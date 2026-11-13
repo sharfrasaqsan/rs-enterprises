@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { revalidateTag } from "next/cache";
 import { adminDb, hasAdminCredentials } from "@/lib/firebase-admin";
 import { createLeadSchema, LeadSource, DealershipBranch } from "@/types/lead";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -135,6 +136,8 @@ export async function createLeadAction(
         vehicleTitle,
       });
     }
+
+    revalidateTag("admin-leads", "max");
 
     return {
       success: true,

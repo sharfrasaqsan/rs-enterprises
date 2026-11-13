@@ -18,6 +18,25 @@ export function Header({ settings }: { settings: CompanySettings }) {
 
   return (
     <header className="sticky top-0 z-50 w-full bg-[var(--bg-overlay)] backdrop-blur-md border-b border-[var(--border-hairline)] transition-luxury">
+      {/* Site-Wide Announcement Banner (Configurable in Admin Settings) */}
+      {settings.announcement?.enabled && settings.announcement.text && (
+        <div className="w-full bg-[var(--accent)] text-white text-[11px] sm:text-xs font-sans font-medium py-2 px-4 text-center tracking-wide transition-colors">
+          <Container size="wide">
+            {settings.announcement.link ? (
+              <Link
+                href={settings.announcement.link}
+                className="hover:underline inline-flex items-center gap-1.5 justify-center min-h-[32px]"
+              >
+                <span>{settings.announcement.text}</span>
+                <span aria-hidden="true">&rarr;</span>
+              </Link>
+            ) : (
+              <span>{settings.announcement.text}</span>
+            )}
+          </Container>
+        </div>
+      )}
+
       <Container size="wide">
         <div className="flex items-center justify-between h-20">
           {/* Brand Logo & Editorial Heritage Tagline */}

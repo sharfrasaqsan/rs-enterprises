@@ -17,7 +17,7 @@ import { SEED_VEHICLES } from "@/lib/seed-data";
 export const getAllPublishedVehicles = unstable_cache(
   async (): Promise<Vehicle[]> => {
     if (!hasAdminCredentials()) {
-      return SEED_VEHICLES.filter((v) => v.published);
+      return SEED_VEHICLES.filter((v) => v.published && !v.archived);
     }
     try {
       const snapshot = await adminDb
@@ -27,14 +27,16 @@ export const getAllPublishedVehicles = unstable_cache(
         .get();
 
       if (!snapshot.empty) {
-        return snapshot.docs.map((doc) => doc.data());
+        return snapshot.docs
+          .map((doc) => doc.data())
+          .filter((v) => !v.archived);
       }
       
       // Fallback to seed vehicles if the database collection is empty
-      return SEED_VEHICLES.filter((v) => v.published);
+      return SEED_VEHICLES.filter((v) => v.published && !v.archived);
     } catch (error) {
       console.warn("Firestore read failed or credentials missing; using seed data fallback:", error);
-      return SEED_VEHICLES.filter((v) => v.published);
+      return SEED_VEHICLES.filter((v) => v.published && !v.archived);
     }
   },
   ["all-published-vehicles-cache"],
@@ -197,7 +199,9 @@ export async function getVehicleBySlug(slug: string): Promise<Vehicle | null> {
       .get();
 
     if (!snapshot.empty && snapshot.docs[0]) {
-      return snapshot.docs[0].data();
+      const data = snapshot.docs[0].data();
+      if (data.archived) return null;
+      return data;
     }
   } catch (error) {
     console.warn(`Direct vehicle lookup failed for slug ${slug}:`, error);
@@ -205,7 +209,10 @@ export async function getVehicleBySlug(slug: string): Promise<Vehicle | null> {
 
   // Check seed vehicles fallback
   const seedFallback = SEED_VEHICLES.find((v) => v.slug === slug);
-  return seedFallback || null;
+  if (seedFallback && !seedFallback.archived) {
+    return seedFallback;
+  }
+  return null;
 }
 
 /**

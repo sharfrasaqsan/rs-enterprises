@@ -1,3 +1,5 @@
+import * as fs from "fs";
+import * as path from "path";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { SEED_VEHICLES, SEED_LEADS, SEED_SETTINGS } from "../src/lib/seed-data";
@@ -5,53 +7,61 @@ import { vehicleConverter } from "../src/types/vehicle";
 import { leadConverter } from "../src/types/lead";
 import { settingsConverter } from "../src/types/settings";
 
-// Setup dotenv if present
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  require("dotenv").config({ path: ".env.local" });
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  require("dotenv").config({ path: ".env" });
-} catch {
-  // Ignore
-}
-
 function getDatabase() {
   const existingApps = getApps();
   const projectId =
     process.env.FIREBASE_PROJECT_ID ||
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-    "rs-enterprises-lk";
+    "rs-enterprises-f3d5e";
 
   let app;
   if (existingApps.length > 0 && existingApps[0]) {
     app = existingApps[0];
   } else {
-    const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
-
-    if (privateKey) {
-      privateKey = privateKey.replace(/\\n/g, "\n");
+    const serviceAccountPath = path.resolve(process.cwd(), "service-account.json");
+    if (fs.existsSync(serviceAccountPath)) {
+      try {
+        const sa = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
+        app = initializeApp({
+          credential: cert(sa),
+          projectId: sa.project_id || projectId,
+        });
+      } catch (err) {
+        console.warn("Could not parse service-account.json:", err);
+      }
     }
 
-    if (serviceAccountJson) {
-      const parsed = JSON.parse(serviceAccountJson);
-      app = initializeApp({
-        credential: cert(parsed),
-        projectId: parsed.project_id || projectId,
-      });
-    } else if (clientEmail && privateKey) {
-      app = initializeApp({
-        credential: cert({
+    if (!app) {
+      const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+      let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+      if (privateKey) {
+        privateKey = privateKey.replace(/\\n/g, "\n");
+      }
+
+      if (serviceAccountJson) {
+        const parsed = JSON.parse(serviceAccountJson);
+        if (parsed.private_key) {
+          parsed.private_key = parsed.private_key.replace(/\\n/g, "\n");
+        }
+        app = initializeApp({
+          credential: cert(parsed),
+          projectId: parsed.project_id || projectId,
+        });
+      } else if (clientEmail && privateKey) {
+        app = initializeApp({
+          credential: cert({
+            projectId,
+            clientEmail,
+            privateKey,
+          }),
           projectId,
-          clientEmail,
-          privateKey,
-        }),
-        projectId,
-      });
-    } else {
-      console.log(`ℹ️ Initializing with projectId "${projectId}" (emulator or GCP default credentials)`);
-      app = initializeApp({ projectId });
+        });
+      } else {
+        console.log(`ℹ️ Initializing with projectId "${projectId}" (emulator or GCP default credentials)`);
+        app = initializeApp({ projectId });
+      }
     }
   }
 
@@ -107,10 +117,24 @@ async function seedDatabase() {
 
   // Commit all writes atomically
   console.log("\n⏳ Committing batch transaction to Firestore...");
-  await batch.commit();
-
-  console.log("\n✅ SUCCESS: Firestore successfully populated with all vehicles, leads, and settings!");
-  console.log("=================================================\n");
+  try {
+    await batch.commit();
+    console.log("\n✅ SUCCESS: Firestore successfully populated with all vehicles, leads, and settings!");
+    console.log("=================================================\n");
+  } catch (commitErr: unknown) {
+    const msg = (commitErr as Error)?.message || String(commitErr);
+    if (msg.includes("Could not load the default credentials")) {
+      console.log("\n⚠️ NOTICE: No active Google Cloud Application Default Credentials detected.");
+      console.log("To commit data to your local Firebase Emulator, start the emulator first:");
+      console.log("  $ npx firebase emulators:start");
+      console.log("  $ FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npm run seed");
+      console.log("\nTo seed a live Firebase project, set GOOGLE_APPLICATION_CREDENTIALS or FIREBASE_SERVICE_ACCOUNT_KEY in .env.local.");
+      console.log("All seed data is active and loaded in memory for the Next.js site.\n");
+      process.exit(0);
+    } else {
+      throw commitErr;
+    }
+  }
 }
 
 seedDatabase().catch((error) => {

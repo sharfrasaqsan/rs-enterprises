@@ -2,7 +2,7 @@ import type { Vehicle } from "@/types/vehicle";
 import type { Lead } from "@/types/lead";
 import type { CompanySettings } from "@/types/settings";
 
-export const SEED_VEHICLES: Vehicle[] = [
+const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
   {
     id: "toyota-land-cruiser-300-zx-2023",
     slug: "2023-toyota-land-cruiser-300-zx",
@@ -404,6 +404,12 @@ export const SEED_VEHICLES: Vehicle[] = [
     updatedAt: "2026-10-30T10:00:00.000Z",
   },
 ];
+
+export const SEED_VEHICLES: Vehicle[] = RAW_SEED_VEHICLES.map((v) => ({
+  archived: false,
+  updatedBy: "S.M. Fajith (Proprietor)",
+  ...v,
+}));
 
 export const SEED_LEADS: Lead[] = [
   {
@@ -819,6 +825,11 @@ export const SEED_SETTINGS: CompanySettings = {
     facebook: "https://facebook.com/rsenterprises.lk [Placeholder to Confirm]",
     instagram: "https://instagram.com/rsenterprises.lk [Placeholder to Confirm]",
     youtube: "",
+  },
+  announcement: {
+    enabled: false,
+    text: "Special Japanese Auction Allocation: New Land Cruiser 300 ZX units arriving soon at Hambantota Port. Reserve today.",
+    link: "/incoming",
   },
   updatedAt: "2026-11-13T12:00:00.000Z",
 };

@@ -1,54 +1,65 @@
+import * as fs from "fs";
+import * as path from "path";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { userConverter, UserRole } from "../src/types/user";
-
-// Load environment variables
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  require("dotenv").config({ path: ".env.local" });
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  require("dotenv").config({ path: ".env" });
-} catch {
-  // Ignore
-}
 
 function getAdminServices() {
   const existingApps = getApps();
   const projectId =
     process.env.FIREBASE_PROJECT_ID ||
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-    "rs-enterprises-lk";
+    "rs-enterprises-f3d5e";
 
   let app;
   if (existingApps.length > 0 && existingApps[0]) {
     app = existingApps[0];
   } else {
-    const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
-
-    if (privateKey) {
-      privateKey = privateKey.replace(/\\n/g, "\n");
+    const serviceAccountPath = path.resolve(process.cwd(), "service-account.json");
+    if (fs.existsSync(serviceAccountPath)) {
+      try {
+        const sa = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
+        app = initializeApp({
+          credential: cert(sa),
+          projectId: sa.project_id || projectId,
+        });
+      } catch (err) {
+        console.warn("Could not parse service-account.json:", err);
+      }
     }
 
-    if (serviceAccountJson) {
-      const parsed = JSON.parse(serviceAccountJson);
-      app = initializeApp({
-        credential: cert(parsed),
-        projectId: parsed.project_id || projectId,
-      });
-    } else if (clientEmail && privateKey) {
-      app = initializeApp({
-        credential: cert({
+    if (!app) {
+      const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+      let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+      if (privateKey) {
+        privateKey = privateKey.replace(/\\n/g, "\n");
+      }
+
+      if (serviceAccountJson) {
+        const parsed = JSON.parse(serviceAccountJson);
+        if (parsed.private_key) {
+          parsed.private_key = parsed.private_key.replace(/\\n/g, "\n");
+        }
+        app = initializeApp({
+          credential: cert(parsed),
+          projectId: parsed.project_id || projectId,
+        });
+      } else if (clientEmail && privateKey) {
+        app = initializeApp({
+          credential: cert({
+            projectId,
+            clientEmail,
+            privateKey,
+          }),
           projectId,
-          clientEmail,
-          privateKey,
-        }),
-        projectId,
-      });
-    } else {
-      app = initializeApp({ projectId });
+        });
+      } else {
+        console.log(`ℹ️ Initializing with projectId "${projectId}" (emulator or GCP default credentials)`);
+        app = initializeApp({ projectId });
+      }
     }
   }
 

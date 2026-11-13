@@ -20,12 +20,20 @@ export const branchDetailsSchema = z.object({
 });
 export type BranchDetails = z.infer<typeof branchDetailsSchema>;
 
+export const announcementSchema = z.object({
+  enabled: z.boolean().default(false),
+  text: z.string().default(""),
+  link: z.string().optional().default(""),
+});
+export type SiteAnnouncement = z.infer<typeof announcementSchema>;
+
 export const companySettingsSchema = z.object({
   companyName: z.string(),
   tagline: z.string(),
   registrationNumber: z.string(),
   mainBranch: branchDetailsSchema,
   coastalBranch: branchDetailsSchema,
+  announcement: announcementSchema.default({ enabled: false, text: "", link: "" }),
   socialLinks: z.object({
     facebook: z.string().url().optional().or(z.literal("")),
     instagram: z.string().url().optional().or(z.literal("")),
@@ -67,6 +75,7 @@ export const settingsConverter: FirestoreDataConverter<CompanySettings> = {
         status: data.coastalBranch?.status || "coming_soon",
         geo: data.coastalBranch?.geo || { lat: 8.5874, lng: 81.2152 },
       },
+      announcement: data.announcement || { enabled: false, text: "", link: "" },
       socialLinks: data.socialLinks || {
         facebook: "https://facebook.com/rsenterprises.lk",
         instagram: "https://instagram.com/rsenterprises.lk",
