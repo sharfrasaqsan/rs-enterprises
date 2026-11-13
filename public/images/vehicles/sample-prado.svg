@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#141416"/>
+      <stop offset="100%" stop-color="#0C0C0D"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#B89B62"/>
+      <stop offset="100%" stop-color="#B89B62"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="750" fill="url(#bg)"/>
+  <line x1="80" y1="670" x2="1120" y2="670" stroke="rgba(237, 232, 223, 0.1)" stroke-width="1"/>
+  <!-- Elegant Automotive Silhouette Line -->
+  <path d="M160 520 C 220 520, 280 500, 340 460 C 440 390, 520 310, 680 300 C 800 300, 920 360, 980 430 C 1030 490, 1060 520, 1080 520 L 1020 520 C 1010 470, 950 430, 890 430 C 830 430, 770 470, 760 520 L 460 520 C 450 470, 390 430, 330 430 C 270 430, 210 470, 200 520 Z" fill="none" stroke="#B89B62" stroke-width="2.5" opacity="0.85"/>
+  <!-- Wheel Arches -->
+  <circle cx="330" cy="520" r="55" fill="#141416" stroke="rgba(237, 232, 223, 0.25)" stroke-width="2"/>
+  <circle cx="330" cy="520" r="28" fill="#0C0C0D" stroke="#B89B62" stroke-width="1.5"/>
+  <circle cx="890" cy="520" r="55" fill="#141416" stroke="rgba(237, 232, 223, 0.25)" stroke-width="2"/>
+  <circle cx="890" cy="520" r="28" fill="#0C0C0D" stroke="#B89B62" stroke-width="1.5"/>
+  <!-- Spec Details -->
+  <text x="100" y="140" font-family="'Times New Roman', serif" font-size="38" fill="#EDE8DF" letter-spacing="1">TOYOTA LAND CRUISER PRADO TX-L</text>
+  <text x="100" y="180" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#B89B62" letter-spacing="4">2023 EDITION • 2.8L DIESEL TURBO • PEARL WHITE</text>
+  <text x="1100" y="140" text-anchor="end" font-family="'Times New Roman', serif" font-size="34" fill="#EDE8DF">LKR 42,500,000</text>
+  <text x="1100" y="180" text-anchor="end" font-family="system-ui, sans-serif" font-size="12" fill="#A39F95" letter-spacing="2">UNREGISTERED • JAPAN AUCTION GRADE 5A</text>
+</svg>

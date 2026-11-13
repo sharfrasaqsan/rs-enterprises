@@ -1,69 +1,63 @@
-import Image from "next/image";
+import { getAllPublishedVehicles } from "@/lib/vehicles";
+import { getCompanySettings } from "@/lib/settings";
+import { Hero } from "@/components/home/Hero";
+import { SearchStrip } from "@/components/home/SearchStrip";
+import { NewArrivals } from "@/components/home/NewArrivals";
+import { DirectFromJapan } from "@/components/home/DirectFromJapan";
+import { IncomingBand } from "@/components/home/IncomingBand";
+import { ServicesList } from "@/components/home/ServicesList";
+import { BranchesSection } from "@/components/home/BranchesSection";
+import { ClosingCta } from "@/components/home/ClosingCta";
 
-export default function Home() {
+export default async function HomePage() {
+  const [vehicles, settings] = await Promise.all([
+    getAllPublishedVehicles(),
+    getCompanySettings(),
+  ]);
+
+  // 1. Featured LCP Vehicle: Primary flagship unit (e.g. LC300 or Prado)
+  const featuredVehicle =
+    vehicles.find((v) => v.slug.includes("land-cruiser-300")) ||
+    vehicles[0];
+
+  // 2. Unique available makes for Search Strip
+  const availableMakes = Array.from(new Set(vehicles.map((v) => v.make))).sort();
+
+  // 3. New Arrivals: Recent showroom acquisitions (excluding featured if possible)
+  const newArrivals = vehicles
+    .filter((v) => v.id !== featuredVehicle.id && v.status !== "sold")
+    .slice(0, 3);
+
+  // 4. Incoming in-transit pipeline units
+  const incomingVehicles = vehicles
+    .filter((v) => v.status === "incoming")
+    .slice(0, 2);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="flex flex-col w-full overflow-x-hidden">
+      {/* 1. Full-Bleed Hero (Featured vehicle is the exclusive LCP image) */}
+      <Hero featuredVehicle={featuredVehicle} settings={settings} />
+
+      {/* 2. Slim Search Strip (Overlapping Hero edge) */}
+      <SearchStrip availableMakes={availableMakes} />
+
+      {/* 3. New Arrivals (Asymmetric 12-column editorial layout) */}
+      <NewArrivals vehicles={newArrivals} />
+
+      {/* 4. Direct from Japan (Inverted Theme Variant with 3 numbered points) */}
+      <DirectFromJapan />
+
+      {/* 5. Incoming Stock Band (Refined 4-stage import logistics indicator) */}
+      <IncomingBand incomingVehicles={incomingVehicles} />
+
+      {/* 6. Curated Services (Hairline-divided list, no boxed feature cards) */}
+      <ServicesList />
+
+      {/* 7. Showroom Branches & Contacts (Kaduruwela Main & Trincomalee) */}
+      <BranchesSection settings={settings} />
+
+      {/* 8. Closing Call-To-Action */}
+      <ClosingCta settings={settings} />
     </div>
   );
 }

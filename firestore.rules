@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner() {
+      return isAuthenticated() && request.auth.token.role == 'owner';
+    }
+
+    function isStaff() {
+      return isAuthenticated() && (request.auth.token.role == 'staff' || request.auth.token.role == 'owner');
+    }
+
+    // 1. Vehicles Collection
+    match /vehicles/{vehicleId} {
+      // Public visitors can only view published stock
+      // Staff and owner can view everything (including drafts and internal statuses)
+      allow read: if (resource != null && resource.data.published == true) || isStaff();
+
+      // Staff and Owner can create and update vehicle specifications
+      allow create, update: if isStaff();
+
+      // STRICT: Only owners can delete vehicle records (Staff cannot delete)
+      allow delete: if isOwner();
+    }
+
+    // 2. Leads Collection (STRICT CRM ACCESS)
+    match /leads/{leadId} {
+      // Anonymous users CANNOT read leads
+      allow read: if isStaff();
+
+      // Public inquiries are created strictly via Server Actions using firebase-admin.
+      // Direct client write by anonymous users is blocked.
+      // Showroom staff and owners can record internal walk-in / phone leads directly.
+      allow create: if isStaff();
+
+      // Staff and Owner can update pipeline stage, notes, and follow-up dates
+      allow update: if isStaff();
+
+      // STRICT: Only owners can permanently delete leads (Staff cannot delete)
+      allow delete: if isOwner();
+    }
+
+    // 3. Settings Collection
+    match /settings/{document=**} {
+      // Public contact and branch metadata is readable
+      allow read: if true;
+
+      // STRICT: Staff cannot touch settings. Only owners can write settings.
+      allow write: if isOwner();
+    }
+
+    // 4. Users Collection (Staff Roles & Profiles)
+    match /users/{userId} {
+      // Staff can view their own profile; owners can view all
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isOwner());
+
+      // STRICT: Only owners can provision or alter user profiles and roles
+      allow write: if isOwner();
+    }
+
+    // Default deny for all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

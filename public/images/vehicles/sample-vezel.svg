@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181B"/>
+      <stop offset="100%" stop-color="#0C0C0D"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="750" fill="url(#bg2)"/>
+  <line x1="80" y1="670" x2="1120" y2="670" stroke="rgba(237, 232, 223, 0.1)" stroke-width="1"/>
+  <!-- Sleek Crossover Silhouette -->
+  <path d="M180 520 C 240 520, 300 490, 360 450 C 470 380, 540 330, 710 320 C 820 320, 910 370, 960 440 C 1000 490, 1030 520, 1060 520 L 1000 520 C 990 470, 930 430, 870 430 C 810 430, 750 470, 740 520 L 480 520 C 470 470, 410 430, 350 430 C 290 430, 230 470, 220 520 Z" fill="none" stroke="#B89B62" stroke-width="2.5" opacity="0.85"/>
+  <circle cx="350" cy="520" r="50" fill="#141416" stroke="rgba(237, 232, 223, 0.25)" stroke-width="2"/>
+  <circle cx="350" cy="520" r="25" fill="#0C0C0D" stroke="#B89B62" stroke-width="1.5"/>
+  <circle cx="870" cy="520" r="50" fill="#141416" stroke="rgba(237, 232, 223, 0.25)" stroke-width="2"/>
+  <circle cx="870" cy="520" r="25" fill="#0C0C0D" stroke="#B89B62" stroke-width="1.5"/>
+  <text x="100" y="140" font-family="'Times New Roman', serif" font-size="38" fill="#EDE8DF" letter-spacing="1">HONDA VEZEL e:HEV Z</text>
+  <text x="100" y="180" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#B89B62" letter-spacing="4">2022 EDITION • 1.5L HYBRID • METEOROID GRAY</text>
+  <text x="1100" y="140" text-anchor="end" font-family="'Times New Roman', serif" font-size="34" fill="#EDE8DF">LKR 16,800,000</text>
+  <text x="1100" y="180" text-anchor="end" font-family="system-ui, sans-serif" font-size="12" fill="#A39F95" letter-spacing="2">UNREGISTERED • JAPAN AUCTION GRADE 4.5</text>
+</svg>

@@ -1,26 +1,202 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* 
+ * RS Enterprises Luxury Automotive Design System Tokens
+ * Root variables for Dark (default) and Light themes
+ */
+
+:root,
+[data-theme="dark"] {
+  /* Color Tokens - Warm Near-Black Showroom */
+  --bg-base: #0C0C0D;
+  --bg-surface: #141416;
+  --bg-elevated: #1C1C1F;
+  --bg-overlay: rgba(12, 12, 13, 0.85);
+
+  --text-primary: #EDE8DF;      /* Warm bone - AAA contrast 16.02:1 */
+  --text-secondary: #A39F95;    /* Cashmere gray - AAA contrast 7.40:1 */
+  --text-muted: #7E7A72;        /* Subtle label - AA contrast 4.58:1 */
+  
+  --accent: #B89B62;            /* Muted Champagne Gold (FLAT, no gradient) - AAA contrast 7.36:1 */
+  --accent-hover: #C9AE77;
+  --accent-contrast: #0C0C0D;
+
+  --border-hairline: rgba(237, 232, 223, 0.10);
+  --border-subtle: rgba(237, 232, 223, 0.18);
+  --border-focus: #B89B62;
+
+  /* Inverted Section Tokens (used inside dark theme for stark contrast sections) */
+  --bg-inverted: #F4F0E8;
+  --text-inverted: #141413;
+  --accent-inverted: #7C602E;
+  --border-inverted: rgba(20, 20, 19, 0.12);
+
+  /* Status Colors (Muted, Architectural) */
+  --status-available: #B89B62;
+  --status-incoming: #8CA0BA;
+  --status-reserved: #C29B7F;
+  --status-sold: #7A7670;
+
+  color-scheme: dark;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+[data-theme="light"] {
+  /* Color Tokens - Warm Ivory/Bone Showroom Gallery */
+  --bg-base: #F4F0E8;
+  --bg-surface: #EBE6DC;
+  --bg-elevated: #E2DCD0;
+  --bg-overlay: rgba(244, 240, 232, 0.90);
+
+  --text-primary: #141413;      /* Deep ink - AAA contrast 16.22:1 */
+  --text-secondary: #524F49;    /* Warm graphite - AAA contrast 7.18:1 */
+  --text-muted: #68645C;        /* Subtle label - AA contrast 5.18:1 */
+
+  --accent: #7C602E;            /* Deep Champagne Bronze (Contrast compliant) - AA contrast 5.18:1 */
+  --accent-hover: #654E25;
+  --accent-contrast: #F4F0E8;
+
+  --border-hairline: rgba(20, 20, 19, 0.10);
+  --border-subtle: rgba(20, 20, 19, 0.20);
+  --border-focus: #7C602E;
+
+  /* Inverted Section Tokens */
+  --bg-inverted: #0C0C0D;
+  --text-inverted: #EDE8DF;
+  --accent-inverted: #B89B62;
+  --border-inverted: rgba(237, 232, 223, 0.12);
+
+  /* Status Colors */
+  --status-available: #7C602E;
+  --status-incoming: #3E5A7A;
+  --status-reserved: #8A5B3D;
+  --status-sold: #66635D;
+
+  color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme {
+  --color-bg-base: var(--bg-base);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-overlay: var(--bg-overlay);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-contrast: var(--accent-contrast);
+
+  --color-border-hairline: var(--border-hairline);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-focus: var(--border-focus);
+
+  --color-bg-inverted: var(--bg-inverted);
+  --color-text-inverted: var(--text-inverted);
+  --color-accent-inverted: var(--accent-inverted);
+  --color-border-inverted: var(--border-inverted);
+
+  --color-status-available: var(--status-available);
+  --color-status-incoming: var(--status-incoming);
+  --color-status-reserved: var(--status-reserved);
+  --color-status-sold: var(--status-sold);
+
+  --font-serif: var(--font-cormorant), "Times New Roman", Garamond, serif;
+  --font-sans: var(--font-jakarta), system-ui, -apple-system, sans-serif;
+}
+
+/* 
+ * Base HTML Resets & Strict Layout Rules 
+ */
+html {
+  font-family: var(--font-sans);
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Luxury Automotive Hairline Border Utility */
+.border-hairline {
+  border-color: var(--border-hairline);
+}
+
+.border-subtle {
+  border-color: var(--border-subtle);
+}
+
+/* Micro-label letter spacing */
+.tracking-luxury {
+  letter-spacing: 0.18em;
+}
+
+.tracking-eyebrow {
+  letter-spacing: 0.22em;
+}
+
+/* Slow, Quiet Luxury Motion (400-700ms ease-out) */
+.transition-luxury {
+  transition-property: color, background-color, border-color, transform, opacity;
+  transition-duration: 500ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hover-lift {
+  transition: transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+.hover-scale-subtle {
+  transition: transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hover-scale-subtle:hover {
+  transform: scale(1.03);
+}
+
+/* CSS Scroll-driven animations with @supports fallback */
+@supports (animation-timeline: view()) {
+  .reveal-on-scroll {
+    animation: fadeRise linear both;
+    animation-timeline: view();
+    animation-range: entry 10% cover 30%;
+  }
+
+  @keyframes fadeRise {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
