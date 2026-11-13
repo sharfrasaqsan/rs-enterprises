@@ -790,9 +790,9 @@ export const SEED_LEADS: Lead[] = [
 ];
 
 export const SEED_SETTINGS: CompanySettings = {
-  companyName: "RS Enterprises Company Pvt Ltd [Placeholder to Confirm]",
-  tagline: "Direct Importer of Premium Japanese Vehicles & Genuine Spare Parts [Placeholder to Confirm]",
-  registrationNumber: "PV-00249871 [Placeholder to Confirm]",
+  companyName: "RS Enterprises Company Pvt Ltd",
+  tagline: "Direct Importer of Premium Japanese Vehicles & Genuine Spare Parts",
+  registrationNumber: "TH/DS/ACCT/BR/38/2018",
   mainBranch: {
     name: "Polonnaruwa Main Showroom & Head Office",
     address: "No.37/1, Kaduruwela, Polonnaruwa, Sri Lanka",

@@ -25,8 +25,14 @@ export function EmptyState() {
         >
           Reset All Filters
         </Link>
+        <Link
+          href="/request-vehicle"
+          className="inline-flex items-center justify-center min-h-[48px] px-6 rounded-[2px] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--text-primary)] text-xs font-sans uppercase font-medium tracking-[0.16em] transition-luxury w-full sm:w-auto"
+        >
+          Request Custom Vehicle
+        </Link>
         <WhatsAppButton
-          label="Request Custom Auction Bidding"
+          label="Auction Desk"
           message="Hello RS Enterprises, I could not find my required vehicle in your showroom stock. Could you please check upcoming Japanese auction listings for me?"
           variant="outline"
           className="w-full sm:w-auto"

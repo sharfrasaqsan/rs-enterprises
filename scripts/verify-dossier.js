@@ -20,3 +20,4 @@ console.log('8. Lead inquiry form:', html.includes('Showroom Inquiry Desk') && h
 console.log('9. Large numerals (LKR 88.5M):', html.includes('88,500,000') && html.includes('3,346'));
 console.log('10. Mobile sticky enquiry bar:', html.includes('Mobile Vehicle Quick Contact'));
 console.log('11. Related vehicles:', html.includes('Similar Vehicles in Showroom'));
+

@@ -4,11 +4,11 @@ import React, { useState, useTransition } from "react";
 import { createLeadAction, CreateLeadResult } from "@/app/actions/leads";
 
 export function LeadEnquiryForm({
-  vehicleId,
-  vehicleTitle,
+  vehicleId = "general-inquiry",
+  vehicleTitle = "General Showroom Inquiry",
 }: {
-  vehicleId: string;
-  vehicleTitle: string;
+  vehicleId?: string;
+  vehicleTitle?: string;
 }) {
   const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<CreateLeadResult | null>(null);
@@ -55,6 +55,17 @@ export function LeadEnquiryForm({
     >
       <input type="hidden" name="vehicleId" value={vehicleId} />
       <input type="hidden" name="vehicleTitle" value={vehicleTitle} />
+
+      {/* Honeypot Anti-Spam (Hidden from real users) */}
+      <div className="hidden" aria-hidden="true" style={{ display: "none" }}>
+        <input
+          type="text"
+          name="_hp_verify"
+          tabIndex={-1}
+          autoComplete="off"
+          defaultValue=""
+        />
+      </div>
 
       <div className="space-y-1">
         <span className="font-serif text-base text-[var(--text-primary)] block">
