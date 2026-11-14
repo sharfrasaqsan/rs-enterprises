@@ -49,6 +49,7 @@ export const leadSchema = z.object({
   assignedTo: z.string().optional().nullable(),
   followUpDate: z.string().optional().nullable(),
   lostReason: z.string().optional().nullable(),
+  updatedBy: z.string().optional().nullable(),
   notes: z.array(leadNoteSchema).default([]),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -84,6 +85,7 @@ export const leadConverter: FirestoreDataConverter<Lead> = {
       assignedTo: lead.assignedTo || null,
       followUpDate: lead.followUpDate || null,
       lostReason: lead.lostReason || null,
+      updatedBy: lead.updatedBy || null,
       notes: lead.notes,
       createdAt: lead.createdAt,
       updatedAt: lead.updatedAt,
@@ -115,6 +117,7 @@ export const leadConverter: FirestoreDataConverter<Lead> = {
       assignedTo: data.assignedTo || null,
       followUpDate: data.followUpDate || null,
       lostReason: data.lostReason || null,
+      updatedBy: data.updatedBy || null,
       notes: Array.isArray(data.notes)
         ? data.notes.map((n: Record<string, unknown>) => ({
             id: String(n.id || Math.random().toString(36).substring(2, 9)),

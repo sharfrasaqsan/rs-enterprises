@@ -218,7 +218,7 @@ export default async function VehicleDetailPage(props: {
               {/* Left Column (7 cols): Full-Bleed Gallery & Technical Dossier */}
               <div className="lg:col-span-7 space-y-12">
                 {/* 1. Opening Full-Bleed Gallery */}
-                <VehicleGallery images={vehicle.images} title={vehicleTitle} />
+                <VehicleGallery images={vehicle.images} title={vehicleTitle} slug={vehicle.slug} />
 
                 {/* 2. Key Figures (Large Light-weight Numerals) */}
                 <div className="p-6 sm:p-8 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] space-y-6">

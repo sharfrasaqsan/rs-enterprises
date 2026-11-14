@@ -8,7 +8,6 @@ import { StatusLabel } from "@/components/ui/StatusLabel";
 import { VehicleImage } from "@/components/ui/VehicleImage";
 import { CompareButton } from "@/components/ui/CompareButton";
 import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
-import { Divider } from "@/components/ui/Divider";
 import { Vehicle } from "@/types/vehicle";
 
 export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
@@ -22,7 +21,7 @@ export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
       <Container size="wide">
         <div className="space-y-12 sm:space-y-16">
           {/* Header Row */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-[var(--border-hairline)]">
+          <div className="reveal-on-scroll flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-[var(--border-hairline)]">
             <div className="space-y-2">
               <Eyebrow>Showroom Acquisitions</Eyebrow>
               <Heading level={2}>
@@ -31,7 +30,7 @@ export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
             </div>
             <Link
               href="/vehicles"
-              className="text-xs font-sans uppercase font-medium tracking-[0.18em] text-[var(--accent)] hover:underline underline-offset-8 transition-colors self-start sm:self-auto min-h-[44px] inline-flex items-center"
+              className="link-underline text-xs font-sans uppercase font-medium tracking-[0.22em] text-[var(--accent)] transition-colors self-start sm:self-auto min-h-[44px] inline-flex items-center"
             >
               View Complete Showroom Inventory &rarr;
             </Link>
@@ -41,23 +40,32 @@ export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
             {/* Major Feature Article: 7 Columns */}
             {leadVehicle && (
-              <article className="lg:col-span-7 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] p-6 sm:p-8 space-y-6">
+              <article className="reveal-on-scroll stagger-1 lg:col-span-7 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] p-6 sm:p-9 space-y-6 shadow-xl transition-all duration-500 hover:border-[var(--border-subtle)]">
                 <div className="flex items-center justify-between gap-4">
-                  <StatusLabel status={leadVehicle.status} />
+                  <div className="flex items-center gap-2">
+                    <StatusLabel status={leadVehicle.status} />
+                    <span className="px-2.5 py-0.5 bg-[var(--bg-overlay)] backdrop-blur-md border border-[var(--border-subtle)] text-[10px] font-mono uppercase tracking-wider text-[var(--accent)] rounded-[1px]">
+                      {leadVehicle.grade}
+                    </span>
+                  </div>
                   <CompareButton slug={leadVehicle.slug} />
                 </div>
 
-                <Link href={`/vehicles/${leadVehicle.slug}`} className="block group">
+                <Link
+                  href={`/vehicles/${leadVehicle.slug}`}
+                  className="block group overflow-hidden rounded-[2px] border border-[var(--border-hairline)]"
+                  style={{ viewTransitionName: `vehicle-thumb-${leadVehicle.slug}` }}
+                >
                   <VehicleImage
-                    src={leadVehicle.images[0] || "/images/vehicles/sample-prado.svg"}
+                    src={leadVehicle.images[0] || "/images/vehicles/prado-black.jpg"}
                     alt={`${leadVehicle.year} ${leadVehicle.make} ${leadVehicle.model}`}
                     aspectRatio="16/10"
                   />
                 </Link>
 
                 <div className="space-y-3">
-                  <div className="text-[11px] font-mono text-[var(--accent)] uppercase tracking-wider">
-                    {leadVehicle.grade} &bull; Auction Grade Verified
+                  <div className="text-[10px] font-mono text-[var(--accent)] uppercase tracking-[0.2em]">
+                    ✦ {leadVehicle.grade} &bull; Auction Grade Verified
                   </div>
                   <Link href={`/vehicles/${leadVehicle.slug}`} className="block group">
                     <Heading level={3} className="group-hover:text-[var(--accent)] transition-colors">
@@ -101,7 +109,7 @@ export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
                     />
                     <Link
                       href={`/vehicles/${leadVehicle.slug}`}
-                      className="inline-flex items-center justify-center min-h-[48px] px-6 rounded-[2px] border border-[var(--border-subtle)] text-xs font-sans uppercase font-medium tracking-[0.16em] text-[var(--text-primary)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-luxury"
+                      className="inline-flex items-center justify-center min-h-[46px] px-6 rounded-[2px] bg-white text-black hover:bg-[var(--accent)] hover:text-black text-xs font-sans uppercase font-semibold tracking-[0.2em] shadow-md transition-luxury"
                     >
                       Dossier
                     </Link>
@@ -115,26 +123,35 @@ export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
               {sideVehicles.map((vehicle, idx) => (
                 <article
                   key={vehicle.id}
-                  className="bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] p-6 space-y-4"
+                  className={`reveal-on-scroll stagger-${idx + 2} bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] p-6 space-y-4 shadow-lg transition-all duration-500 hover:border-[var(--border-subtle)]`}
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <StatusLabel status={vehicle.status} />
+                    <div className="flex items-center gap-2">
+                      <StatusLabel status={vehicle.status} />
+                      <span className="px-2 py-0.5 bg-[var(--bg-overlay)] backdrop-blur-md border border-[var(--border-subtle)] text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)] rounded-[1px]">
+                        {vehicle.grade}
+                      </span>
+                    </div>
                     <CompareButton slug={vehicle.slug} compact />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
                     <div className="sm:col-span-5">
-                      <Link href={`/vehicles/${vehicle.slug}`} className="block group">
+                      <Link
+                        href={`/vehicles/${vehicle.slug}`}
+                        className="block group overflow-hidden rounded-[2px] border border-[var(--border-hairline)]"
+                        style={{ viewTransitionName: `vehicle-thumb-${vehicle.slug}` }}
+                      >
                         <VehicleImage
-                          src={vehicle.images[0] || "/images/vehicles/sample-vezel.svg"}
+                          src={vehicle.images[0] || "/images/vehicles/vezel-hybrid.jpg"}
                           alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
                           aspectRatio="4/3"
                         />
                       </Link>
                     </div>
 
-                    <div className="sm:col-span-7 space-y-2">
-                      <span className="text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-wider block">
+                    <div className="sm:col-span-7 space-y-2.5">
+                      <span className="text-[10px] font-mono text-[var(--accent)] uppercase tracking-[0.2em] block">
                         {vehicle.year} &bull; {vehicle.fuel}
                       </span>
                       <Link href={`/vehicles/${vehicle.slug}`} className="block group">
@@ -150,24 +167,21 @@ export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
                             size="sm"
                           />
                         ) : (
-                          <span className="text-xs font-sans uppercase tracking-widest text-[var(--accent)]">
+                          <span className="text-xs font-sans uppercase tracking-widest text-[var(--accent)] font-medium">
                             Call For Price
                           </span>
                         )}
                       </div>
+
+                      <div className="pt-2 flex items-center gap-3">
+                        <Link
+                          href={`/vehicles/${vehicle.slug}`}
+                          className="link-underline text-[11px] font-sans uppercase font-medium tracking-[0.2em] text-[var(--text-primary)] hover:text-[var(--accent)] transition-colors"
+                        >
+                          View Details &rarr;
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-
-                  <Divider variant="hairline" />
-
-                  <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
-                    <span className="tabular-nums">{vehicle.mileage.toLocaleString()} km</span>
-                    <Link
-                      href={`/vehicles/${vehicle.slug}`}
-                      className="font-sans uppercase text-[11px] font-medium tracking-[0.16em] text-[var(--accent)] hover:underline"
-                    >
-                      View Specs &rarr;
-                    </Link>
                   </div>
                 </article>
               ))}
@@ -178,4 +192,3 @@ export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
     </section>
   );
 }
-

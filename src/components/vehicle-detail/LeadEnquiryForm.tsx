@@ -159,7 +159,7 @@ export function LeadEnquiryForm({
       <button
         type="submit"
         disabled={isPending}
-        className="w-full min-h-[48px] px-6 rounded-[2px] bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)] text-xs uppercase font-medium tracking-[0.18em] transition-luxury flex items-center justify-center cursor-pointer select-none disabled:opacity-50"
+        className="w-full min-h-[48px] px-6 rounded-[2px] bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)] text-xs uppercase font-semibold tracking-[0.2em] shadow-md transition-luxury flex items-center justify-center cursor-pointer select-none disabled:opacity-50"
       >
         {isPending ? "Submitting Inquiry..." : "Submit Showroom Inquiry"}
       </button>

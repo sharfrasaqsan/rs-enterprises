@@ -1,26 +1,89 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750">
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#141416"/>
-      <stop offset="100%" stop-color="#0C0C0D"/>
+    <!-- Deep obsidian studio gradient -->
+    <radialGradient id="studio-spot" cx="50%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#1C1D24"/>
+      <stop offset="45%" stop-color="#0E0F12"/>
+      <stop offset="100%" stop-color="#060608"/>
+    </radialGradient>
+    
+    <!-- Champagne gold metallic gradient -->
+    <linearGradient id="gold-metal" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#D4AF37"/>
+      <stop offset="50%" stop-color="#F3E5AB"/>
+      <stop offset="100%" stop-color="#AA771C"/>
     </linearGradient>
-    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#B89B62"/>
-      <stop offset="100%" stop-color="#B89B62"/>
+
+    <!-- Chrome metallic trim -->
+    <linearGradient id="chrome" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="50%" stop-color="#9CA3AF"/>
+      <stop offset="100%" stop-color="#374151"/>
     </linearGradient>
+
+    <!-- Headlight glow -->
+    <radialGradient id="headlight-glow" cx="85%" cy="58%" r="40%">
+      <stop offset="0%" stop-color="rgba(197, 160, 89, 0.45)"/>
+      <stop offset="60%" stop-color="rgba(197, 160, 89, 0.1)"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
   </defs>
-  <rect width="1200" height="750" fill="url(#bg)"/>
-  <line x1="80" y1="670" x2="1120" y2="670" stroke="rgba(237, 232, 223, 0.1)" stroke-width="1"/>
-  <!-- Elegant Automotive Silhouette Line -->
-  <path d="M160 520 C 220 520, 280 500, 340 460 C 440 390, 520 310, 680 300 C 800 300, 920 360, 980 430 C 1030 490, 1060 520, 1080 520 L 1020 520 C 1010 470, 950 430, 890 430 C 830 430, 770 470, 760 520 L 460 520 C 450 470, 390 430, 330 430 C 270 430, 210 470, 200 520 Z" fill="none" stroke="#B89B62" stroke-width="2.5" opacity="0.85"/>
-  <!-- Wheel Arches -->
-  <circle cx="330" cy="520" r="55" fill="#141416" stroke="rgba(237, 232, 223, 0.25)" stroke-width="2"/>
-  <circle cx="330" cy="520" r="28" fill="#0C0C0D" stroke="#B89B62" stroke-width="1.5"/>
-  <circle cx="890" cy="520" r="55" fill="#141416" stroke="rgba(237, 232, 223, 0.25)" stroke-width="2"/>
-  <circle cx="890" cy="520" r="28" fill="#0C0C0D" stroke="#B89B62" stroke-width="1.5"/>
-  <!-- Spec Details -->
-  <text x="100" y="140" font-family="'Times New Roman', serif" font-size="38" fill="#EDE8DF" letter-spacing="1">TOYOTA LAND CRUISER PRADO TX-L</text>
-  <text x="100" y="180" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#B89B62" letter-spacing="4">2023 EDITION • 2.8L DIESEL TURBO • PEARL WHITE</text>
-  <text x="1100" y="140" text-anchor="end" font-family="'Times New Roman', serif" font-size="34" fill="#EDE8DF">LKR 42,500,000</text>
-  <text x="1100" y="180" text-anchor="end" font-family="system-ui, sans-serif" font-size="12" fill="#A39F95" letter-spacing="2">UNREGISTERED • JAPAN AUCTION GRADE 5A</text>
+
+  <!-- Studio Background -->
+  <rect width="1200" height="750" fill="url(#studio-spot)"/>
+
+  <!-- Showroom Reflection Floor -->
+  <rect x="0" y="520" width="1200" height="230" fill="#040405"/>
+  <line x1="60" y1="520" x2="1140" y2="520" stroke="rgba(212, 175, 55, 0.25)" stroke-width="1.5"/>
+
+  <!-- Dramatic Atmosphere Ambient Beam -->
+  <ellipse cx="600" cy="510" rx="480" ry="40" fill="rgba(212, 175, 55, 0.08)"/>
+
+  <!-- Prestige Automotive Silhouette Body -->
+  <!-- Main Chassis Shadow -->
+  <ellipse cx="600" cy="525" rx="440" ry="22" fill="#000000" opacity="0.9"/>
+
+  <!-- Vehicle Main Body (Sleek Modern Luxury 4WD) -->
+  <path d="M180 500 C 180 470, 230 420, 310 400 L 440 375 L 560 270 C 600 240, 680 230, 820 235 L 940 350 L 1020 380 C 1055 395, 1070 430, 1070 480 L 1070 500 C 1045 500, 1030 435, 955 435 C 880 435, 865 500, 840 500 L 430 500 C 405 500, 390 435, 315 435 C 240 435, 225 500, 180 500 Z" fill="#15171C" stroke="url(#gold-metal)" stroke-width="2"/>
+
+  <!-- Roofline Highlight & Glasshouse -->
+  <path d="M570 280 C 610 255, 680 248, 810 252 L 920 355 L 460 375 Z" fill="#0A0B0E" stroke="rgba(243, 229, 171, 0.4)" stroke-width="1.2"/>
+  <line x1="680" y1="250" x2="695" y2="370" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+
+  <!-- Aerodynamic Side Contour Line -->
+  <path d="M210 430 Q 550 410 1040 395" stroke="rgba(255, 255, 255, 0.4)" stroke-width="1.5" fill="none"/>
+
+  <!-- Headlight Cluster (Biem LED) -->
+  <polygon points="1025,395 1065,415 1050,440 1015,415" fill="#FFFFFF" opacity="0.95"/>
+  <circle cx="1040" cy="420" r="80" fill="url(#headlight-glow)"/>
+
+  <!-- Front Alloy Wheel -->
+  <circle cx="955" cy="500" r="62" fill="#0B0C0E" stroke="url(#chrome)" stroke-width="3"/>
+  <circle cx="955" cy="500" r="44" fill="#181A1F" stroke="url(#gold-metal)" stroke-width="2"/>
+  <circle cx="955" cy="500" r="16" fill="#0A0A0C" stroke="#D4AF37" stroke-width="2"/>
+  <!-- Spokes -->
+  <line x1="955" y1="442" x2="955" y2="558" stroke="url(#chrome)" stroke-width="3"/>
+  <line x1="897" y1="500" x2="1013" y2="500" stroke="url(#chrome)" stroke-width="3"/>
+  <line x1="914" y1="459" x2="996" y2="541" stroke="url(#chrome)" stroke-width="2.5"/>
+  <line x1="914" y1="541" x2="996" y2="459" stroke="url(#chrome)" stroke-width="2.5"/>
+
+  <!-- Rear Alloy Wheel -->
+  <circle cx="315" cy="500" r="62" fill="#0B0C0E" stroke="url(#chrome)" stroke-width="3"/>
+  <circle cx="315" cy="500" r="44" fill="#181A1F" stroke="url(#gold-metal)" stroke-width="2"/>
+  <circle cx="315" cy="500" r="16" fill="#0A0A0C" stroke="#D4AF37" stroke-width="2"/>
+  <!-- Spokes -->
+  <line x1="315" y1="442" x2="315" y2="558" stroke="url(#chrome)" stroke-width="3"/>
+  <line x1="257" y1="500" x2="373" y2="500" stroke="url(#chrome)" stroke-width="3"/>
+  <line x1="274" y1="459" x2="356" y2="541" stroke="url(#chrome)" stroke-width="2.5"/>
+  <line x1="274" y1="541" x2="356" y2="459" stroke="url(#chrome)" stroke-width="2.5"/>
+
+  <!-- High-End Editorial Typography Overlay -->
+  <rect x="70" y="60" width="310" height="28" fill="rgba(197, 160, 89, 0.15)" rx="2" stroke="rgba(197, 160, 89, 0.4)" stroke-width="1"/>
+  <text x="82" y="78" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700" fill="#D4AF37" letter-spacing="3.5">JAPAN AUCTION GRADE 5A • FLAGSHIP</text>
+
+  <text x="70" y="130" font-family="Georgia, serif" font-size="34" font-weight="400" fill="#FFFFFF" letter-spacing="1">TOYOTA LAND CRUISER 300 ZX</text>
+  <text x="70" y="160" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#A1A1AA" letter-spacing="3">3.3L TWIN TURBO DIESEL • 4WD • MODELLISTA AERO</text>
+
+  <text x="1130" y="130" text-anchor="end" font-family="Georgia, serif" font-size="32" font-weight="300" fill="#D4AF37">LKR 88,500,000</text>
+  <text x="1130" y="160" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="500" fill="#71717A" letter-spacing="2">UNREGISTERED • KADURUWELA SHOWROOM</text>
 </svg>

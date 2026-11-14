@@ -3,7 +3,7 @@
 import { revalidateTag, revalidatePath, unstable_cache } from "next/cache";
 import { adminDb, hasAdminCredentials } from "@/lib/firebase-admin";
 import { Vehicle, vehicleConverter, VehicleStatus, ImportStage } from "@/types/vehicle";
-import { Lead, leadConverter, LeadStage, DealershipBranch } from "@/types/lead";
+import { Lead, leadConverter, LeadStage, DealershipBranch, LeadSource } from "@/types/lead";
 import { CompanySettings, settingsConverter } from "@/types/settings";
 import { SEED_VEHICLES, SEED_LEADS, SEED_SETTINGS } from "@/lib/seed-data";
 
@@ -144,30 +144,43 @@ export async function updateIncomingStageAction(
     }
 
     // If unit has arrived in showroom stock, promote status to available
-    if (importStage === "in_stock") {
+    if (importStage === "ready" || importStage === "in_stock") {
       updatePayload.status = "available";
     }
 
+    let vehicleSlug = "";
+
     if (hasAdminCredentials()) {
-      await adminDb.collection("vehicles").doc(vehicleId).update(updatePayload);
+      const docRef = adminDb.collection("vehicles").doc(vehicleId);
+      const snap = await docRef.get();
+      if (snap.exists) {
+        vehicleSlug = snap.data()?.slug || "";
+      }
+      await docRef.update(updatePayload);
     } else {
-      inMemoryVehicles = inMemoryVehicles.map((v) =>
-        v.id === vehicleId
-          ? {
-              ...v,
-              importStage,
-              status: importStage === "in_stock" ? "available" : v.status,
-              expectedArrival: expectedArrival !== undefined ? expectedArrival : v.expectedArrival,
-              updatedAt: now,
-              updatedBy,
-            }
-          : v
-      );
+      inMemoryVehicles = inMemoryVehicles.map((v) => {
+        if (v.id === vehicleId) {
+          vehicleSlug = v.slug;
+          return {
+            ...v,
+            importStage,
+            status: importStage === "ready" || importStage === "in_stock" ? "available" : v.status,
+            expectedArrival: expectedArrival !== undefined ? expectedArrival : v.expectedArrival,
+            updatedAt: now,
+            updatedBy,
+          };
+        }
+        return v;
+      });
     }
+
     revalidateTag("vehicles", "max");
     revalidateTag("admin-vehicles", "max");
     revalidatePath("/incoming");
     revalidatePath("/vehicles");
+    if (vehicleSlug) {
+      revalidatePath(`/vehicles/${vehicleSlug}`);
+    }
     revalidatePath("/");
     return { success: true };
   } catch (err) {
@@ -376,13 +389,15 @@ export const getAdminLeadsAction = unstable_cache(
 export async function updateLeadStageAction(
   leadId: string,
   stage: LeadStage,
-  lostReason?: string
+  lostReason?: string,
+  updatedBy: string = "Showroom Staff"
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const now = new Date().toISOString();
     const updatePayload: Record<string, unknown> = {
       stage,
       updatedAt: now,
+      updatedBy,
     };
     if (lostReason) {
       updatePayload.lostReason = lostReason;
@@ -398,6 +413,7 @@ export async function updateLeadStageAction(
               stage,
               lostReason: lostReason || l.lostReason,
               updatedAt: now,
+              updatedBy,
             }
           : l
       );
@@ -435,6 +451,7 @@ export async function addLeadNoteAction(
         await docRef.update({
           notes: [...existingNotes, newNote],
           updatedAt: now,
+          updatedBy: author,
         });
       }
     } else {
@@ -444,6 +461,7 @@ export async function addLeadNoteAction(
               ...l,
               notes: [...l.notes, newNote],
               updatedAt: now,
+              updatedBy: author,
             }
           : l
       );
@@ -461,7 +479,8 @@ export async function addLeadNoteAction(
  */
 export async function setLeadFollowUpAction(
   leadId: string,
-  followUpDate: string
+  followUpDate: string | null,
+  updatedBy: string = "Showroom Staff"
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const now = new Date().toISOString();
@@ -469,10 +488,11 @@ export async function setLeadFollowUpAction(
       await adminDb.collection("leads").doc(leadId).update({
         followUpDate,
         updatedAt: now,
+        updatedBy,
       });
     } else {
       inMemoryLeads = inMemoryLeads.map((l) =>
-        l.id === leadId ? { ...l, followUpDate, updatedAt: now } : l
+        l.id === leadId ? { ...l, followUpDate, updatedAt: now, updatedBy } : l
       );
     }
     revalidateTag("admin-leads", "max");
@@ -480,6 +500,174 @@ export async function setLeadFollowUpAction(
   } catch (err) {
     console.error("setLeadFollowUpAction failed:", err);
     return { success: false, error: "Failed to set follow-up date." };
+  }
+}
+
+/**
+ * Create Lead from staff phone or walk-in enquiry.
+ */
+export async function createLeadAdminAction(
+  data: {
+    name: string;
+    phone: string;
+    vehicleTitle?: string;
+    vehicleId?: string;
+    source: LeadSource;
+    branch: DealershipBranch;
+    note?: string;
+    assignedTo?: string;
+  },
+  author: string = "Showroom Staff"
+): Promise<{ success: boolean; leadId?: string; error?: string }> {
+  try {
+    const now = new Date().toISOString();
+    const id = `lead-${Date.now()}`;
+    const initialNotes = data.note?.trim()
+      ? [
+          {
+            id: `note-${Date.now()}`,
+            text: data.note.trim(),
+            author,
+            time: now,
+          },
+        ]
+      : [];
+
+    const newLead: Lead = {
+      id,
+      name: data.name.trim(),
+      phone: data.phone.trim(),
+      email: null,
+      source: data.source || "phone",
+      branch: data.branch || "polonnaruwa",
+      vehicleId: data.vehicleId || null,
+      vehicleTitle: data.vehicleTitle?.trim() || null,
+      requestDetails: data.note?.trim() || null,
+      stage: "new",
+      assignedTo: data.assignedTo || null,
+      followUpDate: null,
+      lostReason: null,
+      updatedBy: author,
+      notes: initialNotes,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    if (hasAdminCredentials()) {
+      await adminDb
+        .collection("leads")
+        .doc(id)
+        .withConverter(leadConverter)
+        .set(newLead);
+    } else {
+      inMemoryLeads.unshift(newLead);
+    }
+
+    revalidateTag("admin-leads", "max");
+    return { success: true, leadId: id };
+  } catch (err) {
+    console.error("createLeadAdminAction failed:", err);
+    return { success: false, error: "Failed to create lead." };
+  }
+}
+
+/**
+ * Mark lead as won with prompt to mark vehicle sold.
+ */
+export async function markLeadWonWithVehicleAction(
+  leadId: string,
+  markVehicleSold: boolean,
+  vehicleId?: string | null,
+  author: string = "Showroom Staff"
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const now = new Date().toISOString();
+
+    if (hasAdminCredentials()) {
+      await adminDb.collection("leads").doc(leadId).update({
+        stage: "won",
+        updatedAt: now,
+        updatedBy: author,
+      });
+    } else {
+      inMemoryLeads = inMemoryLeads.map((l) =>
+        l.id === leadId ? { ...l, stage: "won", updatedAt: now, updatedBy: author } : l
+      );
+    }
+
+    if (markVehicleSold && vehicleId) {
+      if (hasAdminCredentials()) {
+        await adminDb.collection("vehicles").doc(vehicleId).update({
+          status: "sold",
+          updatedAt: now,
+          updatedBy: author,
+        });
+      } else {
+        inMemoryVehicles = inMemoryVehicles.map((v) =>
+          v.id === vehicleId ? { ...v, status: "sold", updatedAt: now, updatedBy: author } : v
+        );
+      }
+      revalidateTag("vehicles", "max");
+      revalidateTag("admin-vehicles", "max");
+      revalidatePath("/vehicles");
+      revalidatePath("/incoming");
+      revalidatePath("/");
+    }
+
+    revalidateTag("admin-leads", "max");
+    return { success: true };
+  } catch (err) {
+    console.error("markLeadWonWithVehicleAction failed:", err);
+    return { success: false, error: "Failed to mark lead won." };
+  }
+}
+
+/**
+ * Reassign lead (Owner only).
+ */
+export async function reassignLeadAction(
+  leadId: string,
+  assignedTo: string,
+  author: string = "Showroom Director"
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const now = new Date().toISOString();
+    if (hasAdminCredentials()) {
+      await adminDb.collection("leads").doc(leadId).update({
+        assignedTo,
+        updatedAt: now,
+        updatedBy: author,
+      });
+    } else {
+      inMemoryLeads = inMemoryLeads.map((l) =>
+        l.id === leadId ? { ...l, assignedTo, updatedAt: now, updatedBy: author } : l
+      );
+    }
+    revalidateTag("admin-leads", "max");
+    return { success: true };
+  } catch (err) {
+    console.error("reassignLeadAction failed:", err);
+    return { success: false, error: "Failed to reassign lead." };
+  }
+}
+
+/**
+ * Delete a lead record (Owner only).
+ */
+export async function deleteLeadAction(
+  leadId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (hasAdminCredentials()) {
+      await adminDb.collection("leads").doc(leadId).delete();
+    } else {
+      inMemoryLeads = inMemoryLeads.filter((l) => l.id !== leadId);
+    }
+    revalidateTag("admin-leads", "max");
+    return { success: true };
+  } catch (err) {
+    console.error("deleteLeadAction failed:", err);
+    return { success: false, error: "Failed to delete lead." };
   }
 }
 

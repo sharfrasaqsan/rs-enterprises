@@ -12,6 +12,8 @@ import { EmptyState } from "@/components/vehicles/EmptyState";
 import { Pagination } from "@/components/vehicles/Pagination";
 import { LazyCompareTray } from "@/components/vehicles/LazyCompareTray";
 
+import { VehiclesListSkeleton } from "@/components/vehicles/VehiclesListSkeleton";
+
 export const metadata: Metadata = {
   title: "Japanese Vehicle Showroom & In-Transit Inventory",
   description:
@@ -28,14 +30,7 @@ export const metadata: Metadata = {
 };
 
 function VehiclesLoadingFallback() {
-  return (
-    <div className="py-20 text-center space-y-4">
-      <div className="w-8 h-8 mx-auto border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
-      <p className="text-xs font-sans uppercase tracking-[0.2em] text-[var(--text-muted)]">
-        Retrieving Showroom Inventory...
-      </p>
-    </div>
-  );
+  return <VehiclesListSkeleton />;
 }
 
 async function VehiclesListContent({

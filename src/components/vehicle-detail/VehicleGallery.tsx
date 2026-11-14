@@ -6,9 +6,11 @@ import Image from "next/image";
 export function VehicleGallery({
   images,
   title,
+  slug,
 }: {
   images: string[];
   title: string;
+  slug?: string;
 }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -24,7 +26,10 @@ export function VehicleGallery({
       */}
       <div className="hidden sm:block space-y-4">
         {/* Main Stage Image */}
-        <div className="relative w-full aspect-[16/10] overflow-hidden rounded-[2px] bg-[var(--bg-surface)] border border-[var(--border-hairline)] group">
+        <div
+          className="relative w-full aspect-[16/10] overflow-hidden rounded-[2px] bg-[var(--bg-surface)] border border-[var(--border-hairline)] group"
+          style={slug ? { viewTransitionName: `vehicle-thumb-${slug}` } : undefined}
+        >
           <Image
             src={displayImages[selectedIndex] || displayImages[0]}
             alt={`${title} - Showcase View ${selectedIndex + 1}`}

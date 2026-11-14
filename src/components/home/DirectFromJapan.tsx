@@ -1,8 +1,6 @@
 import React from "react";
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
-import { Heading } from "@/components/ui/Heading";
-import { Numeral } from "@/components/ui/Numeral";
 import { Divider } from "@/components/ui/Divider";
 
 export function DirectFromJapan() {
@@ -22,7 +20,7 @@ export function DirectFromJapan() {
     {
       num: "03",
       title: "Kaduruwela Showroom & Island-Wide Transport",
-      body: "Immediate showroom delivery from No.37/1, Kaduruwela, Polonnaruwa or direct transit to our expanding Trincomalee showroom [Details to be confirmed]. Island-wide door-to-door enclosed flatbed carrier delivery available upon request.",
+      body: "Immediate showroom delivery from No.37/1, Kaduruwela, Polonnaruwa or direct transit to our expanding Trincomalee showroom. Island-wide door-to-door enclosed flatbed carrier delivery available upon request.",
       highlight: "Kaduruwela & Trincomalee Branches",
     },
   ];
@@ -32,11 +30,11 @@ export function DirectFromJapan() {
       <Container size="wide">
         <div className="space-y-12 sm:space-y-16">
           {/* Section Header */}
-          <div className="max-w-2xl space-y-3">
-            <span className="inline-block font-sans text-xs font-semibold uppercase tracking-[0.22em] text-[var(--accent-inverted)]">
+          <div className="reveal-on-scroll max-w-2xl space-y-3">
+            <span className="inline-block font-sans text-xs font-semibold uppercase tracking-[0.25em] text-[var(--accent-inverted)]">
               Import Philosophy &bull; Direct Japanese Procurement
             </span>
-            <h2 className="font-serif text-[clamp(1.75rem,4vw,3rem)] font-normal leading-[1.1] text-[var(--text-inverted)]">
+            <h2 className="font-serif text-[clamp(2rem,4.5vw,3.25rem)] font-normal leading-[1.08] text-[var(--text-inverted)]">
               Direct from Tokyo Auctions to Sri Lankan Roads
             </h2>
             <p className="text-base text-[var(--text-inverted)] opacity-80 font-light leading-relaxed">
@@ -49,16 +47,16 @@ export function DirectFromJapan() {
 
           {/* 3 Numbered Points with Large Numerals */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
-            {points.map((p) => (
+            {points.map((p, idx) => (
               <div
                 key={p.num}
-                className="space-y-4 p-6 sm:p-8 border border-[var(--border-inverted)] rounded-[2px] bg-[var(--bg-inverted)]"
+                className={`reveal-on-scroll stagger-${idx + 1} space-y-5 p-7 sm:p-9 border border-[var(--border-inverted)] rounded-[2px] bg-white/[0.03] backdrop-blur-sm transition-all duration-500 hover:border-[var(--accent-inverted)]`}
               >
                 <div className="flex items-baseline justify-between border-b border-[var(--border-inverted)] pb-4">
                   <span className="font-serif text-4xl sm:text-5xl font-light text-[var(--accent-inverted)]">
                     {p.num}
                   </span>
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--text-inverted)] opacity-60">
+                  <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--text-inverted)] opacity-60">
                     Step {p.num}
                   </span>
                 </div>
@@ -71,7 +69,7 @@ export function DirectFromJapan() {
                   {p.body}
                 </p>
 
-                <div className="pt-2 text-xs font-mono uppercase tracking-wider text-[var(--accent-inverted)]">
+                <div className="pt-2 text-xs font-mono uppercase tracking-[0.18em] text-[var(--accent-inverted)]">
                   &bull; {p.highlight}
                 </div>
               </div>
@@ -82,4 +80,3 @@ export function DirectFromJapan() {
     </Section>
   );
 }
-

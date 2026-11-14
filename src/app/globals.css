@@ -7,69 +7,76 @@
 
 :root,
 [data-theme="dark"] {
-  /* Color Tokens - Warm Near-Black Showroom */
-  --bg-base: #0C0C0D;
-  --bg-surface: #141416;
-  --bg-elevated: #1C1C1F;
-  --bg-overlay: rgba(12, 12, 13, 0.85);
+  /* 
+   * Midnight Piano Obsidian Showroom (Ultra-Luxury Dark Automotive)
+   * Deep piano black, diamond white typography, radiant metallic champagne gold
+   */
+  --bg-base: #060709;          /* Infinite obsidian depth - ultra rich */
+  --bg-surface: #0E1015;       /* Sculpted showroom titanium surface */
+  --bg-elevated: #151821;      /* Elevated luxury glass/card container */
+  --bg-overlay: rgba(6, 7, 9, 0.88);
 
-  --text-primary: #EDE8DF;      /* Warm bone - AAA contrast 16.02:1 */
-  --text-secondary: #A39F95;    /* Cashmere gray - AAA contrast 7.40:1 */
-  --text-muted: #7E7A72;        /* Subtle label - AA contrast 4.58:1 */
-  
-  --accent: #B89B62;            /* Muted Champagne Gold (FLAT, no gradient) - AAA contrast 7.36:1 */
-  --accent-hover: #C9AE77;
-  --accent-contrast: #0C0C0D;
+  --text-primary: #FFFFFF;     /* Diamond brilliant white - maximum clarity */
+  --text-secondary: #94A3B8;   /* Cool titanium silver - crisp, editorial */
+  --text-muted: #64748B;       /* Subdued technical label */
 
-  --border-hairline: rgba(237, 232, 223, 0.10);
-  --border-subtle: rgba(237, 232, 223, 0.18);
-  --border-focus: #B89B62;
+  --accent: #D4AF37;           /* Pure Radiant Champagne Gold (24K metallic luster) */
+  --accent-hover: #E8C55C;     /* Radiant gold gleam */
+  --accent-contrast: #060709;  /* Sharp obsidian text on gold */
 
-  /* Inverted Section Tokens (used inside dark theme for stark contrast sections) */
-  --bg-inverted: #F4F0E8;
-  --text-inverted: #141413;
-  --accent-inverted: #7C602E;
-  --border-inverted: rgba(20, 20, 19, 0.12);
+  --border-hairline: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.16);
+  --border-focus: #D4AF37;
 
-  /* Status Colors (Muted, Architectural) */
-  --status-available: #B89B62;
-  --status-incoming: #8CA0BA;
-  --status-reserved: #C29B7F;
-  --status-sold: #7A7670;
+  /* Inverted Section Tokens (Rich deep slate continuum in dark mode - never jarring white!) */
+  --bg-inverted: #12151E;
+  --text-inverted: #FFFFFF;
+  --accent-inverted: #D4AF37;
+  --border-inverted: rgba(255, 255, 255, 0.12);
+
+  /* Status Colors */
+  --status-available: #D4AF37;
+  --status-incoming: #38BDF8;
+  --status-reserved: #F59E0B;
+  --status-sold: #64748B;
 
   color-scheme: dark;
 }
 
 [data-theme="light"] {
-  /* Color Tokens - Warm Ivory/Bone Showroom Gallery */
-  --bg-base: #F4F0E8;
-  --bg-surface: #EBE6DC;
-  --bg-elevated: #E2DCD0;
-  --bg-overlay: rgba(244, 240, 232, 0.90);
+  /* 
+   * Crystalline White Architectural Gallery (Ultra-Luxury Light Gallery)
+   * Pristine pure white, deep obsidian ink, gilded champagne bronze.
+   * Zero yellow, zero parchment, zero muddy beige.
+   */
+  --bg-base: #FFFFFF;          /* Pure pristine gallery white - crisp and luminous */
+  --bg-surface: #F8F9FA;       /* Softest luminous porcelain / clean platinum */
+  --bg-elevated: #F1F3F5;      /* Crisp light titanium */
+  --bg-overlay: rgba(255, 255, 255, 0.92);
 
-  --text-primary: #141413;      /* Deep ink - AAA contrast 16.22:1 */
-  --text-secondary: #524F49;    /* Warm graphite - AAA contrast 7.18:1 */
-  --text-muted: #68645C;        /* Subtle label - AA contrast 5.18:1 */
+  --text-primary: #0A0A0C;     /* Deep rich Obsidian Ink - maximum sharpness */
+  --text-secondary: #475569;   /* Slate charcoal - sharp, editorial */
+  --text-muted: #64748B;       /* Cool platinum label */
 
-  --accent: #7C602E;            /* Deep Champagne Bronze (Contrast compliant) - AA contrast 5.18:1 */
-  --accent-hover: #654E25;
-  --accent-contrast: #F4F0E8;
+  --accent: #A88438;           /* Rich Gilded Champagne Bronze - AA contrast on white */
+  --accent-hover: #91702B;
+  --accent-contrast: #FFFFFF;  /* Crisp white text on bronze/gold */
 
-  --border-hairline: rgba(20, 20, 19, 0.10);
-  --border-subtle: rgba(20, 20, 19, 0.20);
-  --border-focus: #7C602E;
+  --border-hairline: rgba(10, 10, 12, 0.08); /* Precision micro-lines */
+  --border-subtle: rgba(10, 10, 12, 0.16);
+  --border-focus: #A88438;
 
-  /* Inverted Section Tokens */
-  --bg-inverted: #0C0C0D;
-  --text-inverted: #EDE8DF;
-  --accent-inverted: #B89B62;
-  --border-inverted: rgba(237, 232, 223, 0.12);
+  /* Inverted Section Tokens (Dramatic Midnight Obsidian inside Light theme) */
+  --bg-inverted: #060709;
+  --text-inverted: #FFFFFF;
+  --accent-inverted: #D4AF37;
+  --border-inverted: rgba(255, 255, 255, 0.12);
 
   /* Status Colors */
-  --status-available: #7C602E;
-  --status-incoming: #3E5A7A;
-  --status-reserved: #8A5B3D;
-  --status-sold: #66635D;
+  --status-available: #A88438;
+  --status-incoming: #2563EB;
+  --status-reserved: #D97706;
+  --status-sold: #64748B;
 
   color-scheme: light;
 }
@@ -146,6 +153,119 @@ body {
   letter-spacing: 0.22em;
 }
 
+/* Custom Selection in Accent Colour */
+::selection {
+  background-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+::-moz-selection {
+  background-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+/* Refined focus rings in accent colour */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Slow 1.03 image hover inside overflow-hidden frame */
+.image-frame {
+  position: relative;
+  overflow: hidden;
+}
+
+.image-frame img,
+.image-zoom-frame img,
+.group:hover .image-zoom,
+.image-zoom:hover {
+  transition: transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.image-frame:hover img,
+.image-zoom-frame:hover img,
+.group:hover .image-zoom,
+.image-zoom:hover {
+  transform: scale(1.03);
+}
+
+/* Animated link underlines */
+.link-underline,
+.nav-link,
+a.link-editorial {
+  position: relative;
+  display: inline-block;
+  text-decoration: none;
+}
+
+.link-underline::after,
+.nav-link::after,
+a.link-editorial::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: currentColor;
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.link-underline:hover::after,
+.nav-link:hover::after,
+a.link-editorial:hover::after {
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+
+/* Subtle, quick theme-change transition */
+html {
+  transition: background-color 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              color 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body,
+header,
+footer,
+nav,
+main,
+section,
+article,
+aside,
+input,
+textarea,
+select,
+button {
+  transition: background-color 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              color 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Cross-Document View Transitions */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-group(root) {
+  animation-duration: 250ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 200ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* Slow, Quiet Luxury Motion (400-700ms ease-out) */
 .transition-luxury {
   transition-property: color, background-color, border-color, transform, opacity;
@@ -169,27 +289,176 @@ body {
   transform: scale(1.03);
 }
 
-/* CSS Scroll-driven animations with @supports fallback */
-@supports (animation-timeline: view()) {
-  .reveal-on-scroll {
-    animation: fadeRise linear both;
-    animation-timeline: view();
-    animation-range: entry 10% cover 30%;
+/* =========================================================================
+   Luxury Loading Skeleton Shimmer
+   ========================================================================= */
+@keyframes shimmer-luxury {
+  0% {
+    background-position: -200% 0;
   }
-
-  @keyframes fadeRise {
-    from {
-      opacity: 0;
-      transform: translateY(12px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  100% {
+    background-position: 200% 0;
   }
 }
 
-/* Respect prefers-reduced-motion */
+.shimmer-luxury {
+  background: linear-gradient(
+    90deg,
+    var(--bg-surface) 0%,
+    var(--bg-elevated) 50%,
+    var(--bg-surface) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-luxury 2s infinite ease-in-out;
+  will-change: background-position;
+}
+
+/* =========================================================================
+   Scroll Reveal: Dramatic 28px rise + fade, staggered by 80ms
+   Universal IntersectionObserver + GPU-accelerated transition
+   ========================================================================= */
+
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 750ms cubic-bezier(0.16, 1, 0.3, 1),
+              transform 750ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.reveal-on-scroll.is-revealed {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+/* Stagger by 80ms increments for cascading showroom rhythm */
+.reveal-on-scroll.stagger-1 {
+  transition-delay: 60ms;
+}
+
+.reveal-on-scroll.stagger-2 {
+  transition-delay: 140ms;
+}
+
+.reveal-on-scroll.stagger-3 {
+  transition-delay: 220ms;
+}
+
+.reveal-on-scroll.stagger-4 {
+  transition-delay: 300ms;
+}
+
+.reveal-on-scroll.stagger-5 {
+  transition-delay: 380ms;
+}
+
+.reveal-on-scroll.stagger-6 {
+  transition-delay: 460ms;
+}
+
+.reveal-fade {
+  opacity: 0;
+  transition: opacity 750ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity;
+}
+
+.reveal-fade.is-revealed {
+  opacity: 1 !important;
+}
+
+/* =========================================================================
+   Header: Transparent over hero, Solid on scroll, Hiding on scroll down
+   ========================================================================= */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  background-color: var(--bg-overlay);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-hairline);
+  transition: transform 350ms cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 300ms ease,
+              border-color 300ms ease;
+  will-change: transform;
+}
+
+@supports (animation-timeline: scroll()) {
+  @keyframes header-solidify {
+    0% {
+      background-color: transparent;
+      border-color: transparent;
+      backdrop-filter: blur(0px);
+      -webkit-backdrop-filter: blur(0px);
+    }
+    100% {
+      background-color: var(--bg-overlay);
+      border-color: var(--border-hairline);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+  }
+
+  .site-header {
+    animation: header-solidify linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0px 80px;
+  }
+}
+
+@property --scroll-pos {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+@property --scroll-pos-delayed {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
+@keyframes scroll-tracker {
+  to {
+    --scroll-pos: 1000;
+    --scroll-pos-delayed: 1000;
+  }
+}
+
+:root {
+  animation: scroll-tracker linear both;
+  animation-timeline: scroll(root);
+  container-name: page;
+  container-type: normal;
+}
+
+body {
+  --scroll-delta: calc(var(--scroll-pos) - var(--scroll-pos-delayed));
+  --scroll-dir: sign(var(--scroll-delta));
+}
+
+@container page style(--scroll-dir: 1) {
+  .site-header {
+    transform: translateY(-100%);
+  }
+}
+
+@container page style(--scroll-dir: -1) {
+  .site-header {
+    transform: translateY(0);
+  }
+}
+
+@container page style(--scroll-dir: 0) {
+  .site-header {
+    transition-delay: calc(infinity * 1s);
+  }
+}
+
+/* =========================================================================
+   prefers-reduced-motion: Disable all animations, transitions and transforms
+   ========================================================================= */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -198,5 +467,45 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+
+  .reveal-on-scroll,
+  .reveal-fade {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .shimmer-luxury {
+    animation: none !important;
+    background: var(--bg-surface) !important;
+  }
+
+  .site-header {
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+    background-color: var(--bg-overlay) !important;
+    border-color: var(--border-hairline) !important;
+  }
+
+  .hover-scale-subtle:hover,
+  .image-frame:hover img,
+  .image-zoom:hover,
+  .group:hover .image-zoom {
+    transform: none !important;
+  }
+
+  .link-underline::after,
+  .nav-link::after,
+  a.link-editorial::after {
+    transition: none !important;
   }
 }

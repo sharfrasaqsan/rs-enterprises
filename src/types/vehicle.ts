@@ -14,9 +14,57 @@ export const vehicleStatusSchema = z.enum([
 export type VehicleStatus = z.infer<typeof vehicleStatusSchema>;
 
 export const importStageSchema = z
-  .enum(["japan_auction", "in_transit", "customs_clearing", "in_stock"])
+  .enum([
+    "purchased",
+    "shipped",
+    "at_port",
+    "clearing",
+    "ready",
+    // Legacy mapping support
+    "japan_auction",
+    "in_transit",
+    "customs_clearing",
+    "in_stock",
+  ])
   .nullable();
 export type ImportStage = z.infer<typeof importStageSchema>;
+
+export type StandardImportStage = "purchased" | "shipped" | "at_port" | "clearing" | "ready";
+
+export function normalizeImportStage(stage: ImportStage): StandardImportStage | null {
+  if (!stage) return null;
+  switch (stage) {
+    case "japan_auction":
+    case "purchased":
+      return "purchased";
+    case "in_transit":
+    case "shipped":
+      return "shipped";
+    case "at_port":
+      return "at_port";
+    case "customs_clearing":
+    case "clearing":
+      return "clearing";
+    case "in_stock":
+    case "ready":
+      return "ready";
+    default:
+      return "purchased";
+  }
+}
+
+export const IMPORT_STAGES: {
+  key: StandardImportStage;
+  label: string;
+  stepNumber: number;
+  description: string;
+}[] = [
+  { key: "purchased", label: "Purchased", stepNumber: 1, description: "Secured at Japanese auction yard" },
+  { key: "shipped", label: "Shipped", stepNumber: 2, description: "RoRo vessel ocean transit" },
+  { key: "at_port", label: "At port", stepNumber: 3, description: "Arrived at Hambantota / Colombo port" },
+  { key: "clearing", label: "Clearing", stepNumber: 4, description: "Customs assessment & documentation" },
+  { key: "ready", label: "Ready", stepNumber: 5, description: "Ready on Kaduruwela showroom floor" },
+];
 
 export const fuelTypeSchema = z.enum([
   "petrol",

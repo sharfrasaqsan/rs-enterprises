@@ -17,7 +17,7 @@ export function Header({ settings }: { settings: CompanySettings }) {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-[var(--bg-overlay)] backdrop-blur-md border-b border-[var(--border-hairline)] transition-luxury">
+    <header className="site-header sticky top-0 z-50 w-full bg-[var(--bg-overlay)] backdrop-blur-md border-b border-[var(--border-hairline)] transition-luxury">
       {/* Site-Wide Announcement Banner (Configurable in Admin Settings) */}
       {settings.announcement?.enabled && settings.announcement.text && (
         <div className="w-full bg-[var(--accent)] text-white text-[11px] sm:text-xs font-sans font-medium py-2 px-4 text-center tracking-wide transition-colors">
@@ -45,21 +45,24 @@ export function Header({ settings }: { settings: CompanySettings }) {
             className="flex flex-col justify-center min-h-[44px] group focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
             aria-label="RS Enterprises Home"
           >
-            <span className="font-serif text-xl sm:text-2xl font-normal tracking-[0.05em] text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">
-              RS ENTERPRISES
-            </span>
-            <span className="text-[10px] sm:text-[11px] font-sans font-medium uppercase tracking-[0.22em] text-[var(--accent)] -mt-0.5">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+              <span className="font-serif text-xl sm:text-2xl font-normal tracking-[0.12em] text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">
+                RS ENTERPRISES
+              </span>
+            </div>
+            <span className="text-[10px] font-sans font-medium uppercase tracking-[0.26em] text-[var(--accent)] ml-3.5 -mt-0.5">
               Kaduruwela &bull; Trincomalee
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-8" aria-label="Main Navigation">
+          <nav className="hidden lg:flex items-center space-x-9" aria-label="Main Navigation">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="min-h-[44px] inline-flex items-center text-xs font-sans uppercase font-medium tracking-[0.18em] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors relative py-1"
+                className="min-h-[44px] inline-flex items-center text-[11px] font-sans uppercase font-medium tracking-[0.22em] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors relative py-1 link-underline"
               >
                 {item.label}
               </Link>

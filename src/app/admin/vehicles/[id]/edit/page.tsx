@@ -1,6 +1,7 @@
 import React from "react";
 import { notFound } from "next/navigation";
 import { getAdminVehiclesAction } from "@/app/actions/admin";
+import { getCompanySettings } from "@/lib/settings";
 import { VehicleFormClient } from "@/components/admin/VehicleFormClient";
 
 export async function generateStaticParams() {
@@ -14,13 +15,16 @@ export default async function AdminEditVehiclePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const vehicles = await getAdminVehiclesAction();
+  const [vehicles, settings] = await Promise.all([
+    getAdminVehiclesAction(),
+    getCompanySettings(),
+  ]);
   const vehicle = vehicles.find((v) => v.id === id);
 
   if (!vehicle) {
     notFound();
   }
 
-  return <VehicleFormClient initialVehicle={vehicle} />;
+  return <VehicleFormClient initialVehicle={vehicle} settings={settings} />;
 }
 

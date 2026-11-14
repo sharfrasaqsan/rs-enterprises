@@ -12,7 +12,7 @@ export function BranchesSection({ settings }: { settings: CompanySettings }) {
       <Container size="wide">
         <div className="space-y-12 sm:space-y-16">
           {/* Header */}
-          <div className="max-w-2xl space-y-3">
+          <div className="reveal-on-scroll max-w-2xl space-y-3">
             <Eyebrow>Showroom Locations &bull; Island-Wide Reach</Eyebrow>
             <Heading level={2}>
               Showroom Network &amp; Contacts
@@ -26,7 +26,7 @@ export function BranchesSection({ settings }: { settings: CompanySettings }) {
           {/* Asymmetric Branch Dossiers */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
             {/* 1. Main Showroom: Kaduruwela, Polonnaruwa (7 cols) */}
-            <div className="lg:col-span-7 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] p-6 sm:p-10 space-y-6">
+            <div className="reveal-on-scroll stagger-1 lg:col-span-7 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] p-6 sm:p-10 space-y-6">
               <div className="flex items-center justify-between pb-4 border-b border-[var(--border-hairline)]">
                 <div>
                   <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--accent)] block">
@@ -96,7 +96,7 @@ export function BranchesSection({ settings }: { settings: CompanySettings }) {
             </div>
 
             {/* 2. Coastal Showroom: Trincomalee (5 cols) */}
-            <div className="lg:col-span-5 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] p-6 sm:p-10 space-y-6 flex flex-col justify-between">
+            <div className="reveal-on-scroll stagger-2 lg:col-span-5 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] p-6 sm:p-10 space-y-6 flex flex-col justify-between">
               <div className="space-y-4">
                 <div className="flex items-center justify-between pb-4 border-b border-[var(--border-hairline)]">
                   <div>

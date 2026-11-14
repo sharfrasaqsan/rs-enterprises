@@ -2,19 +2,18 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Vehicle, ImportStage } from "@/types/vehicle";
+import {
+  Vehicle,
+  ImportStage,
+  IMPORT_STAGES,
+  normalizeImportStage,
+  StandardImportStage,
+} from "@/types/vehicle";
 import { updateIncomingStageAction } from "@/app/actions/admin";
 import { useAdminAuth } from "@/app/admin/AdminAuthContext";
 import { Heading } from "@/components/ui/Heading";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { VehicleImage } from "@/components/ui/VehicleImage";
-
-const STAGES: { key: ImportStage; label: string; desc: string }[] = [
-  { key: "japan_auction", label: "Auction Secured", desc: "Secured at USS/CAA Tokyo/Nagoya" },
-  { key: "in_transit", label: "On High Seas", desc: "RoRo Vessel transit to Sri Lanka" },
-  { key: "customs_clearing", label: "Customs Clearing", desc: "Hambantota / Colombo Port" },
-  { key: "in_stock", label: "Showroom Stock", desc: "Kaduruwela Showroom Floor" },
-];
 
 export function IncomingManagerClient({
   initialVehicles,
@@ -30,10 +29,13 @@ export function IncomingManagerClient({
   const [tempEta, setTempEta] = useState("");
 
   // Only incoming vehicles (or recently arrived)
-  const incomingVehicles = vehicles.filter((v) => v.status === "incoming" || v.importStage !== null);
+  const incomingVehicles = vehicles.filter(
+    (v) => v.status === "incoming" || v.importStage !== null
+  );
 
   const filtered = incomingVehicles.filter((v) => {
-    if (filterStage !== "all" && v.importStage !== filterStage) return false;
+    const std = normalizeImportStage(v.importStage);
+    if (filterStage !== "all" && std !== filterStage) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       const match =
@@ -46,14 +48,31 @@ export function IncomingManagerClient({
     return true;
   });
 
-  const countAuction = incomingVehicles.filter((v) => v.importStage === "japan_auction").length;
-  const countTransit = incomingVehicles.filter((v) => v.importStage === "in_transit").length;
-  const countCustoms = incomingVehicles.filter((v) => v.importStage === "customs_clearing").length;
+  const countPurchased = incomingVehicles.filter(
+    (v) => normalizeImportStage(v.importStage) === "purchased"
+  ).length;
+  const countShipped = incomingVehicles.filter(
+    (v) => normalizeImportStage(v.importStage) === "shipped"
+  ).length;
+  const countAtPort = incomingVehicles.filter(
+    (v) => normalizeImportStage(v.importStage) === "at_port"
+  ).length;
+  const countClearing = incomingVehicles.filter(
+    (v) => normalizeImportStage(v.importStage) === "clearing"
+  ).length;
+  const countReady = incomingVehicles.filter(
+    (v) => normalizeImportStage(v.importStage) === "ready"
+  ).length;
 
-  async function handleSetStage(vehicle: Vehicle, nextStage: ImportStage) {
+  async function handleSetStage(vehicle: Vehicle, nextStage: StandardImportStage) {
     setLoadingId(vehicle.id);
     const updatedBy = user?.displayName || "Showroom Logistics";
-    const res = await updateIncomingStageAction(vehicle.id, nextStage, vehicle.expectedArrival, updatedBy);
+    const res = await updateIncomingStageAction(
+      vehicle.id,
+      nextStage,
+      vehicle.expectedArrival,
+      updatedBy
+    );
     setLoadingId(null);
 
     if (res.success) {
@@ -63,7 +82,7 @@ export function IncomingManagerClient({
             ? {
                 ...v,
                 importStage: nextStage,
-                status: nextStage === "in_stock" ? "available" : v.status,
+                status: nextStage === "ready" ? "available" : v.status,
                 updatedAt: new Date().toISOString(),
                 updatedBy,
               }
@@ -111,7 +130,7 @@ export function IncomingManagerClient({
             Incoming Stock Pipeline
           </Heading>
           <p className="text-xs text-[var(--text-secondary)] font-light mt-1">
-            Track vehicles from Japanese auction yards across maritime shipping and customs clearance
+            Track vehicles across 5 stages: Purchased &rarr; Shipped &rarr; At port &rarr; Clearing &rarr; Ready
           </p>
         </div>
 
@@ -124,40 +143,49 @@ export function IncomingManagerClient({
       </div>
 
       {/* KPI Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 bg-[var(--bg-surface)] border border-[var(--border-hairline)]">
-          <span className="text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] block">
-            Total In Pipeline
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="p-3.5 bg-[var(--bg-surface)] border border-[var(--border-hairline)]">
+          <span className="text-[10px] font-sans uppercase tracking-[0.16em] text-amber-400 block">
+            1. Purchased
           </span>
-          <span className="font-mono text-2xl font-bold text-[var(--text-primary)] mt-1 block">
-            {incomingVehicles.length}
-          </span>
-        </div>
-
-        <div className="p-4 bg-[var(--bg-surface)] border border-[var(--border-hairline)]">
-          <span className="text-[10px] font-sans uppercase tracking-[0.18em] text-amber-400 block">
-            Secured at Auction
-          </span>
-          <span className="font-mono text-2xl font-bold text-[var(--text-primary)] mt-1 block">
-            {countAuction}
+          <span className="font-mono text-xl sm:text-2xl font-bold text-[var(--text-primary)] mt-1 block">
+            {countPurchased}
           </span>
         </div>
 
-        <div className="p-4 bg-[var(--bg-surface)] border border-[var(--border-hairline)]">
-          <span className="text-[10px] font-sans uppercase tracking-[0.18em] text-cyan-400 block">
-            On High Seas
+        <div className="p-3.5 bg-[var(--bg-surface)] border border-[var(--border-hairline)]">
+          <span className="text-[10px] font-sans uppercase tracking-[0.16em] text-cyan-400 block">
+            2. Shipped
           </span>
-          <span className="font-mono text-2xl font-bold text-[var(--text-primary)] mt-1 block">
-            {countTransit}
+          <span className="font-mono text-xl sm:text-2xl font-bold text-[var(--text-primary)] mt-1 block">
+            {countShipped}
           </span>
         </div>
 
-        <div className="p-4 bg-[var(--bg-surface)] border border-[var(--border-hairline)]">
-          <span className="text-[10px] font-sans uppercase tracking-[0.18em] text-indigo-400 block">
-            At Port Clearance
+        <div className="p-3.5 bg-[var(--bg-surface)] border border-[var(--border-hairline)]">
+          <span className="text-[10px] font-sans uppercase tracking-[0.16em] text-indigo-400 block">
+            3. At Port
           </span>
-          <span className="font-mono text-2xl font-bold text-[var(--text-primary)] mt-1 block">
-            {countCustoms}
+          <span className="font-mono text-xl sm:text-2xl font-bold text-[var(--text-primary)] mt-1 block">
+            {countAtPort}
+          </span>
+        </div>
+
+        <div className="p-3.5 bg-[var(--bg-surface)] border border-[var(--border-hairline)]">
+          <span className="text-[10px] font-sans uppercase tracking-[0.16em] text-violet-400 block">
+            4. Clearing
+          </span>
+          <span className="font-mono text-xl sm:text-2xl font-bold text-[var(--text-primary)] mt-1 block">
+            {countClearing}
+          </span>
+        </div>
+
+        <div className="p-3.5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] col-span-2 sm:col-span-1">
+          <span className="text-[10px] font-sans uppercase tracking-[0.16em] text-emerald-400 block">
+            5. Ready (Stock)
+          </span>
+          <span className="font-mono text-xl sm:text-2xl font-bold text-[var(--text-primary)] mt-1 block">
+            {countReady}
           </span>
         </div>
       </div>
@@ -181,9 +209,11 @@ export function IncomingManagerClient({
             className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
           >
             <option value="all">All Stages ({incomingVehicles.length})</option>
-            <option value="japan_auction">Auction Secured ({countAuction})</option>
-            <option value="in_transit">On High Seas ({countTransit})</option>
-            <option value="customs_clearing">Customs Clearing ({countCustoms})</option>
+            <option value="purchased">1. Purchased ({countPurchased})</option>
+            <option value="shipped">2. Shipped ({countShipped})</option>
+            <option value="at_port">3. At Port ({countAtPort})</option>
+            <option value="clearing">4. Clearing ({countClearing})</option>
+            <option value="ready">5. Ready ({countReady})</option>
           </select>
         </div>
       </div>
@@ -202,12 +232,12 @@ export function IncomingManagerClient({
         <div className="space-y-4">
           {filtered.map((vehicle) => {
             const isUpdating = loadingId === vehicle.id;
-            const currentStage = vehicle.importStage || "japan_auction";
+            const currentStage = normalizeImportStage(vehicle.importStage) || "purchased";
 
             return (
               <div
                 key={vehicle.id}
-                className={`p-5 sm:p-6 bg-[var(--bg-surface)] border border-[var(--border-hairline)] space-y-4 transition-opacity ${
+                className={`p-5 sm:p-6 bg-[var(--bg-surface)] border border-[var(--border-hairline)] space-y-5 transition-opacity ${
                   isUpdating ? "opacity-50 pointer-events-none" : ""
                 }`}
               >
@@ -271,7 +301,7 @@ export function IncomingManagerClient({
                     ) : (
                       <div className="text-right">
                         <span className="text-[10px] font-sans uppercase tracking-wider text-[var(--text-secondary)] block">
-                          Expected Arrival
+                          Expected Arrival Month
                         </span>
                         <div className="flex items-center gap-1.5 justify-end mt-0.5">
                           <span className="font-mono text-xs text-[var(--accent)] font-semibold">
@@ -286,7 +316,7 @@ export function IncomingManagerClient({
                             className="text-[10px] font-sans uppercase text-[var(--text-secondary)] hover:text-[var(--text-primary)] underline min-h-[44px] inline-flex items-center"
                             title="Edit Arrival Month"
                           >
-                            Edit ETA
+                            Edit
                           </button>
                         </div>
                       </div>
@@ -301,13 +331,19 @@ export function IncomingManagerClient({
                   </div>
                 </div>
 
-                {/* 1-Tap Import Logistics Stepper */}
-                <div className="pt-3 border-t border-[var(--border-hairline)]">
-                  <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--text-secondary)] block mb-2">
-                    Advance Logistics Stage (1-Tap Progression):
-                  </span>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {STAGES.map((stg) => {
+                {/* 5-Step Row of Steps */}
+                <div className="pt-3 border-t border-[var(--border-hairline)] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--text-secondary)] block">
+                      Import Logistics Stage:
+                    </span>
+                    <span className="text-[10px] font-sans text-[var(--text-secondary)]">
+                      1-Tap updates live site and revalidates /incoming &amp; vehicle page
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    {IMPORT_STAGES.map((stg) => {
                       const isCurrent = currentStage === stg.key;
                       return (
                         <button
@@ -322,18 +358,18 @@ export function IncomingManagerClient({
                         >
                           <div className="flex items-center justify-between">
                             <span className="text-[10px] font-sans uppercase font-semibold tracking-wider block">
-                              {stg.label}
+                              {stg.stepNumber}. {stg.label}
                             </span>
                             {isCurrent && (
                               <span className="w-2 h-2 rounded-full bg-white shrink-0" />
                             )}
                           </div>
                           <span
-                            className={`text-[9px] font-light leading-tight block mt-0.5 ${
+                            className={`text-[9px] font-light leading-tight block mt-0.5 line-clamp-1 ${
                               isCurrent ? "text-white/80" : "text-[var(--text-secondary)]"
                             }`}
                           >
-                            {stg.desc}
+                            {stg.description}
                           </span>
                         </button>
                       );

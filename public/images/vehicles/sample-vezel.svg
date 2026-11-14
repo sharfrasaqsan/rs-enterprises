@@ -1,20 +1,49 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750">
   <defs>
-    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#18181B"/>
-      <stop offset="100%" stop-color="#0C0C0D"/>
+    <radialGradient id="vezel-spot" cx="50%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#1A1C22"/>
+      <stop offset="45%" stop-color="#0D0E12"/>
+      <stop offset="100%" stop-color="#050608"/>
+    </radialGradient>
+    <linearGradient id="gold-vezel" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#C5A059"/>
+      <stop offset="50%" stop-color="#F5E4B8"/>
+      <stop offset="100%" stop-color="#9E7D3B"/>
+    </linearGradient>
+    <linearGradient id="chrome-vezel" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="50%" stop-color="#9CA3AF"/>
+      <stop offset="100%" stop-color="#374151"/>
     </linearGradient>
   </defs>
-  <rect width="1200" height="750" fill="url(#bg2)"/>
-  <line x1="80" y1="670" x2="1120" y2="670" stroke="rgba(237, 232, 223, 0.1)" stroke-width="1"/>
+
+  <rect width="1200" height="750" fill="url(#vezel-spot)"/>
+  <rect x="0" y="520" width="1200" height="230" fill="#040405"/>
+  <line x1="60" y1="520" x2="1140" y2="520" stroke="rgba(197, 160, 89, 0.25)" stroke-width="1.5"/>
+
   <!-- Sleek Crossover Silhouette -->
-  <path d="M180 520 C 240 520, 300 490, 360 450 C 470 380, 540 330, 710 320 C 820 320, 910 370, 960 440 C 1000 490, 1030 520, 1060 520 L 1000 520 C 990 470, 930 430, 870 430 C 810 430, 750 470, 740 520 L 480 520 C 470 470, 410 430, 350 430 C 290 430, 230 470, 220 520 Z" fill="none" stroke="#B89B62" stroke-width="2.5" opacity="0.85"/>
-  <circle cx="350" cy="520" r="50" fill="#141416" stroke="rgba(237, 232, 223, 0.25)" stroke-width="2"/>
-  <circle cx="350" cy="520" r="25" fill="#0C0C0D" stroke="#B89B62" stroke-width="1.5"/>
-  <circle cx="870" cy="520" r="50" fill="#141416" stroke="rgba(237, 232, 223, 0.25)" stroke-width="2"/>
-  <circle cx="870" cy="520" r="25" fill="#0C0C0D" stroke="#B89B62" stroke-width="1.5"/>
-  <text x="100" y="140" font-family="'Times New Roman', serif" font-size="38" fill="#EDE8DF" letter-spacing="1">HONDA VEZEL e:HEV Z</text>
-  <text x="100" y="180" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#B89B62" letter-spacing="4">2022 EDITION • 1.5L HYBRID • METEOROID GRAY</text>
-  <text x="1100" y="140" text-anchor="end" font-family="'Times New Roman', serif" font-size="34" fill="#EDE8DF">LKR 16,800,000</text>
-  <text x="1100" y="180" text-anchor="end" font-family="system-ui, sans-serif" font-size="12" fill="#A39F95" letter-spacing="2">UNREGISTERED • JAPAN AUCTION GRADE 4.5</text>
+  <ellipse cx="600" cy="525" rx="420" ry="20" fill="#000000" opacity="0.9"/>
+  <path d="M210 500 C 210 470, 250 430, 320 410 L 460 385 L 580 300 C 620 270, 710 260, 830 270 L 930 365 L 1000 395 C 1035 410, 1050 440, 1050 480 L 1050 500 C 1025 500, 1010 440, 940 440 C 870 440, 855 500, 830 500 L 430 500 C 405 500, 390 440, 320 440 C 250 440, 235 500, 210 500 Z" fill="#14161C" stroke="url(#gold-vezel)" stroke-width="2"/>
+
+  <!-- Glasshouse -->
+  <path d="M590 310 C 630 280, 700 272, 820 280 L 910 370 L 480 390 Z" fill="#090A0D" stroke="rgba(245, 228, 184, 0.4)" stroke-width="1.2"/>
+  <line x1="690" y1="275" x2="710" y2="380" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+
+  <!-- Wheels -->
+  <circle cx="940" cy="500" r="58" fill="#0B0C0E" stroke="url(#chrome-vezel)" stroke-width="2.5"/>
+  <circle cx="940" cy="500" r="40" fill="#181A1F" stroke="url(#gold-vezel)" stroke-width="1.8"/>
+  <circle cx="940" cy="500" r="14" fill="#0A0A0C" stroke="#C5A059" stroke-width="1.5"/>
+
+  <circle cx="320" cy="500" r="58" fill="#0B0C0E" stroke="url(#chrome-vezel)" stroke-width="2.5"/>
+  <circle cx="320" cy="500" r="40" fill="#181A1F" stroke="url(#gold-vezel)" stroke-width="1.8"/>
+  <circle cx="320" cy="500" r="14" fill="#0A0A0C" stroke="#C5A059" stroke-width="1.5"/>
+
+  <rect x="70" y="60" width="310" height="28" fill="rgba(197, 160, 89, 0.15)" rx="2" stroke="rgba(197, 160, 89, 0.4)" stroke-width="1"/>
+  <text x="82" y="78" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700" fill="#C5A059" letter-spacing="3.5">HYBRID INTELLIGENCE • e:HEV</text>
+
+  <text x="70" y="130" font-family="Georgia, serif" font-size="34" font-weight="400" fill="#FFFFFF" letter-spacing="1">HONDA VEZEL e:HEV Z</text>
+  <text x="70" y="160" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#A1A1AA" letter-spacing="3">1.5L TWO-MOTOR HYBRID • PREMIUM CROSSOVER</text>
+
+  <text x="1130" y="130" text-anchor="end" font-family="Georgia, serif" font-size="32" font-weight="300" fill="#C5A059">LKR 17,200,000</text>
+  <text x="1130" y="160" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="500" fill="#71717A" letter-spacing="2">IN-TRANSIT • HAMBANTOTA PORT CLEARING</text>
 </svg>

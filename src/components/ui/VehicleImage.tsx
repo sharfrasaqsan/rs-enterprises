@@ -30,12 +30,20 @@ export function VehicleImage({
     "21/9": "aspect-[21/9]",
   }[aspectRatio];
 
+  // Resolve placeholders to real high-resolution luxury automotive photography
+  const resolvedSrc =
+    !src || src.includes("sample-prado.svg")
+      ? "/images/vehicles/land-cruiser-300.jpg"
+      : src.includes("sample-vezel.svg")
+      ? "/images/vehicles/vezel-hybrid.jpg"
+      : src;
+
   return (
     <div
       className={`relative overflow-hidden rounded-[2px] bg-[var(--bg-surface)] border border-[var(--border-hairline)] group ${aspectClasses} ${className}`}
     >
       <Image
-        src={src}
+        src={resolvedSrc}
         alt={alt}
         fill
         priority={priority}

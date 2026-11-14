@@ -47,7 +47,7 @@ export function IncomingBand({
       <Container size="wide">
         <div className="space-y-12">
           {/* Section Header */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-[var(--border-hairline)]">
+          <div className="reveal-on-scroll flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-[var(--border-hairline)]">
             <div className="space-y-2">
               <Eyebrow>Logistics Pipeline &bull; Open for Pre-Order</Eyebrow>
               <Heading level={2}>
@@ -56,7 +56,7 @@ export function IncomingBand({
             </div>
             <Link
               href="/incoming"
-              className="text-xs font-sans uppercase font-medium tracking-[0.18em] text-[var(--accent)] hover:underline underline-offset-8 transition-colors self-start sm:self-auto min-h-[44px] inline-flex items-center"
+              className="link-underline text-xs font-sans uppercase font-medium tracking-[0.18em] text-[var(--accent)] transition-colors self-start sm:self-auto min-h-[44px] inline-flex items-center"
             >
               Explore Full Pipeline &rarr;
             </Link>
@@ -64,13 +64,13 @@ export function IncomingBand({
 
           {/* Incoming Vehicle Showcase */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-            {incomingVehicles.map((vehicle) => {
+            {incomingVehicles.map((vehicle, idx) => {
               const currentStageIndex = getStageIndex(vehicle.importStage);
 
               return (
                 <div
                   key={vehicle.id}
-                  className="bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] p-6 sm:p-8 space-y-6 flex flex-col justify-between"
+                  className={`reveal-on-scroll stagger-${idx + 1} bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] p-6 sm:p-8 space-y-6 flex flex-col justify-between`}
                 >
                   <div className="space-y-6">
                     {/* Header Row */}
@@ -89,7 +89,7 @@ export function IncomingBand({
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
                       <div className="sm:col-span-5">
                         <VehicleImage
-                          src={vehicle.images[0] || "/images/vehicles/sample-vezel.svg"}
+                          src={vehicle.images[0] || "/images/vehicles/vezel-hybrid.jpg"}
                           alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
                           aspectRatio="16/10"
                         />

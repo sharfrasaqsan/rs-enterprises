@@ -15,7 +15,7 @@ export function ClosingCta({ settings }: { settings: CompanySettings }) {
       />
 
       <Container size="wide">
-        <div className="max-w-3xl mx-auto text-center space-y-8">
+        <div className="reveal-on-scroll max-w-3xl mx-auto text-center space-y-8">
           <div className="space-y-3">
             <Eyebrow>Direct Japanese Auction Access</Eyebrow>
             <Heading level={2}>
@@ -28,7 +28,7 @@ export function ClosingCta({ settings }: { settings: CompanySettings }) {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
-            <Button variant="solid" size="lg" href="/vehicles" className="w-full sm:w-auto">
+            <Button variant="diamond" size="lg" href="/vehicles" className="w-full sm:w-auto">
               Explore Available Inventory
             </Button>
             <WhatsAppButton

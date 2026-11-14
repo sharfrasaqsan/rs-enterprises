@@ -18,13 +18,16 @@ export function Footer({ settings }: { settings: CompanySettings }) {
           {/* Brand & Mission: 4 cols */}
           <div className="lg:col-span-4 space-y-4">
             <div>
-              <Link href="/" className="inline-block">
-                <span className="font-serif text-2xl font-normal tracking-[0.05em] text-[var(--text-primary)]">
-                  RS ENTERPRISES
-                </span>
+              <Link href="/" className="inline-block group">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+                  <span className="font-serif text-2xl font-normal tracking-[0.12em] text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">
+                    RS ENTERPRISES
+                  </span>
+                </div>
               </Link>
-              <p className="text-xs font-sans uppercase tracking-[0.2em] text-[var(--accent)] mt-0.5">
-                Company Pvt Ltd
+              <p className="text-xs font-sans uppercase tracking-[0.24em] text-[var(--accent)] mt-1 ml-3.5">
+                Company Pvt Ltd &bull; Est. 2018
               </p>
             </div>
 

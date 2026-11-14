@@ -23,11 +23,24 @@ export function ThemeToggle({ className = "" }: ThemeToggleProps) {
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
     setTheme(nextTheme);
-    document.documentElement.setAttribute("data-theme", nextTheme);
-    try {
-      localStorage.setItem("rs_theme", nextTheme);
-    } catch {
-      // Ignore if localStorage is blocked
+
+    const applyTheme = () => {
+      document.documentElement.setAttribute("data-theme", nextTheme);
+      try {
+        localStorage.setItem("rs_theme", nextTheme);
+      } catch {
+        // Ignore if localStorage is blocked
+      }
+    };
+
+    if (
+      typeof document !== "undefined" &&
+      "startViewTransition" in document &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      (document as unknown as { startViewTransition: (cb: () => void) => void }).startViewTransition(applyTheme);
+    } else {
+      applyTheme();
     }
   };
 

@@ -21,8 +21,8 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     expectedArrival: null,
     published: true,
     images: [
-      "/images/vehicles/sample-prado.svg",
-      "/images/vehicles/sample-vezel.svg",
+      "/images/vehicles/land-cruiser-300.jpg",
+      "/images/vehicles/prado-black.jpg",
     ],
     features: [
       "Modellista Aerodynamic Kit",
@@ -56,8 +56,8 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     expectedArrival: null,
     published: true,
     images: [
-      "/images/vehicles/sample-prado.svg",
-      "/images/vehicles/sample-vezel.svg",
+      "/images/vehicles/prado-black.jpg",
+      "/images/vehicles/land-cruiser-300.jpg",
     ],
     features: [
       "Saddle Tan Exclusive Leather Interior",
@@ -90,8 +90,8 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     expectedArrival: null,
     published: true,
     images: [
-      "/images/vehicles/sample-vezel.svg",
-      "/images/vehicles/sample-prado.svg",
+      "/images/vehicles/harrier-luxury.jpg",
+      "/images/vehicles/vezel-hybrid.jpg",
     ],
     features: [
       "Dimmable Electrochromic Panoramic Glass Roof",
@@ -123,8 +123,8 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     expectedArrival: "2026-12-10",
     published: true,
     images: [
-      "/images/vehicles/sample-vezel.svg",
-      "/images/vehicles/sample-prado.svg",
+      "/images/vehicles/vezel-hybrid.jpg",
+      "/images/vehicles/harrier-luxury.jpg",
     ],
     features: [
       "Honda SENSING Advanced Driver Assistance",
@@ -156,8 +156,8 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     expectedArrival: null,
     published: true,
     images: [
-      "/images/vehicles/sample-vezel.svg",
-      "/images/vehicles/sample-prado.svg",
+      "/images/vehicles/crown-sedan.jpg",
+      "/images/vehicles/vezel-hybrid.jpg",
     ],
     features: [
       "Full Genuine Brown Leather Upholstery",
@@ -189,8 +189,8 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     expectedArrival: null,
     published: true,
     images: [
-      "/images/vehicles/sample-prado.svg",
-      "/images/vehicles/sample-vezel.svg",
+      "/images/vehicles/vezel-hybrid.jpg",
+      "/images/vehicles/outlander-suv.jpg",
     ],
     features: [
       "10.5-Inch Large Display Audio with Navigation",
@@ -222,8 +222,8 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     expectedArrival: null,
     published: true,
     images: [
-      "/images/vehicles/sample-prado.svg",
-      "/images/vehicles/sample-vezel.svg",
+      "/images/vehicles/crown-sedan.jpg",
+      "/images/vehicles/prado-black.jpg",
     ],
     features: [
       "WxB Sport Pattern Leather & Fabric Seats",
@@ -255,8 +255,8 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     expectedArrival: null,
     published: true,
     images: [
-      "/images/vehicles/sample-prado.svg",
-      "/images/vehicles/sample-vezel.svg",
+      "/images/vehicles/vezel-hybrid.jpg",
+      "/images/vehicles/crown-sedan.jpg",
     ],
     features: [
       "Toyota Safety Sense with Pre-Crash Safety",
@@ -288,8 +288,8 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     expectedArrival: null,
     published: true,
     images: [
-      "/images/vehicles/sample-vezel.svg",
-      "/images/vehicles/sample-prado.svg",
+      "/images/vehicles/vezel-hybrid.jpg",
+      "/images/vehicles/outlander-suv.jpg",
     ],
     features: [
       "Suzuki Dual Camera Brake Support",
@@ -321,8 +321,8 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     expectedArrival: "2027-01-15",
     published: true,
     images: [
-      "/images/vehicles/sample-prado.svg",
-      "/images/vehicles/sample-vezel.svg",
+      "/images/vehicles/prado-black.jpg",
+      "/images/vehicles/harrier-luxury.jpg",
     ],
     features: [
       "100% Electric Motor Drive with VC-Turbo Generator",
@@ -355,8 +355,8 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     expectedArrival: null,
     published: true,
     images: [
-      "/images/vehicles/sample-prado.svg",
-      "/images/vehicles/sample-vezel.svg",
+      "/images/vehicles/outlander-suv.jpg",
+      "/images/vehicles/land-cruiser-300.jpg",
     ],
     features: [
       "Twin-Motor 4WD with Super All-Wheel Control (S-AWC)",
@@ -388,8 +388,8 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     expectedArrival: null,
     published: true,
     images: [
-      "/images/vehicles/sample-prado.svg",
-      "/images/vehicles/sample-vezel.svg",
+      "/images/vehicles/crown-sedan.jpg",
+      "/images/vehicles/harrier-luxury.jpg",
     ],
     features: [
       "Dark Brown Premium Fabric with Woodgrain Accents",

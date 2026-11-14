@@ -334,9 +334,18 @@ export function VehiclesManagerClient({
                       {/* Edit Details */}
                       <Link
                         href={`/admin/vehicles/${vehicle.id}/edit`}
-                        className="min-h-[44px] px-4 inline-flex items-center text-xs font-sans uppercase font-medium tracking-wider bg-[var(--bg-base)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors"
+                        className="min-h-[44px] px-3.5 inline-flex items-center text-xs font-sans uppercase font-medium tracking-wider bg-[var(--bg-base)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors"
                       >
                         Edit
+                      </Link>
+
+                      {/* Social Poster Kit */}
+                      <Link
+                        href={`/admin/vehicles/${vehicle.id}/edit#marketing`}
+                        className="min-h-[44px] px-3.5 inline-flex items-center text-xs font-sans uppercase font-medium tracking-wider bg-[var(--bg-base)] border border-[var(--border-subtle)] text-[var(--accent)] hover:border-[var(--accent)] transition-colors"
+                        title="Generate branded square & story posters with captions"
+                      >
+                        Poster
                       </Link>
 
                       {/* Live Public View */}

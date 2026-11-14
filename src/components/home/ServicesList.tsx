@@ -45,7 +45,7 @@ export function ServicesList() {
       <Container size="wide">
         <div className="space-y-12 sm:space-y-16">
           {/* Section Header */}
-          <div className="max-w-2xl space-y-3">
+          <div className="reveal-on-scroll max-w-2xl space-y-3">
             <Eyebrow>Comprehensive Automotive Solutions</Eyebrow>
             <Heading level={2}>
               Curated Automotive Services
@@ -58,10 +58,10 @@ export function ServicesList() {
 
           {/* Hairline-Divided Editorial List */}
           <div className="border-t border-[var(--border-hairline)] divide-y divide-[var(--border-hairline)]">
-            {services.map((service) => (
+            {services.map((service, idx) => (
               <div
                 key={service.num}
-                className="py-8 sm:py-12 grid grid-cols-1 md:grid-cols-12 gap-6 items-baseline group"
+                className={`reveal-on-scroll stagger-${idx + 1} py-8 sm:py-12 grid grid-cols-1 md:grid-cols-12 gap-6 items-baseline group`}
               >
                 {/* Numeral: 2 cols */}
                 <div className="md:col-span-2">
@@ -84,7 +84,7 @@ export function ServicesList() {
                 <div className="md:col-span-3 md:text-right pt-2 md:pt-0">
                   <Link
                     href={service.href}
-                    className="inline-flex items-center min-h-[44px] text-xs font-sans uppercase font-medium tracking-[0.16em] text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors"
+                    className="link-underline inline-flex items-center min-h-[44px] text-xs font-sans uppercase font-medium tracking-[0.16em] text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors"
                   >
                     <span>{service.actionText}</span>
                     <span className="ml-2">&rarr;</span>

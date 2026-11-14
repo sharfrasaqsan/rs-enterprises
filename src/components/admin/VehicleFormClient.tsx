@@ -9,16 +9,23 @@ import {
   FuelType,
   TransmissionType,
   ImportStage,
+  IMPORT_STAGES,
+  normalizeImportStage,
+  StandardImportStage,
 } from "@/types/vehicle";
+import { CompanySettings } from "@/types/settings";
 import { saveVehicleAction, archiveVehicleAction } from "@/app/actions/admin";
 import { useAdminAuth } from "@/app/admin/AdminAuthContext";
 import { Heading } from "@/components/ui/Heading";
 import { Eyebrow } from "@/components/ui/Eyebrow";
+import { SocialPosterGenerator } from "@/components/admin/SocialPosterGenerator";
 
 export function VehicleFormClient({
   initialVehicle,
+  settings,
 }: {
   initialVehicle?: Vehicle | null;
+  settings?: CompanySettings;
 }) {
   const router = useRouter();
   const { user } = useAdminAuth();
@@ -296,7 +303,7 @@ export function VehicleFormClient({
       transmission,
       engineCC: Number(engineCC) || 1500,
       status,
-      importStage: status === "incoming" ? importStage || "in_transit" : null,
+      importStage: status === "incoming" ? (importStage ? (normalizeImportStage(importStage) || "purchased") : "purchased") : null,
       expectedArrival: status === "incoming" && expectedArrival ? expectedArrival : null,
       published,
       features: featureList,
@@ -786,27 +793,47 @@ export function VehicleFormClient({
 
             {status === "incoming" && (
               <>
-                <div>
-                  <label
-                    htmlFor="veh-stage"
-                    className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
-                  >
-                    Import Pipeline Stage
+                <div className="sm:col-span-2 space-y-2">
+                  <label className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+                    Import Logistics Stage (Purchased &rarr; Shipped &rarr; At Port &rarr; Clearing &rarr; Ready)
                   </label>
-                  <select
-                    id="veh-stage"
-                    value={importStage || "japan_auction"}
-                    onChange={(e) => setImportStage(e.target.value as ImportStage)}
-                    className="w-full h-11 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
-                  >
-                    <option value="japan_auction">Japan Auction Yard</option>
-                    <option value="in_transit">In-Transit (RoRo Ocean Transit)</option>
-                    <option value="customs_clearing">Customs Clearing (Hambantota/Colombo)</option>
-                    <option value="in_stock">Arrived Showroom</option>
-                  </select>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    {IMPORT_STAGES.map((stg) => {
+                      const currentNorm = normalizeImportStage(importStage) || "purchased";
+                      const isCurrent = currentNorm === stg.key;
+                      return (
+                        <button
+                          key={stg.key}
+                          type="button"
+                          onClick={() => setImportStage(stg.key)}
+                          className={`min-h-[44px] p-2.5 text-left border rounded-[2px] transition-all cursor-pointer ${
+                            isCurrent
+                              ? "bg-[var(--accent)] text-white border-[var(--accent)] shadow-sm"
+                              : "bg-[var(--bg-base)] border-[var(--border-hairline)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-subtle)]"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-sans uppercase font-semibold tracking-wider block">
+                              {stg.stepNumber}. {stg.label}
+                            </span>
+                            {isCurrent && (
+                              <span className="w-2 h-2 rounded-full bg-white shrink-0" />
+                            )}
+                          </div>
+                          <span
+                            className={`text-[9px] font-light leading-tight block mt-0.5 line-clamp-1 ${
+                              isCurrent ? "text-white/80" : "text-[var(--text-secondary)]"
+                            }`}
+                          >
+                            {stg.description}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                <div>
+                <div className="sm:col-span-2">
                   <label
                     htmlFor="veh-eta"
                     className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
@@ -937,6 +964,13 @@ export function VehicleFormClient({
           </div>
         </div>
       </form>
+
+      {/* Social Poster Generator (Admin Media Kit) */}
+      {isEditing && initialVehicle && (
+        <div id="marketing" className="pt-4 border-t border-[var(--border-hairline)]">
+          <SocialPosterGenerator vehicle={initialVehicle} settings={settings} />
+        </div>
+      )}
     </div>
   );
 }

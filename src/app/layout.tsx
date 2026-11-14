@@ -4,6 +4,7 @@ import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { MobileActionBar } from "@/components/layout/MobileActionBar";
+import { ScrollRevealObserver } from "@/components/layout/ScrollRevealObserver";
 import { getCompanySettings } from "@/lib/settings";
 
 const cormorant = Cormorant_Garamond({
@@ -59,8 +60,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0C0C0D" },
-    { media: "(prefers-color-scheme: light)", color: "#F4F0E8" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090B" },
+    { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -91,7 +92,7 @@ export default async function RootLayout({
             __html: `(function() {
               try {
                 var storedTheme = localStorage.getItem('rs_theme');
-                var theme = storedTheme || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+                var theme = storedTheme || 'dark';
                 document.documentElement.setAttribute('data-theme', theme);
               } catch (e) {
                 document.documentElement.setAttribute('data-theme', 'dark');
@@ -99,8 +100,13 @@ export default async function RootLayout({
             })();`,
           }}
         />
+        {/* No-JS fallback ensuring all scroll elements are immediately visible */}
+        <noscript>
+          <style>{`.reveal-on-scroll { opacity: 1 !important; transform: none !important; }`}</style>
+        </noscript>
       </head>
       <body className="min-h-screen flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] antialiased selection:bg-[var(--accent)] selection:text-[var(--accent-contrast)]">
+        <ScrollRevealObserver />
         <Header settings={settings} />
         <main className="flex-1 pb-16 md:pb-0">{children}</main>
         <Footer settings={settings} />
