@@ -18,7 +18,7 @@ export function SearchStrip({
           method="GET"
           className="bg-[var(--bg-elevated)]/95 border border-[var(--border-subtle)] rounded-[2px] p-5 sm:p-7 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] backdrop-blur-xl"
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
             {/* 1. Make Select */}
             <div className="space-y-2">
               <label
@@ -49,13 +49,72 @@ export function SearchStrip({
               </div>
             </div>
 
-            {/* 2. Budget Range */}
+            {/* 2. Body Type Select */}
+            <div className="space-y-2">
+              <label
+                htmlFor="search-body-type"
+                className="block text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--accent)]"
+              >
+                02 // Body Type
+              </label>
+              <div className="relative">
+                <select
+                  id="search-body-type"
+                  name="bodyType"
+                  defaultValue="all"
+                  className="w-full min-h-[50px] px-4 py-3 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px] text-xs font-sans uppercase tracking-wider focus:border-[var(--accent)] focus:outline-none transition-luxury appearance-none cursor-pointer hover:border-[var(--border-subtle)]"
+                >
+                  <option value="all">All Body Styles</option>
+                  <option value="suv">SUV</option>
+                  <option value="sedan">Sedan</option>
+                  <option value="hatchback">Hatchback</option>
+                  <option value="mpv">MPV / Mini Van</option>
+                  <option value="crossover">Crossover</option>
+                  <option value="wagon">Station Wagon</option>
+                  <option value="pickup">Pickup Truck</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-[var(--text-muted)]">
+                  <svg className="w-3.5 h-3.5 stroke-current" viewBox="0 0 24 24" fill="none" strokeWidth="1.5">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Showroom Branch Select */}
+            <div className="space-y-2">
+              <label
+                htmlFor="search-branch"
+                className="block text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--accent)]"
+              >
+                03 // Showroom Branch
+              </label>
+              <div className="relative">
+                <select
+                  id="search-branch"
+                  name="branch"
+                  defaultValue="all"
+                  className="w-full min-h-[50px] px-4 py-3 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px] text-xs font-sans uppercase tracking-wider focus:border-[var(--accent)] focus:outline-none transition-luxury appearance-none cursor-pointer hover:border-[var(--border-subtle)]"
+                >
+                  <option value="all">All Locations</option>
+                  <option value="polonnaruwa">Kaduruwela Main Showroom</option>
+                  <option value="trincomalee">Trincomalee Branch</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-[var(--text-muted)]">
+                  <svg className="w-3.5 h-3.5 stroke-current" viewBox="0 0 24 24" fill="none" strokeWidth="1.5">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Budget Range */}
             <div className="space-y-2">
               <label
                 htmlFor="search-price"
                 className="block text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--accent)]"
               >
-                02 // Budget Range
+                04 // Budget Bracket
               </label>
               <div className="relative">
                 <select
@@ -79,38 +138,7 @@ export function SearchStrip({
               </div>
             </div>
 
-            {/* 3. Year Select */}
-            <div className="space-y-2">
-              <label
-                htmlFor="search-year"
-                className="block text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--accent)]"
-              >
-                03 // Minimum Year
-              </label>
-              <div className="relative">
-                <select
-                  id="search-year"
-                  name="minYear"
-                  defaultValue=""
-                  className="w-full min-h-[50px] px-4 py-3 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px] text-xs font-sans uppercase tracking-wider focus:border-[var(--accent)] focus:outline-none transition-luxury appearance-none cursor-pointer hover:border-[var(--border-subtle)]"
-                >
-                  <option value="">All Production Years</option>
-                  <option value="2024">2024 &amp; Newer</option>
-                  <option value="2023">2023 &amp; Newer</option>
-                  <option value="2022">2022 &amp; Newer</option>
-                  <option value="2021">2021 &amp; Newer</option>
-                  <option value="2020">2020 &amp; Newer</option>
-                  <option value="2018">2018 &amp; Newer</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-[var(--text-muted)]">
-                  <svg className="w-3.5 h-3.5 stroke-current" viewBox="0 0 24 24" fill="none" strokeWidth="1.5">
-                    <path d="M6 9l6 6 6-6" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            {/* 4. Action Button */}
+            {/* 5. Action Button */}
             <div>
               <button
                 type="submit"

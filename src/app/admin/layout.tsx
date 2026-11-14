@@ -11,6 +11,10 @@ export const metadata: Metadata = {
   },
 };
 
+// Admin CRM is a protected, authenticated dynamic dashboard segment.
+// Skip instant static partial prerendering validation.
+export const instant = false;
+
 export default function AdminLayout({
   children,
 }: {

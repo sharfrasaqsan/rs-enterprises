@@ -21,7 +21,10 @@ export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
       <Container size="wide">
         <div className="space-y-12 sm:space-y-16">
           {/* Header Row */}
-          <div className="reveal-on-scroll flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-[var(--border-hairline)]">
+          <div
+            suppressHydrationWarning
+            className="reveal-on-scroll flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-[var(--border-hairline)]"
+          >
             <div className="space-y-2">
               <Eyebrow>Showroom Acquisitions</Eyebrow>
               <Heading level={2}>
@@ -40,7 +43,10 @@ export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
             {/* Major Feature Article: 7 Columns */}
             {leadVehicle && (
-              <article className="reveal-on-scroll stagger-1 lg:col-span-7 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] p-6 sm:p-9 space-y-6 shadow-xl transition-all duration-500 hover:border-[var(--border-subtle)]">
+              <article
+                suppressHydrationWarning
+                className="reveal-on-scroll stagger-1 lg:col-span-7 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] p-6 sm:p-9 space-y-6 shadow-xl transition-all duration-500 hover:border-[var(--border-subtle)]"
+              >
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-2">
                     <StatusLabel status={leadVehicle.status} />
@@ -79,8 +85,8 @@ export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
 
                 {/* 4-Item Spec Matrix */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-[var(--border-hairline)]">
-                  <Numeral value={leadVehicle.mileage.toLocaleString()} suffix="km" label="Mileage" size="sm" />
-                  <Numeral value={leadVehicle.engineCC.toLocaleString()} suffix="cc" label="Displacement" size="sm" />
+                  <Numeral value={leadVehicle.mileage.toLocaleString("en-US")} suffix="km" label="Mileage" size="sm" />
+                  <Numeral value={leadVehicle.engineCC.toLocaleString("en-US")} suffix="cc" label="Displacement" size="sm" />
                   <Numeral value={leadVehicle.fuel} label="Fuel System" size="sm" />
                   <Numeral value={leadVehicle.transmission} label="Transmission" size="sm" />
                 </div>
@@ -123,6 +129,7 @@ export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
               {sideVehicles.map((vehicle, idx) => (
                 <article
                   key={vehicle.id}
+                  suppressHydrationWarning
                   className={`reveal-on-scroll stagger-${idx + 2} bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] p-6 space-y-4 shadow-lg transition-all duration-500 hover:border-[var(--border-subtle)]`}
                 >
                   <div className="flex items-center justify-between gap-3">

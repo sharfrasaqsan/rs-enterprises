@@ -30,7 +30,7 @@ export function DirectFromJapan() {
       <Container size="wide">
         <div className="space-y-12 sm:space-y-16">
           {/* Section Header */}
-          <div className="reveal-on-scroll max-w-2xl space-y-3">
+          <div suppressHydrationWarning className="reveal-on-scroll max-w-2xl space-y-3">
             <span className="inline-block font-sans text-xs font-semibold uppercase tracking-[0.25em] text-[var(--accent-inverted)]">
               Import Philosophy &bull; Direct Japanese Procurement
             </span>
@@ -50,6 +50,7 @@ export function DirectFromJapan() {
             {points.map((p, idx) => (
               <div
                 key={p.num}
+                suppressHydrationWarning
                 className={`reveal-on-scroll stagger-${idx + 1} space-y-5 p-7 sm:p-9 border border-[var(--border-inverted)] rounded-[2px] bg-white/[0.03] backdrop-blur-sm transition-all duration-500 hover:border-[var(--accent-inverted)]`}
               >
                 <div className="flex items-baseline justify-between border-b border-[var(--border-inverted)] pb-4">

@@ -232,7 +232,7 @@ export default async function IncomingPage() {
                         <div className="flex flex-wrap items-center gap-3 text-[11px] font-sans font-medium uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-2">
                           <span>{vehicle.year}</span>
                           <span className="w-1 h-1 rounded-full bg-[var(--border-subtle)]" />
-                          <span>{vehicle.mileage.toLocaleString()} KM</span>
+                          <span>{vehicle.mileage.toLocaleString("en-US")} KM</span>
                           <span className="w-1 h-1 rounded-full bg-[var(--border-subtle)]" />
                           <span>{vehicle.engineCC} CC</span>
                           <span className="w-1 h-1 rounded-full bg-[var(--border-subtle)]" />

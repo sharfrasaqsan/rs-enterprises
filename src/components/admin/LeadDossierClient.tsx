@@ -16,6 +16,7 @@ import {
 import { useAdminAuth } from "@/app/admin/AdminAuthContext";
 import { Heading } from "@/components/ui/Heading";
 import { Eyebrow } from "@/components/ui/Eyebrow";
+import { exportSingleLeadToPDF } from "@/lib/export-leads";
 
 export function LeadDossierClient({
   initialLead,
@@ -231,6 +232,18 @@ export function LeadDossierClient({
             </svg>
             <span>WhatsApp (+94)</span>
           </a>
+
+          <button
+            type="button"
+            onClick={() => exportSingleLeadToPDF(lead)}
+            className="min-h-[48px] px-5 inline-flex items-center justify-center gap-2 text-xs font-sans uppercase font-medium tracking-wider border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] hover:bg-[var(--bg-base)] transition-colors rounded-[2px] cursor-pointer"
+            title="Print or export individual client profile sheet as PDF"
+          >
+            <svg className="w-4 h-4 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            <span>Print / PDF Dossier</span>
+          </button>
         </div>
       </div>
 

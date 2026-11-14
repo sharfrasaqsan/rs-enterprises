@@ -155,7 +155,7 @@ export function Hero({
                   Displacement & Engine
                 </span>
                 <span className="font-serif text-lg sm:text-xl text-[var(--text-primary)] block">
-                  {featuredVehicle.engineCC.toLocaleString()} CC &bull; {featuredVehicle.fuel}
+                  {featuredVehicle.engineCC.toLocaleString("en-US")} CC &bull; {featuredVehicle.fuel}
                 </span>
               </div>
 
@@ -164,7 +164,7 @@ export function Hero({
                   Certified Odometer
                 </span>
                 <span className="font-serif text-lg sm:text-xl text-[var(--text-primary)] block">
-                  {featuredVehicle.mileage.toLocaleString()} KM Genuine
+                  {featuredVehicle.mileage.toLocaleString("en-US")} KM Genuine
                 </span>
               </div>
 

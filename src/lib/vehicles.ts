@@ -100,7 +100,17 @@ export async function getVehicles(
       if (v.transmission !== filters.transmission) return false;
     }
 
-    // Free-text search (make, model, year, grade, color, features)
+    // Body Type filter
+    if (filters.bodyType && filters.bodyType !== "all") {
+      if (v.bodyType !== filters.bodyType) return false;
+    }
+
+    // Branch filter
+    if (filters.branch && filters.branch !== "all") {
+      if (v.branch !== filters.branch) return false;
+    }
+
+    // Free-text search (make, model, year, grade, color, bodyType, driveType, branch, features)
     if (filters.search) {
       const q = filters.search.toLowerCase().trim();
       const matchMake = v.make.toLowerCase().includes(q);
@@ -108,6 +118,10 @@ export async function getVehicles(
       const matchYear = String(v.year).includes(q);
       const matchGrade = v.grade.toLowerCase().includes(q);
       const matchColor = v.color.toLowerCase().includes(q);
+      const matchBody = v.bodyType?.toLowerCase().includes(q) || false;
+      const matchDrive = v.driveType?.toLowerCase().includes(q) || false;
+      const matchBranch = v.branch?.toLowerCase().includes(q) || false;
+      const matchReg = v.registrationStatus?.toLowerCase().includes(q) || false;
       const matchFeatures = v.features.some((f) => f.toLowerCase().includes(q));
 
       if (
@@ -116,6 +130,10 @@ export async function getVehicles(
         !matchYear &&
         !matchGrade &&
         !matchColor &&
+        !matchBody &&
+        !matchDrive &&
+        !matchBranch &&
+        !matchReg &&
         !matchFeatures
       ) {
         return false;

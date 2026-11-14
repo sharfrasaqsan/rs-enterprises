@@ -35,6 +35,18 @@ export const leadNoteSchema = z.object({
 });
 export type LeadNote = z.infer<typeof leadNoteSchema>;
 
+export const leadInquirySchema = z.object({
+  id: z.string(),
+  time: z.string(), // ISO string
+  source: leadSourceSchema,
+  branch: branchSchema,
+  vehicleId: z.string().optional().nullable(),
+  vehicleTitle: z.string().optional().nullable(),
+  requestDetails: z.string().optional().nullable(),
+  note: z.string().optional().nullable(),
+});
+export type LeadInquiry = z.infer<typeof leadInquirySchema>;
+
 export const leadSchema = z.object({
   id: z.string(),
   name: z.string().min(1, "Name is required"),
@@ -50,6 +62,9 @@ export const leadSchema = z.object({
   followUpDate: z.string().optional().nullable(),
   lostReason: z.string().optional().nullable(),
   updatedBy: z.string().optional().nullable(),
+  inquiryCount: z.number().int().positive().default(1),
+  isReturningBuyer: z.boolean().default(false),
+  inquiries: z.array(leadInquirySchema).default([]),
   notes: z.array(leadNoteSchema).default([]),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -86,6 +101,9 @@ export const leadConverter: FirestoreDataConverter<Lead> = {
       followUpDate: lead.followUpDate || null,
       lostReason: lead.lostReason || null,
       updatedBy: lead.updatedBy || null,
+      inquiryCount: lead.inquiryCount || 1,
+      isReturningBuyer: Boolean(lead.isReturningBuyer),
+      inquiries: lead.inquiries || [],
       notes: lead.notes,
       createdAt: lead.createdAt,
       updatedAt: lead.updatedAt,
@@ -118,6 +136,20 @@ export const leadConverter: FirestoreDataConverter<Lead> = {
       followUpDate: data.followUpDate || null,
       lostReason: data.lostReason || null,
       updatedBy: data.updatedBy || null,
+      inquiryCount: typeof data.inquiryCount === "number" ? data.inquiryCount : 1,
+      isReturningBuyer: Boolean(data.isReturningBuyer),
+      inquiries: Array.isArray(data.inquiries)
+        ? data.inquiries.map((inq: Record<string, unknown>) => ({
+            id: String(inq.id || Math.random().toString(36).substring(2, 9)),
+            time: formatTimestamp(inq.time),
+            source: (inq.source as any) || "website_form",
+            branch: (inq.branch as any) || "polonnaruwa",
+            vehicleId: inq.vehicleId ? String(inq.vehicleId) : null,
+            vehicleTitle: inq.vehicleTitle ? String(inq.vehicleTitle) : null,
+            requestDetails: inq.requestDetails ? String(inq.requestDetails) : null,
+            note: inq.note ? String(inq.note) : null,
+          }))
+        : [],
       notes: Array.isArray(data.notes)
         ? data.notes.map((n: Record<string, unknown>) => ({
             id: String(n.id || Math.random().toString(36).substring(2, 9)),

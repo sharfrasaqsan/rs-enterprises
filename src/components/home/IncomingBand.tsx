@@ -47,7 +47,7 @@ export function IncomingBand({
       <Container size="wide">
         <div className="space-y-12">
           {/* Section Header */}
-          <div className="reveal-on-scroll flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-[var(--border-hairline)]">
+          <div suppressHydrationWarning className="reveal-on-scroll flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-[var(--border-hairline)]">
             <div className="space-y-2">
               <Eyebrow>Logistics Pipeline &bull; Open for Pre-Order</Eyebrow>
               <Heading level={2}>
@@ -70,6 +70,7 @@ export function IncomingBand({
               return (
                 <div
                   key={vehicle.id}
+                  suppressHydrationWarning
                   className={`reveal-on-scroll stagger-${idx + 1} bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] p-6 sm:p-8 space-y-6 flex flex-col justify-between`}
                 >
                   <div className="space-y-6">

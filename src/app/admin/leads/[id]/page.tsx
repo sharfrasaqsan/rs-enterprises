@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { getAdminLeadsAction, getAdminVehiclesAction } from "@/app/actions/admin";
 import { LeadDossierClient } from "@/components/admin/LeadDossierClient";
 
+export const instant = false;
+
 export async function generateStaticParams() {
   const leads = await getAdminLeadsAction();
   return leads.map((l) => ({ id: l.id }));

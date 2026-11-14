@@ -2,7 +2,15 @@
 
 import React, { useState, useTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { VehicleStatus, FuelType, TransmissionType } from "@/types/vehicle";
+import {
+  VehicleStatus,
+  FuelType,
+  TransmissionType,
+  BodyType,
+  DealershipBranch,
+  formatBodyType,
+  formatBranch,
+} from "@/types/vehicle";
 
 export interface VehicleFilterBarProps {
   availableMakes: string[];
@@ -23,6 +31,8 @@ export function VehicleFilterBar({
   const currentMake = searchParams.get("make") || "all";
   const currentModel = searchParams.get("model") || "";
   const currentStatus = searchParams.get("status") || "all";
+  const currentBodyType = searchParams.get("bodyType") || "all";
+  const currentBranch = searchParams.get("branch") || "all";
   const currentMinYear = searchParams.get("minYear") || "";
   const currentMaxPrice = searchParams.get("maxPrice") || "";
   const currentFuel = searchParams.get("fuel") || "all";
@@ -64,6 +74,8 @@ export function VehicleFilterBar({
   const activeTags: { key: string; label: string }[] = [];
   if (currentMake !== "all") activeTags.push({ key: "make", label: `Make: ${currentMake}` });
   if (currentModel) activeTags.push({ key: "model", label: `Model: ${currentModel}` });
+  if (currentBodyType !== "all") activeTags.push({ key: "bodyType", label: `Body: ${formatBodyType(currentBodyType)}` });
+  if (currentBranch !== "all") activeTags.push({ key: "branch", label: `Branch: ${currentBranch === "polonnaruwa" ? "Kaduruwela" : "Trincomalee"}` });
   if (currentStatus !== "all") activeTags.push({ key: "status", label: `Status: ${currentStatus.toUpperCase()}` });
   if (currentMinYear) activeTags.push({ key: "minYear", label: `Year: ${currentMinYear}+` });
   if (currentMaxPrice) {
@@ -76,17 +88,19 @@ export function VehicleFilterBar({
   return (
     <div className="w-full space-y-4">
       {/* 
-        Desktop Calm Filter Bar 
+        Desktop Calm Filter Bar (2 Rows x 4 Columns)
       */}
-      <div className="hidden lg:grid grid-cols-6 gap-3 p-4 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] items-center">
+      <div className="hidden lg:grid grid-cols-4 gap-3 p-4 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] items-center">
         {/* 1. Make */}
         <div>
-          <label htmlFor="filter-make" className="sr-only">Make</label>
+          <label htmlFor="filter-make" className="block text-[10px] font-mono uppercase tracking-wider text-[var(--accent)] mb-1">
+            Manufacturer
+          </label>
           <select
             id="filter-make"
             value={currentMake}
             onChange={(e) => updateParam("make", e.target.value)}
-            className="w-full min-h-[44px] px-3 py-2 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px] text-xs font-sans uppercase tracking-wider focus:border-[var(--accent)] focus:outline-none cursor-pointer"
+            className="w-full min-h-[42px] px-3 py-2 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px] text-xs font-sans uppercase tracking-wider focus:border-[var(--accent)] focus:outline-none cursor-pointer"
           >
             <option value="all">All Makes</option>
             {availableMakes.map((m) => (
@@ -97,14 +111,57 @@ export function VehicleFilterBar({
           </select>
         </div>
 
-        {/* 2. Status */}
+        {/* 2. Body Type */}
         <div>
-          <label htmlFor="filter-status" className="sr-only">Status</label>
+          <label htmlFor="filter-body-type" className="block text-[10px] font-mono uppercase tracking-wider text-[var(--accent)] mb-1">
+            Body Type
+          </label>
+          <select
+            id="filter-body-type"
+            value={currentBodyType}
+            onChange={(e) => updateParam("bodyType", e.target.value)}
+            className="w-full min-h-[42px] px-3 py-2 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px] text-xs font-sans uppercase tracking-wider focus:border-[var(--accent)] focus:outline-none cursor-pointer"
+          >
+            <option value="all">All Body Types</option>
+            <option value="suv">SUV</option>
+            <option value="sedan">Sedan</option>
+            <option value="hatchback">Hatchback</option>
+            <option value="mpv">MPV / Mini Van</option>
+            <option value="crossover">Crossover</option>
+            <option value="wagon">Station Wagon</option>
+            <option value="van">Van</option>
+            <option value="coupe">Coupe</option>
+            <option value="pickup">Pickup Truck</option>
+          </select>
+        </div>
+
+        {/* 3. Dealership Branch */}
+        <div>
+          <label htmlFor="filter-branch" className="block text-[10px] font-mono uppercase tracking-wider text-[var(--accent)] mb-1">
+            Showroom Location
+          </label>
+          <select
+            id="filter-branch"
+            value={currentBranch}
+            onChange={(e) => updateParam("branch", e.target.value)}
+            className="w-full min-h-[42px] px-3 py-2 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px] text-xs font-sans uppercase tracking-wider focus:border-[var(--accent)] focus:outline-none cursor-pointer"
+          >
+            <option value="all">All Showrooms</option>
+            <option value="polonnaruwa">Kaduruwela Main Showroom</option>
+            <option value="trincomalee">Trincomalee Branch</option>
+          </select>
+        </div>
+
+        {/* 4. Showroom Status */}
+        <div>
+          <label htmlFor="filter-status" className="block text-[10px] font-mono uppercase tracking-wider text-[var(--accent)] mb-1">
+            Availability
+          </label>
           <select
             id="filter-status"
             value={currentStatus}
             onChange={(e) => updateParam("status", e.target.value)}
-            className="w-full min-h-[44px] px-3 py-2 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px] text-xs font-sans uppercase tracking-wider focus:border-[var(--accent)] focus:outline-none cursor-pointer"
+            className="w-full min-h-[42px] px-3 py-2 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px] text-xs font-sans uppercase tracking-wider focus:border-[var(--accent)] focus:outline-none cursor-pointer"
           >
             <option value="all">All Statuses</option>
             <option value="available">Available in Showroom</option>
@@ -114,14 +171,16 @@ export function VehicleFilterBar({
           </select>
         </div>
 
-        {/* 3. Max Budget */}
+        {/* 5. Max Budget */}
         <div>
-          <label htmlFor="filter-price" className="sr-only">Budget</label>
+          <label htmlFor="filter-price" className="block text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] mb-1">
+            Budget Bracket
+          </label>
           <select
             id="filter-price"
             value={currentMaxPrice}
             onChange={(e) => updateParam("maxPrice", e.target.value)}
-            className="w-full min-h-[44px] px-3 py-2 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px] text-xs font-sans uppercase tracking-wider focus:border-[var(--accent)] focus:outline-none cursor-pointer"
+            className="w-full min-h-[42px] px-3 py-2 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px] text-xs font-sans uppercase tracking-wider focus:border-[var(--accent)] focus:outline-none cursor-pointer"
           >
             <option value="">Any Budget</option>
             <option value="10000000">Under 10M LKR</option>
@@ -132,16 +191,19 @@ export function VehicleFilterBar({
           </select>
         </div>
 
-        {/* 4. Min Year */}
+        {/* 6. Min Year */}
         <div>
-          <label htmlFor="filter-year" className="sr-only">Year</label>
+          <label htmlFor="filter-year" className="block text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] mb-1">
+            Minimum Year
+          </label>
           <select
             id="filter-year"
             value={currentMinYear}
             onChange={(e) => updateParam("minYear", e.target.value)}
-            className="w-full min-h-[44px] px-3 py-2 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px] text-xs font-sans uppercase tracking-wider focus:border-[var(--accent)] focus:outline-none cursor-pointer"
+            className="w-full min-h-[42px] px-3 py-2 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px] text-xs font-sans uppercase tracking-wider focus:border-[var(--accent)] focus:outline-none cursor-pointer"
           >
-            <option value="">All Years</option>
+            <option value="">All Production Years</option>
+            <option value="2024">2024 &amp; Newer</option>
             <option value="2023">2023 &amp; Newer</option>
             <option value="2022">2022 &amp; Newer</option>
             <option value="2021">2021 &amp; Newer</option>
@@ -149,14 +211,16 @@ export function VehicleFilterBar({
           </select>
         </div>
 
-        {/* 5. Fuel */}
+        {/* 7. Fuel */}
         <div>
-          <label htmlFor="filter-fuel" className="sr-only">Fuel</label>
+          <label htmlFor="filter-fuel" className="block text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] mb-1">
+            Powertrain
+          </label>
           <select
             id="filter-fuel"
             value={currentFuel}
             onChange={(e) => updateParam("fuel", e.target.value)}
-            className="w-full min-h-[44px] px-3 py-2 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px] text-xs font-sans uppercase tracking-wider focus:border-[var(--accent)] focus:outline-none cursor-pointer"
+            className="w-full min-h-[42px] px-3 py-2 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px] text-xs font-sans uppercase tracking-wider focus:border-[var(--accent)] focus:outline-none cursor-pointer"
           >
             <option value="all">All Fuel Types</option>
             <option value="hybrid">Hybrid / e:HEV</option>
@@ -166,14 +230,16 @@ export function VehicleFilterBar({
           </select>
         </div>
 
-        {/* 6. Sorting */}
+        {/* 8. Sorting */}
         <div>
-          <label htmlFor="filter-sort" className="sr-only">Sort</label>
+          <label htmlFor="filter-sort" className="block text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] mb-1">
+            Sort By
+          </label>
           <select
             id="filter-sort"
             value={currentSort}
             onChange={(e) => updateParam("sort", e.target.value)}
-            className="w-full min-h-[44px] px-3 py-2 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px] text-xs font-sans uppercase tracking-wider focus:border-[var(--accent)] focus:outline-none cursor-pointer"
+            className="w-full min-h-[42px] px-3 py-2 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px] text-xs font-sans uppercase tracking-wider focus:border-[var(--accent)] focus:outline-none cursor-pointer"
           >
             <option value="recent">Latest Arrivals</option>
             <option value="price_asc">Price: Low to High</option>
@@ -280,6 +346,41 @@ export function VehicleFilterBar({
                     {availableMakes.map((m) => (
                       <option key={m} value={m}>{m}</option>
                     ))}
+                  </select>
+                </div>
+
+                {/* Body Type */}
+                <div className="space-y-1.5">
+                  <span className="font-medium uppercase tracking-wider text-[var(--text-muted)]">Body Type</span>
+                  <select
+                    value={currentBodyType}
+                    onChange={(e) => updateParam("bodyType", e.target.value)}
+                    className="w-full min-h-[48px] px-3 py-2 bg-[var(--bg-surface)] text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px]"
+                  >
+                    <option value="all">All Body Types</option>
+                    <option value="suv">SUV</option>
+                    <option value="sedan">Sedan</option>
+                    <option value="hatchback">Hatchback</option>
+                    <option value="mpv">MPV / Mini Van</option>
+                    <option value="crossover">Crossover</option>
+                    <option value="wagon">Station Wagon</option>
+                    <option value="van">Van</option>
+                    <option value="coupe">Coupe</option>
+                    <option value="pickup">Pickup Truck</option>
+                  </select>
+                </div>
+
+                {/* Showroom Location */}
+                <div className="space-y-1.5">
+                  <span className="font-medium uppercase tracking-wider text-[var(--text-muted)]">Showroom Location</span>
+                  <select
+                    value={currentBranch}
+                    onChange={(e) => updateParam("branch", e.target.value)}
+                    className="w-full min-h-[48px] px-3 py-2 bg-[var(--bg-surface)] text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px]"
+                  >
+                    <option value="all">All Showrooms</option>
+                    <option value="polonnaruwa">Kaduruwela Main Showroom</option>
+                    <option value="trincomalee">Trincomalee Branch</option>
                   </select>
                 </div>
 

@@ -81,6 +81,76 @@ export const transmissionSchema = z.enum([
 ]);
 export type TransmissionType = z.infer<typeof transmissionSchema>;
 
+export const bodyTypeSchema = z.enum([
+  "suv",
+  "sedan",
+  "hatchback",
+  "mpv",
+  "crossover",
+  "wagon",
+  "van",
+  "coupe",
+  "pickup",
+]);
+export type BodyType = z.infer<typeof bodyTypeSchema>;
+
+export const driveTypeSchema = z.enum([
+  "2WD",
+  "4WD",
+  "AWD",
+  "FWD",
+  "RWD",
+]);
+export type DriveType = z.infer<typeof driveTypeSchema>;
+
+export const registrationStatusSchema = z.enum([
+  "unregistered",
+  "registered",
+]);
+export type RegistrationStatus = z.infer<typeof registrationStatusSchema>;
+
+export const dealershipBranchSchema = z.enum([
+  "polonnaruwa",
+  "trincomalee",
+]);
+export type DealershipBranch = z.infer<typeof dealershipBranchSchema>;
+
+export function formatBodyType(type?: BodyType | string): string {
+  switch (type) {
+    case "suv":
+      return "SUV";
+    case "sedan":
+      return "Sedan";
+    case "hatchback":
+      return "Hatchback";
+    case "mpv":
+      return "MPV / Mini Van";
+    case "crossover":
+      return "Crossover";
+    case "wagon":
+      return "Station Wagon";
+    case "van":
+      return "Van";
+    case "coupe":
+      return "Coupe";
+    case "pickup":
+      return "Pickup";
+    default:
+      return type ? type.toUpperCase() : "SUV";
+  }
+}
+
+export function formatBranch(branch?: DealershipBranch | string): string {
+  switch (branch) {
+    case "polonnaruwa":
+      return "Kaduruwela Main Showroom";
+    case "trincomalee":
+      return "Trincomalee Branch";
+    default:
+      return "Kaduruwela Main Showroom";
+  }
+}
+
 export const vehicleSchema = z.object({
   id: z.string(),
   slug: z.string().min(3),
@@ -95,6 +165,15 @@ export const vehicleSchema = z.object({
   engineCC: z.number().int().positive(),
   color: z.string().min(1),
   status: vehicleStatusSchema,
+  bodyType: bodyTypeSchema.default("suv"),
+  driveType: driveTypeSchema.default("2WD"),
+  seats: z.number().int().positive().default(5),
+  registrationStatus: registrationStatusSchema.default("unregistered"),
+  owners: z.number().int().nonnegative().default(0),
+  auctionGrade: z.string().default("4.5"),
+  auctionScore: z.string().default("A"),
+  chassisNumber: z.string().default(""), // Admin only - strictly withheld from public display
+  branch: dealershipBranchSchema.default("polonnaruwa"),
   importStage: importStageSchema.default(null),
   expectedArrival: z.string().nullable().default(null),
   published: z.boolean().default(true),
@@ -113,6 +192,8 @@ export interface VehicleFilterParams {
   status?: VehicleStatus | "all";
   make?: string;
   model?: string;
+  bodyType?: BodyType | "all";
+  branch?: DealershipBranch | "all";
   minYear?: number;
   maxYear?: number;
   minPrice?: number;
@@ -153,6 +234,15 @@ export const vehicleConverter: FirestoreDataConverter<Vehicle> = {
       engineCC: vehicle.engineCC,
       color: vehicle.color,
       status: vehicle.status,
+      bodyType: vehicle.bodyType,
+      driveType: vehicle.driveType,
+      seats: vehicle.seats,
+      registrationStatus: vehicle.registrationStatus,
+      owners: vehicle.owners,
+      auctionGrade: vehicle.auctionGrade,
+      auctionScore: vehicle.auctionScore,
+      chassisNumber: vehicle.chassisNumber || "",
+      branch: vehicle.branch,
       importStage: vehicle.importStage,
       expectedArrival: vehicle.expectedArrival,
       published: vehicle.published,
@@ -192,6 +282,15 @@ export const vehicleConverter: FirestoreDataConverter<Vehicle> = {
       engineCC: Number(data.engineCC) || 1500,
       color: data.color || "",
       status: data.status || "available",
+      bodyType: data.bodyType || "suv",
+      driveType: data.driveType || "2WD",
+      seats: Number(data.seats) || 5,
+      registrationStatus: data.registrationStatus || "unregistered",
+      owners: data.owners !== undefined ? Number(data.owners) : 0,
+      auctionGrade: data.auctionGrade || "4.5",
+      auctionScore: data.auctionScore || "A",
+      chassisNumber: data.chassisNumber || "",
+      branch: data.branch || "polonnaruwa",
       importStage: data.importStage || null,
       expectedArrival: data.expectedArrival || null,
       published: Boolean(data.published),

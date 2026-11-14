@@ -314,60 +314,87 @@ button {
 }
 
 /* =========================================================================
-   Scroll Reveal: Dramatic 28px rise + fade, staggered by 80ms
-   Universal IntersectionObserver + GPU-accelerated transition
+   Luxury Scroll Reveal: Smooth Rise + Scale + Fade
+   Native CSS scroll-timeline (Chrome/Edge) + Universal Observer Fallback
    ========================================================================= */
 
+/* Default fallback: Render visible to guarantee no content ever gets trapped hidden */
 .reveal-on-scroll {
-  opacity: 0;
-  transform: translateY(28px);
-  transition: opacity 750ms cubic-bezier(0.16, 1, 0.3, 1),
-              transform 750ms cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity, transform;
+  opacity: 1;
+  transform: none;
 }
 
-.reveal-on-scroll.is-revealed {
-  opacity: 1 !important;
-  transform: translateY(0) !important;
+@supports (animation-timeline: view()) {
+  @keyframes luxuryReveal {
+    0% {
+      opacity: 0;
+      transform: translateY(36px) scale(0.985);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .reveal-on-scroll {
+    animation: luxuryReveal cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-timeline: view();
+    animation-range: entry 5% entry 85%;
+    will-change: transform, opacity;
+  }
+
+  /* Stagger ranges for cascading showroom rhythm */
+  .reveal-on-scroll.stagger-1 {
+    animation-range: entry 5% entry 75%;
+  }
+
+  .reveal-on-scroll.stagger-2 {
+    animation-range: entry 10% entry 82%;
+  }
+
+  .reveal-on-scroll.stagger-3 {
+    animation-range: entry 15% entry 88%;
+  }
+
+  .reveal-on-scroll.stagger-4 {
+    animation-range: entry 20% entry 94%;
+  }
+
+  .reveal-on-scroll.stagger-5 {
+    animation-range: entry 25% entry 100%;
+  }
+
+  .reveal-on-scroll.stagger-6 {
+    animation-range: entry 30% entry 100%;
+  }
 }
 
-/* Stagger by 80ms increments for cascading showroom rhythm */
-.reveal-on-scroll.stagger-1 {
-  transition-delay: 60ms;
-}
+/* Fallback for browsers without animation-timeline: view() */
+@supports not (animation-timeline: view()) {
+  .reveal-on-scroll {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 800ms cubic-bezier(0.16, 1, 0.3, 1),
+                transform 800ms cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+  }
 
-.reveal-on-scroll.stagger-2 {
-  transition-delay: 140ms;
-}
+  .reveal-on-scroll[data-revealed="true"],
+  .reveal-on-scroll.is-revealed {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+  }
 
-.reveal-on-scroll.stagger-3 {
-  transition-delay: 220ms;
-}
-
-.reveal-on-scroll.stagger-4 {
-  transition-delay: 300ms;
-}
-
-.reveal-on-scroll.stagger-5 {
-  transition-delay: 380ms;
-}
-
-.reveal-on-scroll.stagger-6 {
-  transition-delay: 460ms;
-}
-
-.reveal-fade {
-  opacity: 0;
-  transition: opacity 750ms cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity;
-}
-
-.reveal-fade.is-revealed {
-  opacity: 1 !important;
+  .reveal-on-scroll.stagger-1 { transition-delay: 80ms; }
+  .reveal-on-scroll.stagger-2 { transition-delay: 160ms; }
+  .reveal-on-scroll.stagger-3 { transition-delay: 240ms; }
+  .reveal-on-scroll.stagger-4 { transition-delay: 320ms; }
+  .reveal-on-scroll.stagger-5 { transition-delay: 400ms; }
+  .reveal-on-scroll.stagger-6 { transition-delay: 480ms; }
 }
 
 /* =========================================================================
-   Header: Transparent over hero, Solid on scroll, Hiding on scroll down
+   Header: Transparent over hero, Solid on scroll (Rock-solid sticky header)
    ========================================================================= */
 
 .site-header {
@@ -379,10 +406,8 @@ button {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-hairline);
-  transition: transform 350ms cubic-bezier(0.16, 1, 0.3, 1),
-              background-color 300ms ease,
+  transition: background-color 300ms ease,
               border-color 300ms ease;
-  will-change: transform;
 }
 
 @supports (animation-timeline: scroll()) {
@@ -405,54 +430,6 @@ button {
     animation: header-solidify linear both;
     animation-timeline: scroll(root);
     animation-range: 0px 80px;
-  }
-}
-
-@property --scroll-pos {
-  syntax: "<number>";
-  inherits: true;
-  initial-value: 0;
-}
-@property --scroll-pos-delayed {
-  syntax: "<number>";
-  inherits: true;
-  initial-value: 0;
-}
-
-@keyframes scroll-tracker {
-  to {
-    --scroll-pos: 1000;
-    --scroll-pos-delayed: 1000;
-  }
-}
-
-:root {
-  animation: scroll-tracker linear both;
-  animation-timeline: scroll(root);
-  container-name: page;
-  container-type: normal;
-}
-
-body {
-  --scroll-delta: calc(var(--scroll-pos) - var(--scroll-pos-delayed));
-  --scroll-dir: sign(var(--scroll-delta));
-}
-
-@container page style(--scroll-dir: 1) {
-  .site-header {
-    transform: translateY(-100%);
-  }
-}
-
-@container page style(--scroll-dir: -1) {
-  .site-header {
-    transform: translateY(0);
-  }
-}
-
-@container page style(--scroll-dir: 0) {
-  .site-header {
-    transition-delay: calc(infinity * 1s);
   }
 }
 

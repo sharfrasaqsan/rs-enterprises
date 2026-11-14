@@ -12,6 +12,10 @@ import {
   IMPORT_STAGES,
   normalizeImportStage,
   StandardImportStage,
+  BodyType,
+  DriveType,
+  RegistrationStatus,
+  DealershipBranch,
 } from "@/types/vehicle";
 import { CompanySettings } from "@/types/settings";
 import { saveVehicleAction, archiveVehicleAction } from "@/app/actions/admin";
@@ -60,6 +64,21 @@ export function VehicleFormClient({
   const [status, setStatus] = useState<VehicleStatus>(
     initialVehicle?.status || "available"
   );
+  // Rich Vehicle Specifications
+  const [bodyType, setBodyType] = useState<BodyType>(initialVehicle?.bodyType || "suv");
+  const [driveType, setDriveType] = useState<DriveType>(initialVehicle?.driveType || "2WD");
+  const [seats, setSeats] = useState<number>(initialVehicle?.seats || 5);
+  const [registrationStatus, setRegistrationStatus] = useState<RegistrationStatus>(
+    initialVehicle?.registrationStatus || "unregistered"
+  );
+  const [owners, setOwners] = useState<number>(
+    initialVehicle?.owners !== undefined ? initialVehicle.owners : 0
+  );
+  const [auctionGrade, setAuctionGrade] = useState(initialVehicle?.auctionGrade || "4.5");
+  const [auctionScore, setAuctionScore] = useState(initialVehicle?.auctionScore || "A");
+  const [chassisNumber, setChassisNumber] = useState(initialVehicle?.chassisNumber || "");
+  const [branch, setBranch] = useState<DealershipBranch>(initialVehicle?.branch || "polonnaruwa");
+
   const [importStage, setImportStage] = useState<ImportStage>(
     initialVehicle?.importStage || null
   );
@@ -303,6 +322,15 @@ export function VehicleFormClient({
       transmission,
       engineCC: Number(engineCC) || 1500,
       status,
+      bodyType,
+      driveType,
+      seats: Number(seats) || 5,
+      registrationStatus,
+      owners: Number(owners) || 0,
+      auctionGrade: auctionGrade.trim() || "4.5",
+      auctionScore: auctionScore.trim() || "A",
+      chassisNumber: chassisNumber.trim(),
+      branch,
       importStage: status === "incoming" ? (importStage ? (normalizeImportStage(importStage) || "purchased") : "purchased") : null,
       expectedArrival: status === "incoming" && expectedArrival ? expectedArrival : null,
       published,
@@ -619,12 +647,223 @@ export function VehicleFormClient({
           </div>
         </div>
 
-        {/* Section 3: Multi-Image Gallery with WebP Compression & Drag Reorder */}
+        {/* Section 2.5: Provenance, Registration & Branch Routing (Rich Vehicle Data) */}
+        <div className="p-6 bg-[var(--bg-surface)] border border-[var(--border-hairline)] space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--accent)] font-semibold block">
+              03. Provenance, Body &amp; Dealership Routing
+            </span>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)]">
+              Buyer Decision Attributes
+            </span>
+          </div>
+
+          {/* Row 1: Chassis Number (Admin Only) & Branch Location */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px]">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label
+                  htmlFor="veh-chassis"
+                  className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
+                >
+                  Chassis / VIN Number *
+                </label>
+                <span className="px-1.5 py-0.5 text-[9px] font-mono uppercase font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded">
+                  Admin Only &bull; Hidden From Public
+                </span>
+              </div>
+              <input
+                id="veh-chassis"
+                type="text"
+                value={chassisNumber}
+                onChange={(e) => setChassisNumber(e.target.value.toUpperCase())}
+                placeholder="e.g. FJA300-0018472 / GDJ150-0092814"
+                className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] font-mono"
+              />
+              <span className="text-[10px] text-[var(--text-secondary)] font-mono block mt-1">
+                Used for internal customs assessment, inspection clearance, and title transfer.
+              </span>
+            </div>
+
+            <div>
+              <label
+                htmlFor="veh-branch"
+                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
+              >
+                Holding Showroom Branch *
+              </label>
+              <select
+                id="veh-branch"
+                value={branch}
+                onChange={(e) => setBranch(e.target.value as DealershipBranch)}
+                className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
+              >
+                <option value="polonnaruwa">Kaduruwela Main Showroom (Polonnaruwa)</option>
+                <option value="trincomalee">Trincomalee Branch Showroom</option>
+              </select>
+              <span className="text-[10px] text-[var(--text-secondary)] font-mono block mt-1">
+                Determines branch inquiry routing and customer viewing location.
+              </span>
+            </div>
+          </div>
+
+          {/* Row 2: Body Type, Drive Type, Seating Capacity */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label
+                htmlFor="veh-body"
+                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
+              >
+                Body Type *
+              </label>
+              <select
+                id="veh-body"
+                value={bodyType}
+                onChange={(e) => setBodyType(e.target.value as BodyType)}
+                className="w-full h-11 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
+              >
+                <option value="suv">SUV</option>
+                <option value="sedan">Sedan</option>
+                <option value="hatchback">Hatchback</option>
+                <option value="mpv">MPV / Mini Van</option>
+                <option value="crossover">Crossover</option>
+                <option value="wagon">Station Wagon</option>
+                <option value="van">Van</option>
+                <option value="coupe">Coupe</option>
+                <option value="pickup">Pickup Truck</option>
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="veh-drive"
+                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
+              >
+                Drive Type (Drivetrain) *
+              </label>
+              <select
+                id="veh-drive"
+                value={driveType}
+                onChange={(e) => setDriveType(e.target.value as DriveType)}
+                className="w-full h-11 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
+              >
+                <option value="2WD">2WD (FWD / RWD)</option>
+                <option value="4WD">4WD (Four-Wheel Drive)</option>
+                <option value="AWD">AWD (All-Wheel Drive)</option>
+                <option value="FWD">FWD (Front-Wheel Drive)</option>
+                <option value="RWD">RWD (Rear-Wheel Drive)</option>
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="veh-seats"
+                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
+              >
+                Seating Capacity *
+              </label>
+              <input
+                id="veh-seats"
+                type="number"
+                min="1"
+                max="15"
+                required
+                value={seats}
+                onChange={(e) => setSeats(Number(e.target.value))}
+                placeholder="e.g. 5 or 7"
+                className="w-full h-11 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] font-mono"
+              />
+            </div>
+          </div>
+
+          {/* Row 3: Registration Status, Owners, Auction Grade & Score */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div>
+              <label
+                htmlFor="veh-reg"
+                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
+              >
+                Registration Status *
+              </label>
+              <select
+                id="veh-reg"
+                value={registrationStatus}
+                onChange={(e) => {
+                  const val = e.target.value as RegistrationStatus;
+                  setRegistrationStatus(val);
+                  if (val === "unregistered") setOwners(0);
+                  else if (owners === 0) setOwners(1);
+                }}
+                className="w-full h-11 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
+              >
+                <option value="unregistered">Unregistered (Direct Import)</option>
+                <option value="registered">Registered (Pre-Owned in SL)</option>
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="veh-owners"
+                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
+              >
+                Previous Owners
+              </label>
+              <input
+                id="veh-owners"
+                type="number"
+                min="0"
+                max="10"
+                value={owners}
+                onChange={(e) => setOwners(Number(e.target.value))}
+                className="w-full h-11 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] font-mono"
+              />
+              <span className="text-[9px] text-[var(--text-secondary)] font-mono block mt-0.5">
+                {registrationStatus === "unregistered" ? "0 for brand new/unregistered in SL" : "Registered owner count"}
+              </span>
+            </div>
+
+            <div>
+              <label
+                htmlFor="veh-auction-grade"
+                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
+              >
+                Japanese Auction Grade *
+              </label>
+              <input
+                id="veh-auction-grade"
+                type="text"
+                value={auctionGrade}
+                onChange={(e) => setAuctionGrade(e.target.value)}
+                placeholder="e.g. 5.0 / 4.5 / 6.0 / S"
+                className="w-full h-11 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] font-mono"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="veh-auction-score"
+                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
+              >
+                Auction Score (Interior/Exterior)
+              </label>
+              <input
+                id="veh-auction-score"
+                type="text"
+                value={auctionScore}
+                onChange={(e) => setAuctionScore(e.target.value)}
+                placeholder="e.g. A/A or A or B"
+                className="w-full h-11 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] font-mono"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Section 4: Multi-Image Gallery with WebP Compression & Drag Reorder */}
         <div className="p-6 bg-[var(--bg-surface)] border border-[var(--border-hairline)] space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--accent)] font-semibold block">
-                03. Multi-Image Gallery
+                04. Multi-Image Gallery
               </span>
               <p className="text-xs text-[var(--text-secondary)] font-light mt-0.5">
                 Upload smartphone photos (auto-compressed to WebP max 1600px). Drag thumbnails to reorder.

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Lead, LeadStage, LeadSource, DealershipBranch } from "@/types/lead";
@@ -17,6 +17,10 @@ import {
 import { useAdminAuth } from "@/app/admin/AdminAuthContext";
 import { Heading } from "@/components/ui/Heading";
 import { Eyebrow } from "@/components/ui/Eyebrow";
+import {
+  exportLeadsToPDF,
+  exportSingleLeadToPDF,
+} from "@/lib/export-leads";
 
 const BOARD_COLUMNS: { key: "new" | "contacted" | "viewing" | "negotiating" | "closed"; label: string }[] = [
   { key: "new", label: "New Enquiries" },
@@ -74,6 +78,23 @@ export function LeadsPipelineClient({
 
   // Drag and drop tracking
   const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
+
+  // Export Menu State
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close export menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+        setShowExportMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Check URL query param for default opened lead or add action
   useEffect(() => {
@@ -385,13 +406,104 @@ export function LeadsPipelineClient({
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setShowAddModal(true)}
-          className="min-h-[44px] px-6 inline-flex items-center justify-center text-xs font-sans uppercase font-medium tracking-wider bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors shadow-sm self-start sm:self-auto rounded-[2px] cursor-pointer"
-        >
-          + Add Lead (Phone / Walk-in)
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
+          {/* Export PDF Menu */}
+          <div className="relative" ref={exportMenuRef}>
+            <button
+              type="button"
+              onClick={() => {
+                if (filteredLeads.length === leads.length) {
+                  exportLeadsToPDF(leads, {
+                    filterSummary: `All Showroom Enquiries (${leads.length} Records)`,
+                  });
+                } else {
+                  setShowExportMenu((prev) => !prev);
+                }
+              }}
+              className="min-h-[44px] px-4 inline-flex items-center justify-center gap-2 text-xs font-sans uppercase font-medium tracking-wider bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors rounded-[2px] cursor-pointer shadow-sm"
+              aria-label="Export leads to PDF report"
+            >
+              <svg className="w-4 h-4 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              <span>Export PDF</span>
+              {filteredLeads.length !== leads.length && (
+                <svg className={`w-3.5 h-3.5 text-[var(--text-secondary)] transition-transform duration-200 ${showExportMenu ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              )}
+            </button>
+
+            {showExportMenu && filteredLeads.length !== leads.length && (
+              <div className="absolute right-0 mt-2 w-72 bg-[var(--bg-surface)] border border-[var(--border-subtle)] shadow-2xl z-30 rounded-[2px] p-2 space-y-2 animate-in fade-in zoom-in-95 duration-100">
+                <div className="px-3 py-2 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px]">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)]">PDF Scope</div>
+                  <div className="text-xs font-medium text-[var(--text-primary)] mt-0.5">
+                    Filter Active: {filteredLeads.length} of {leads.length} Leads
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      exportLeadsToPDF(filteredLeads, {
+                        filterSummary: `Filtered View (${filteredLeads.length} of ${leads.length} Records)`,
+                      });
+                      setShowExportMenu(false);
+                    }}
+                    className="w-full text-left px-3 py-2.5 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-base)] rounded-[2px] flex items-center justify-between transition-colors cursor-pointer"
+                  >
+                    <div>
+                      <div className="font-medium flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]"></span>
+                        <span>Filtered View</span>
+                      </div>
+                      <div className="text-[10px] text-[var(--text-secondary)] mt-0.5">
+                        {filteredLeads.length} leads matching filter
+                      </div>
+                    </div>
+                    <svg className="w-4 h-4 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      exportLeadsToPDF(leads, {
+                        filterSummary: `Complete Showroom Dossier (${leads.length} Total Records)`,
+                      });
+                      setShowExportMenu(false);
+                    }}
+                    className="w-full text-left px-3 py-2.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-base)] rounded-[2px] flex items-center justify-between transition-colors cursor-pointer"
+                  >
+                    <div>
+                      <div className="font-medium flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-neutral-500"></span>
+                        <span>All Leads Dossier</span>
+                      </div>
+                      <div className="text-[10px] text-[var(--text-secondary)] mt-0.5">
+                        {leads.length} total showroom records
+                      </div>
+                    </div>
+                    <svg className="w-4 h-4 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowAddModal(true)}
+            className="min-h-[44px] px-6 inline-flex items-center justify-center text-xs font-sans uppercase font-medium tracking-wider bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors shadow-sm rounded-[2px] cursor-pointer"
+          >
+            + Add Lead (Phone / Walk-in)
+          </button>
+        </div>
       </div>
 
       {/* Filter & Search Bar */}
@@ -746,28 +858,42 @@ export function LeadsPipelineClient({
             </div>
 
             {/* Big Action Buttons */}
-            <div className="grid grid-cols-2 gap-3">
-              <a
-                href={`tel:${activeLead.phone}`}
-                className="min-h-[48px] px-4 inline-flex items-center justify-center gap-2 text-xs font-sans uppercase font-medium tracking-wider border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--text-primary)] hover:bg-[var(--bg-base)] transition-colors rounded-[2px]"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
-                </svg>
-                <span>Direct Call</span>
-              </a>
+            <div className="space-y-2.5">
+              <div className="grid grid-cols-2 gap-3">
+                <a
+                  href={`tel:${activeLead.phone}`}
+                  className="min-h-[48px] px-4 inline-flex items-center justify-center gap-2 text-xs font-sans uppercase font-medium tracking-wider border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--text-primary)] hover:bg-[var(--bg-base)] transition-colors rounded-[2px]"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
+                  </svg>
+                  <span>Direct Call</span>
+                </a>
 
-              <a
-                href={getWhatsAppUrl(activeLead.phone, activeLead.name, activeLead.vehicleTitle)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="min-h-[48px] px-4 inline-flex items-center justify-center gap-2 text-xs font-sans uppercase font-medium tracking-wider bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors rounded-[2px] shadow-sm"
+                <a
+                  href={getWhatsAppUrl(activeLead.phone, activeLead.name, activeLead.vehicleTitle)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="min-h-[48px] px-4 inline-flex items-center justify-center gap-2 text-xs font-sans uppercase font-medium tracking-wider bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors rounded-[2px] shadow-sm"
+                >
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z" />
+                  </svg>
+                  <span>WhatsApp (+94)</span>
+                </a>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => exportSingleLeadToPDF(activeLead)}
+                className="w-full min-h-[42px] px-4 inline-flex items-center justify-center gap-2 text-xs font-sans uppercase font-medium tracking-wider border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] hover:bg-[var(--bg-base)] transition-colors rounded-[2px] cursor-pointer"
+                title="Print or export individual client profile sheet as PDF"
               >
-                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                  <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z" />
+                <svg className="w-4 h-4 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
-                <span>WhatsApp (+94)</span>
-              </a>
+                <span>Print / Export Lead Dossier (.PDF)</span>
+              </button>
             </div>
 
             {/* Stage Selector with Quick 1-Tap Buttons */}

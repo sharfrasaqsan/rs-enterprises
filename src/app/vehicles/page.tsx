@@ -4,7 +4,14 @@ import { Container } from "@/components/ui/Container";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { Heading } from "@/components/ui/Heading";
 import { getVehicles } from "@/lib/vehicles";
-import { VehicleFilterParams, VehicleStatus, FuelType, TransmissionType } from "@/types/vehicle";
+import {
+  VehicleFilterParams,
+  VehicleStatus,
+  FuelType,
+  TransmissionType,
+  BodyType,
+  DealershipBranch,
+} from "@/types/vehicle";
 import { VehicleFilterBar } from "@/components/vehicles/VehicleFilterBar";
 import { VehicleEntry } from "@/components/vehicles/VehicleEntry";
 import { FeaturedVehicleEntry } from "@/components/vehicles/FeaturedVehicleEntry";
@@ -69,6 +76,18 @@ async function VehiclesListContent({
       typeof resolvedSearchParams.fuel === "string" &&
       ["petrol", "diesel", "hybrid", "electric", "all"].includes(resolvedSearchParams.fuel)
         ? (resolvedSearchParams.fuel as FuelType | "all")
+        : undefined,
+    bodyType:
+      typeof resolvedSearchParams.bodyType === "string" &&
+      ["suv", "sedan", "hatchback", "mpv", "crossover", "wagon", "van", "coupe", "pickup", "all"].includes(
+        resolvedSearchParams.bodyType
+      )
+        ? (resolvedSearchParams.bodyType as BodyType | "all")
+        : undefined,
+    branch:
+      typeof resolvedSearchParams.branch === "string" &&
+      ["polonnaruwa", "trincomalee", "all"].includes(resolvedSearchParams.branch)
+        ? (resolvedSearchParams.branch as DealershipBranch | "all")
         : undefined,
     transmission:
       typeof resolvedSearchParams.transmission === "string" &&

@@ -1,10 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
-import { MobileActionBar } from "@/components/layout/MobileActionBar";
-import { ScrollRevealObserver } from "@/components/layout/ScrollRevealObserver";
+import { PublicShell } from "@/components/layout/PublicShell";
 import { getCompanySettings } from "@/lib/settings";
 
 const cormorant = Cormorant_Garamond({
@@ -106,11 +103,7 @@ export default async function RootLayout({
         </noscript>
       </head>
       <body className="min-h-screen flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] antialiased selection:bg-[var(--accent)] selection:text-[var(--accent-contrast)]">
-        <ScrollRevealObserver />
-        <Header settings={settings} />
-        <main className="flex-1 pb-16 md:pb-0">{children}</main>
-        <Footer settings={settings} />
-        <MobileActionBar settings={settings} />
+        <PublicShell settings={settings}>{children}</PublicShell>
       </body>
     </html>
   );

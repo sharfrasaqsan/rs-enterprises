@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Vehicle, VehicleStatus } from "@/types/vehicle";
+import { Vehicle, VehicleStatus, formatBodyType, formatBranch } from "@/types/vehicle";
 import {
   toggleVehiclePublishedAction,
   updateVehicleStatusAction,
@@ -23,6 +23,8 @@ export function VehiclesManagerClient({
   const [vehicles, setVehicles] = useState<Vehicle[]>(initialVehicles);
   const [viewTab, setViewTab] = useState<"active" | "archived">("active");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [branchFilter, setBranchFilter] = useState<string>("all");
+  const [bodyFilter, setBodyFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [archiveConfirmId, setArchiveConfirmId] = useState<string | null>(null);
@@ -35,6 +37,8 @@ export function VehiclesManagerClient({
   // In-memory filter
   const filteredVehicles = targetList.filter((v) => {
     if (statusFilter !== "all" && v.status !== statusFilter) return false;
+    if (branchFilter !== "all" && v.branch !== branchFilter) return false;
+    if (bodyFilter !== "all" && v.bodyType !== bodyFilter) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       const match =
@@ -42,7 +46,10 @@ export function VehiclesManagerClient({
         v.model.toLowerCase().includes(q) ||
         String(v.year).includes(q) ||
         v.grade.toLowerCase().includes(q) ||
-        v.color.toLowerCase().includes(q);
+        v.color.toLowerCase().includes(q) ||
+        (v.chassisNumber && v.chassisNumber.toLowerCase().includes(q)) ||
+        (v.bodyType && v.bodyType.toLowerCase().includes(q)) ||
+        (v.branch && v.branch.toLowerCase().includes(q));
       if (!match) return false;
     }
     return true;
@@ -180,17 +187,46 @@ export function VehiclesManagerClient({
 
       {/* Filter and Search Bar */}
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-        <div className="sm:col-span-8">
+        <div className="sm:col-span-4">
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by make, model, year, grade, or color..."
+            placeholder="Search by make, model, VIN / chassis, color..."
             className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
           />
         </div>
 
-        <div className="sm:col-span-4">
+        <div className="sm:col-span-3">
+          <select
+            value={branchFilter}
+            onChange={(e) => setBranchFilter(e.target.value)}
+            className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
+          >
+            <option value="all">All Showroom Branches</option>
+            <option value="polonnaruwa">Kaduruwela Main Showroom</option>
+            <option value="trincomalee">Trincomalee Branch</option>
+          </select>
+        </div>
+
+        <div className="sm:col-span-2">
+          <select
+            value={bodyFilter}
+            onChange={(e) => setBodyFilter(e.target.value)}
+            className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
+          >
+            <option value="all">All Bodies</option>
+            <option value="suv">SUV</option>
+            <option value="sedan">Sedan</option>
+            <option value="hatchback">Hatchback</option>
+            <option value="mpv">MPV / Van</option>
+            <option value="crossover">Crossover</option>
+            <option value="wagon">Wagon</option>
+            <option value="pickup">Pickup</option>
+          </select>
+        </div>
+
+        <div className="sm:col-span-3">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -256,6 +292,11 @@ export function VehiclesManagerClient({
                       <span className="text-[10px] font-mono px-2 py-0.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--text-secondary)]">
                         {vehicle.grade}
                       </span>
+                      {vehicle.chassisNumber && (
+                        <span className="text-[10px] font-mono px-2 py-0.5 uppercase rounded-[2px] bg-amber-500/10 text-amber-400 border border-amber-500/30" title="Chassis / VIN (Admin Only)">
+                          VIN: {vehicle.chassisNumber}
+                        </span>
+                      )}
                       {vehicle.archived ? (
                         <span className="text-[9px] font-mono px-2 py-0.5 uppercase rounded-[2px] bg-red-950/30 text-red-400 border border-red-800">
                           Archived
@@ -273,8 +314,28 @@ export function VehiclesManagerClient({
                       )}
                     </div>
 
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
+                      <span className="text-[var(--accent)] font-medium">
+                        {formatBranch(vehicle.branch)}
+                      </span>
+                      <span>&bull;</span>
+                      <span>{formatBodyType(vehicle.bodyType)}</span>
+                      <span>&bull;</span>
+                      <span>{vehicle.driveType}</span>
+                      <span>&bull;</span>
+                      <span>{vehicle.seats} Seats</span>
+                      <span>&bull;</span>
+                      <span className={vehicle.registrationStatus === "unregistered" ? "text-emerald-400" : ""}>
+                        {vehicle.registrationStatus === "unregistered" ? "Unregistered" : `Registered (${vehicle.owners} Owner)`}
+                      </span>
+                      <span>&bull;</span>
+                      <span className="font-mono text-[var(--text-primary)]">
+                        Grade {vehicle.auctionGrade} ({vehicle.auctionScore})
+                      </span>
+                    </div>
+
                     <p className="text-xs text-[var(--text-secondary)] font-light">
-                      {vehicle.mileage.toLocaleString()} KM &bull; {vehicle.fuel} &bull;{" "}
+                      {vehicle.mileage.toLocaleString("en-US")} KM &bull; {vehicle.fuel} &bull;{" "}
                       {vehicle.transmission} &bull; {vehicle.color}
                     </p>
 

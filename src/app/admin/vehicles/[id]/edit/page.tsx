@@ -4,6 +4,8 @@ import { getAdminVehiclesAction } from "@/app/actions/admin";
 import { getCompanySettings } from "@/lib/settings";
 import { VehicleFormClient } from "@/components/admin/VehicleFormClient";
 
+export const instant = false;
+
 export async function generateStaticParams() {
   const vehicles = await getAdminVehiclesAction();
   return vehicles.map((v) => ({ id: v.id }));

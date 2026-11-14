@@ -7,48 +7,53 @@ export function ScrollRevealObserver() {
   const pathname = usePathname();
 
   useEffect(() => {
-    // Respect user's motion preferences
+    // If native CSS scroll-driven animations are supported, let CSS handle it with 0 JS overhead
+    if (typeof CSS !== "undefined" && CSS.supports && CSS.supports("animation-timeline", "view()")) {
+      return;
+    }
+
+    // Respect reduced motion accessibility preferences
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       document.querySelectorAll(".reveal-on-scroll").forEach((el) => {
-        el.classList.add("is-revealed");
+        el.setAttribute("data-revealed", "true");
       });
       return;
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("is-revealed");
-            // Once revealed, unobserve to maintain optimal performance
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      {
-        root: null,
-        rootMargin: "0px 0px -50px 0px", // Trigger when 50px into view
-        threshold: 0.05,
-      }
-    );
+    // Delay observer setup until after React initial hydration is 100% complete
+    const timer = setTimeout(() => {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.setAttribute("data-revealed", "true");
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        {
+          root: null,
+          rootMargin: "0px 0px -40px 0px",
+          threshold: 0.08,
+        }
+      );
 
-    // Observe all scroll reveal elements
-    const elements = document.querySelectorAll(".reveal-on-scroll:not(.is-revealed)");
-    elements.forEach((el) => {
-      // If element is already in the viewport on load, reveal immediately
-      const rect = el.getBoundingClientRect();
-      if (rect.top < window.innerHeight && rect.bottom > 0) {
-        el.classList.add("is-revealed");
-      } else {
-        observer.observe(el);
-      }
-    });
+      const elements = document.querySelectorAll(".reveal-on-scroll:not([data-revealed='true'])");
+      elements.forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        // If already above the fold, reveal immediately without animation
+        if (rect.top < window.innerHeight) {
+          el.setAttribute("data-revealed", "true");
+        } else {
+          observer.observe(el);
+        }
+      });
 
-    return () => {
-      observer.disconnect();
-    };
+      return () => observer.disconnect();
+    }, 200);
+
+    return () => clearTimeout(timer);
   }, [pathname]);
 
   return null;
 }
-

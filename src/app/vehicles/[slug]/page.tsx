@@ -16,6 +16,7 @@ import { LeadEnquiryForm } from "@/components/vehicle-detail/LeadEnquiryForm";
 import { MobileVehicleStickyBar } from "@/components/vehicle-detail/MobileVehicleStickyBar";
 import { VehicleCompareCheckbox } from "@/components/vehicles/VehicleCompareCheckbox";
 import { LazyCompareTray } from "@/components/vehicles/LazyCompareTray";
+import { formatBodyType, formatBranch } from "@/types/vehicle";
 import {
   getAllPublishedVehicles,
   getVehicleBySlug,
@@ -193,8 +194,21 @@ export default async function VehicleDetailPage(props: {
             <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-3">
                 <StatusLabel status={vehicle.status} />
+                <span className="px-2.5 py-1 bg-[var(--bg-surface)] border border-[var(--border-hairline)] text-[11px] font-sans font-medium uppercase tracking-wider text-[var(--accent)] rounded-[2px]">
+                  {formatBranch(vehicle.branch)}
+                </span>
+                <span className="px-2.5 py-1 bg-[var(--bg-surface)] border border-[var(--border-hairline)] text-[11px] font-mono uppercase tracking-wider text-[var(--text-primary)] rounded-[2px]">
+                  {formatBodyType(vehicle.bodyType)} &bull; {vehicle.driveType} &bull; {vehicle.seats} Seats
+                </span>
+                <span className={`px-2.5 py-1 text-[11px] font-mono uppercase tracking-wider rounded-[2px] border ${
+                  vehicle.registrationStatus === "unregistered"
+                    ? "bg-emerald-950/20 text-emerald-400 border-emerald-800/40"
+                    : "bg-[var(--bg-surface)] text-[var(--text-secondary)] border-[var(--border-hairline)]"
+                }`}>
+                  {vehicle.registrationStatus === "unregistered" ? "Unregistered &bull; Direct Import" : "Registered Pre-Owned"}
+                </span>
                 <span className="text-[11px] font-mono text-[var(--accent)] uppercase tracking-wider">
-                  Grade {vehicle.grade} &bull; Auction Sheet Verified
+                  Auction Grade {vehicle.auctionGrade} ({vehicle.auctionScore}) &bull; Verified Sheet
                 </span>
                 {vehicle.expectedArrival && (
                   <span className="text-[11px] font-mono text-[var(--text-muted)] uppercase tracking-wider">
@@ -225,13 +239,13 @@ export default async function VehicleDetailPage(props: {
                   <Eyebrow>Technical Summary</Eyebrow>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
                     <Numeral
-                      value={vehicle.mileage.toLocaleString()}
+                      value={vehicle.mileage.toLocaleString("en-US")}
                       suffix="km"
                       label="Certified Mileage"
                       size="md"
                     />
                     <Numeral
-                      value={vehicle.engineCC.toLocaleString()}
+                      value={vehicle.engineCC.toLocaleString("en-US")}
                       suffix="cc"
                       label="Engine Displacement"
                       size="md"
@@ -260,20 +274,50 @@ export default async function VehicleDetailPage(props: {
 
                   <div className="border-t border-[var(--border-hairline)] divide-y divide-[var(--border-hairline)] text-xs font-sans">
                     <div className="py-3.5 grid grid-cols-2">
+                      <span className="text-[var(--text-muted)] uppercase tracking-wider">Holding Showroom Branch</span>
+                      <span className="text-[var(--accent)] font-semibold">{formatBranch(vehicle.branch)}</span>
+                    </div>
+                    <div className="py-3.5 grid grid-cols-2">
                       <span className="text-[var(--text-muted)] uppercase tracking-wider">Manufacturer / Brand</span>
                       <span className="text-[var(--text-primary)] font-medium">{vehicle.make}</span>
                     </div>
                     <div className="py-3.5 grid grid-cols-2">
-                      <span className="text-[var(--text-muted)] uppercase tracking-wider">Model Range</span>
-                      <span className="text-[var(--text-primary)] font-medium">{vehicle.model}</span>
+                      <span className="text-[var(--text-muted)] uppercase tracking-wider">Model Range &amp; Trim</span>
+                      <span className="text-[var(--text-primary)] font-medium">{vehicle.model} ({vehicle.grade})</span>
                     </div>
                     <div className="py-3.5 grid grid-cols-2">
                       <span className="text-[var(--text-muted)] uppercase tracking-wider">Year of Manufacture</span>
                       <span className="text-[var(--text-primary)] font-medium tabular-nums">{vehicle.year}</span>
                     </div>
                     <div className="py-3.5 grid grid-cols-2">
-                      <span className="text-[var(--text-muted)] uppercase tracking-wider">Auction Inspection Grade</span>
-                      <span className="text-[var(--text-primary)] font-medium">{vehicle.grade}</span>
+                      <span className="text-[var(--text-muted)] uppercase tracking-wider">Body Configuration</span>
+                      <span className="text-[var(--text-primary)] font-medium">{formatBodyType(vehicle.bodyType)}</span>
+                    </div>
+                    <div className="py-3.5 grid grid-cols-2">
+                      <span className="text-[var(--text-muted)] uppercase tracking-wider">Drivetrain / Drive Type</span>
+                      <span className="text-[var(--text-primary)] font-medium font-mono">{vehicle.driveType}</span>
+                    </div>
+                    <div className="py-3.5 grid grid-cols-2">
+                      <span className="text-[var(--text-muted)] uppercase tracking-wider">Seating Capacity</span>
+                      <span className="text-[var(--text-primary)] font-medium tabular-nums">{vehicle.seats} Passengers</span>
+                    </div>
+                    <div className="py-3.5 grid grid-cols-2">
+                      <span className="text-[var(--text-muted)] uppercase tracking-wider">Registration Status</span>
+                      <span className={`font-medium ${vehicle.registrationStatus === "unregistered" ? "text-emerald-400" : "text-[var(--text-primary)]"}`}>
+                        {vehicle.registrationStatus === "unregistered" ? "Unregistered (Direct Japanese Import)" : "Registered (Pre-Owned)"}
+                      </span>
+                    </div>
+                    <div className="py-3.5 grid grid-cols-2">
+                      <span className="text-[var(--text-muted)] uppercase tracking-wider">Previous Owners</span>
+                      <span className="text-[var(--text-primary)] font-medium">
+                        {vehicle.registrationStatus === "unregistered" ? "0 (Zero Local Owners &bull; Brand New in SL)" : `${vehicle.owners} Owner(s)`}
+                      </span>
+                    </div>
+                    <div className="py-3.5 grid grid-cols-2">
+                      <span className="text-[var(--text-muted)] uppercase tracking-wider">Japanese Auction Grade</span>
+                      <span className="text-[var(--text-primary)] font-medium font-mono text-[var(--accent)]">
+                        Grade {vehicle.auctionGrade} &bull; Score {vehicle.auctionScore}
+                      </span>
                     </div>
                     <div className="py-3.5 grid grid-cols-2">
                       <span className="text-[var(--text-muted)] uppercase tracking-wider">Engine Displacement</span>

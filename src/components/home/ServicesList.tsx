@@ -45,7 +45,7 @@ export function ServicesList() {
       <Container size="wide">
         <div className="space-y-12 sm:space-y-16">
           {/* Section Header */}
-          <div className="reveal-on-scroll max-w-2xl space-y-3">
+          <div suppressHydrationWarning className="reveal-on-scroll max-w-2xl space-y-3">
             <Eyebrow>Comprehensive Automotive Solutions</Eyebrow>
             <Heading level={2}>
               Curated Automotive Services
@@ -61,6 +61,7 @@ export function ServicesList() {
             {services.map((service, idx) => (
               <div
                 key={service.num}
+                suppressHydrationWarning
                 className={`reveal-on-scroll stagger-${idx + 1} py-8 sm:py-12 grid grid-cols-1 md:grid-cols-12 gap-6 items-baseline group`}
               >
                 {/* Numeral: 2 cols */}

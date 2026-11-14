@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Vehicle } from "@/types/vehicle";
+import { Vehicle, formatBodyType, formatBranch } from "@/types/vehicle";
 import { Heading } from "@/components/ui/Heading";
 import { Numeral } from "@/components/ui/Numeral";
 import { StatusLabel } from "@/components/ui/StatusLabel";
@@ -35,6 +35,11 @@ export function ComparisonView({
   const isAllSameTransmission = vehicles.every((v) => v.transmission === vehicles[0].transmission);
   const isAllSameGrade = vehicles.every((v) => v.grade === vehicles[0].grade);
   const isAllSameColor = vehicles.every((v) => v.color.toLowerCase() === vehicles[0].color.toLowerCase());
+  const isAllSameBody = vehicles.every((v) => v.bodyType === vehicles[0].bodyType);
+  const isAllSameDrive = vehicles.every((v) => v.driveType === vehicles[0].driveType);
+  const isAllSameSeats = vehicles.every((v) => v.seats === vehicles[0].seats);
+  const isAllSameReg = vehicles.every((v) => v.registrationStatus === vehicles[0].registrationStatus);
+  const isAllSameBranch = vehicles.every((v) => v.branch === vehicles[0].branch);
   const isAllSameStatus = vehicles.every((v) => v.status === vehicles[0].status);
 
   const vehicleTitles = vehicles.map((v) => `${v.year} ${v.make} ${v.model}`);
@@ -207,7 +212,7 @@ export function ComparisonView({
                 return (
                   <div key={v.id} className="p-4 border-b border-[var(--border-hairline)] text-xs font-sans">
                     <span className="font-serif text-base tabular-nums text-[var(--text-primary)]">
-                      {v.mileage.toLocaleString()} km
+                      {v.mileage.toLocaleString("en-US")} km
                     </span>
                     {isBest && (
                       <span className="flex items-center gap-1.5 mt-1 text-[10px] font-mono uppercase tracking-wider text-[var(--accent)] font-semibold">
@@ -231,7 +236,7 @@ export function ComparisonView({
               </div>
               {vehicles.map((v) => (
                 <div key={v.id} className="p-4 border-b border-[var(--border-hairline)] text-xs font-sans text-[var(--text-primary)] tabular-nums">
-                  {v.engineCC.toLocaleString()} CC
+                  {v.engineCC.toLocaleString("en-US")} CC
                 </div>
               ))}
             </>
@@ -296,6 +301,72 @@ export function ComparisonView({
               {vehicles.map((v) => (
                 <div key={v.id} className="p-4 border-b border-[var(--border-hairline)] text-xs font-sans text-[var(--text-primary)]">
                   {v.color}
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* ========================================================= */}
+          {/* SPEC ROW 8.1: Body Type */}
+          {/* ========================================================= */}
+          {(!showDiffOnly || !isAllSameBody) && (
+            <>
+              <div className="p-4 bg-[var(--bg-surface)] text-[11px] font-sans uppercase tracking-[0.16em] text-[var(--text-muted)] font-medium sticky left-0 z-20 border-b border-[var(--border-hairline)] flex items-center">
+                Body Type
+              </div>
+              {vehicles.map((v) => (
+                <div key={v.id} className="p-4 border-b border-[var(--border-hairline)] text-xs font-sans text-[var(--text-primary)] font-medium">
+                  {formatBodyType(v.bodyType)}
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* ========================================================= */}
+          {/* SPEC ROW 8.2: Drive Type & Seats */}
+          {/* ========================================================= */}
+          {(!showDiffOnly || !isAllSameDrive || !isAllSameSeats) && (
+            <>
+              <div className="p-4 bg-[var(--bg-surface)] text-[11px] font-sans uppercase tracking-[0.16em] text-[var(--text-muted)] font-medium sticky left-0 z-20 border-b border-[var(--border-hairline)] flex items-center">
+                Drive &amp; Seats
+              </div>
+              {vehicles.map((v) => (
+                <div key={v.id} className="p-4 border-b border-[var(--border-hairline)] text-xs font-sans text-[var(--text-primary)]">
+                  <span className="font-mono">{v.driveType}</span> &bull; {v.seats} Seats
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* ========================================================= */}
+          {/* SPEC ROW 8.3: Registration Status */}
+          {/* ========================================================= */}
+          {(!showDiffOnly || !isAllSameReg) && (
+            <>
+              <div className="p-4 bg-[var(--bg-surface)] text-[11px] font-sans uppercase tracking-[0.16em] text-[var(--text-muted)] font-medium sticky left-0 z-20 border-b border-[var(--border-hairline)] flex items-center">
+                Registration
+              </div>
+              {vehicles.map((v) => (
+                <div key={v.id} className="p-4 border-b border-[var(--border-hairline)] text-xs font-sans">
+                  <span className={v.registrationStatus === "unregistered" ? "text-emerald-400 font-medium" : "text-[var(--text-primary)]"}>
+                    {v.registrationStatus === "unregistered" ? "Unregistered (Direct Import)" : `Registered (${v.owners} Owner)`}
+                  </span>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* ========================================================= */}
+          {/* SPEC ROW 8.4: Showroom Branch Location */}
+          {/* ========================================================= */}
+          {(!showDiffOnly || !isAllSameBranch) && (
+            <>
+              <div className="p-4 bg-[var(--bg-surface)] text-[11px] font-sans uppercase tracking-[0.16em] text-[var(--text-muted)] font-medium sticky left-0 z-20 border-b border-[var(--border-hairline)] flex items-center">
+                Showroom
+              </div>
+              {vehicles.map((v) => (
+                <div key={v.id} className="p-4 border-b border-[var(--border-hairline)] text-xs font-sans text-[var(--accent)] font-medium">
+                  {formatBranch(v.branch)}
                 </div>
               ))}
             </>

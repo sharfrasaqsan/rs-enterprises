@@ -15,7 +15,7 @@ export function ClosingCta({ settings }: { settings: CompanySettings }) {
       />
 
       <Container size="wide">
-        <div className="reveal-on-scroll max-w-3xl mx-auto text-center space-y-8">
+        <div suppressHydrationWarning className="reveal-on-scroll max-w-3xl mx-auto text-center space-y-8">
           <div className="space-y-3">
             <Eyebrow>Direct Japanese Auction Access</Eyebrow>
             <Heading level={2}>
