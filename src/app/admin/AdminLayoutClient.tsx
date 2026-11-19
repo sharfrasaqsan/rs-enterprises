@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAdminAuth } from "./AdminAuthContext";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { Logo } from "@/components/ui/Logo";
 
 interface AdminNavItem {
   href: string;
@@ -104,8 +105,9 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-[var(--bg-base)] flex flex-col lg:flex-row">
       {/* Mobile Top App Bar (Visible on mobile & tablet) */}
       <header className="lg:hidden sticky top-0 z-40 bg-[var(--bg-surface)] border-b border-[var(--border-hairline)] px-4 h-16 flex items-center justify-between">
-        <Link href="/admin" className="flex items-center space-x-2 min-h-[44px]">
-          <span className="font-serif text-lg font-normal tracking-wide text-[var(--text-primary)]">
+        <Link href="/admin" className="flex items-center gap-2 min-h-[44px]">
+          <Logo className="h-7 w-auto" />
+          <span className="font-serif text-base font-normal tracking-wide text-[var(--text-primary)]">
             RS ENTERPRISES
           </span>
           <span className="text-[10px] font-mono px-1.5 py-0.5 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-[var(--accent)] uppercase">
@@ -140,19 +142,24 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
       <aside className="hidden lg:flex flex-col justify-between w-64 shrink-0 bg-[var(--bg-surface)] border-r border-[var(--border-hairline)] p-6 min-h-screen">
         <div className="space-y-8">
           {/* Showroom Brand */}
-          <Link href="/admin" className="block focus:outline-none">
-            <span className="font-serif text-xl font-normal tracking-[0.05em] text-[var(--text-primary)] block">
-              RS ENTERPRISES
-            </span>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
-                Staff CRM
-              </span>
-              {mounted && user && (
-                <span className="text-[9px] font-mono px-1.5 py-0.2 bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--text-secondary)] uppercase">
-                  {user.role}
+          <Link href="/admin" className="block focus:outline-none group">
+            <div className="flex items-center gap-2.5">
+              <Logo className="h-8 w-auto" />
+              <div>
+                <span className="font-serif text-base font-normal tracking-[0.05em] text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors block leading-tight">
+                  RS ENTERPRISES
                 </span>
-              )}
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[9px] font-sans font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
+                    Staff CRM
+                  </span>
+                  {mounted && user && (
+                    <span className="text-[8px] font-mono px-1 py-0.2 bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--text-secondary)] uppercase">
+                      {user.role}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           </Link>
 

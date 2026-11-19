@@ -5,6 +5,7 @@ import { Eyebrow } from "@/components/ui/Eyebrow";
 import { Divider } from "@/components/ui/Divider";
 import { PhoneLink } from "@/components/ui/PhoneLink";
 import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
+import { Logo } from "@/components/ui/Logo";
 import { CompanySettings } from "@/types/settings";
 
 export function Footer({ settings }: { settings: CompanySettings }) {
@@ -18,17 +19,17 @@ export function Footer({ settings }: { settings: CompanySettings }) {
           {/* Brand & Mission: 4 cols */}
           <div className="lg:col-span-4 space-y-4">
             <div>
-              <Link href="/" className="inline-block group">
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
-                  <span className="font-serif text-2xl font-normal tracking-[0.12em] text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">
+              <Link href="/" className="inline-flex items-center gap-3 group" aria-label="RS Enterprises Home">
+                <Logo className="h-10 sm:h-12 w-auto" />
+                <div className="flex flex-col">
+                  <span className="font-serif text-xl sm:text-2xl font-normal tracking-[0.12em] text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">
                     RS ENTERPRISES
+                  </span>
+                  <span className="text-[10px] font-sans font-medium uppercase tracking-[0.24em] text-[var(--accent)] mt-0.5">
+                    Company Pvt Ltd &bull; Est. 2018
                   </span>
                 </div>
               </Link>
-              <p className="text-xs font-sans uppercase tracking-[0.24em] text-[var(--accent)] mt-1 ml-3.5">
-                Company Pvt Ltd &bull; Est. 2018
-              </p>
             </div>
 
             <p className="text-sm font-light leading-relaxed max-w-sm">

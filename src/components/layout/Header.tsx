@@ -4,6 +4,7 @@ import { Container } from "@/components/ui/Container";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { CompareCounter } from "@/components/ui/CompareCounter";
 import { MobileNav } from "@/components/layout/MobileNav";
+import { Logo } from "@/components/ui/Logo";
 import { CompanySettings } from "@/types/settings";
 
 export function Header({ settings }: { settings: CompanySettings }) {
@@ -39,27 +40,20 @@ export function Header({ settings }: { settings: CompanySettings }) {
 
       <Container size="wide">
         <div className="flex items-center justify-between h-20">
-          {/* Brand Logo & Editorial Heritage Tagline: Compact 'RS' on mobile, full wordmark on desktop */}
+          {/* Brand Logo & Editorial Heritage Tagline */}
           <Link
             href="/"
-            className="flex items-center min-h-[44px] group focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] shrink-0"
+            className="flex items-center min-h-[44px] gap-2.5 sm:gap-3 group focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] shrink-0"
             aria-label="RS Enterprises Home"
           >
-            <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shrink-0" />
-              {/* Mobile compact wordmark strictly on one line */}
-              <span className="font-serif text-xl font-normal tracking-[0.14em] text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors sm:hidden">
-                RS
+            <Logo className="h-8 sm:h-10 w-auto" />
+            <div className="flex flex-col justify-center">
+              <span className="font-serif text-base sm:text-lg font-medium tracking-[0.08em] text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors leading-tight">
+                RS ENTERPRISES
               </span>
-              {/* Desktop & Tablet full brand name and location */}
-              <div className="hidden sm:flex sm:flex-col justify-center">
-                <span className="font-serif text-xl sm:text-2xl font-normal tracking-[0.12em] text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">
-                  RS ENTERPRISES
-                </span>
-                <span className="text-[10px] font-sans font-medium uppercase tracking-[0.26em] text-[var(--accent)] -mt-0.5">
-                  Kaduruwela &bull; Trincomalee
-                </span>
-              </div>
+              <span className="text-[8px] sm:text-[9px] font-sans font-medium uppercase tracking-[0.24em] text-[var(--accent)]">
+                Kaduruwela &bull; Trincomalee
+              </span>
             </div>
           </Link>
 
