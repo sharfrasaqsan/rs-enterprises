@@ -1,6 +1,7 @@
 import type { Vehicle } from "@/types/vehicle";
 import type { Lead } from "@/types/lead";
 import type { CompanySettings } from "@/types/settings";
+import type { SavedSearch } from "@/types/saved-search";
 
 const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
   {
@@ -10,6 +11,7 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     model: "Land Cruiser 300 ZX",
     year: 2023,
     price: 88500000, // LKR 88.5M
+    costPrice: 78500000, // LKR 78.5M
     mileage: 12000,
     fuel: "diesel",
     transmission: "automatic",
@@ -26,12 +28,12 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     auctionScore: "A/A",
     chassisNumber: "FJA300-0018472",
     branch: "polonnaruwa",
+    verified: false,
     importStage: "in_stock",
     expectedArrival: null,
     published: true,
     images: [
       "/images/vehicles/land-cruiser-300.jpg",
-      "/images/vehicles/prado-black.jpg",
     ],
     features: [
       "Modellista Aerodynamic Kit",
@@ -43,7 +45,7 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
       "Adaptive Variable Suspension (AVS)",
     ],
     description:
-      "The flagship Toyota Land Cruiser 300 ZX. Procured directly from USS Tokyo auction in immaculate condition. Full export inspection certificate, zero accident history, available immediately for viewing at our Kaduruwela showroom.",
+      "The flagship Toyota Land Cruiser 300 ZX in pristine condition. Full export inspection certificate, zero accident history, available immediately for viewing at our Kaduruwela showroom.",
     createdAt: "2026-09-10T08:00:00.000Z",
     updatedAt: "2026-11-10T14:30:00.000Z",
   },
@@ -54,6 +56,7 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     model: "Land Cruiser Prado TX-L",
     year: 2022,
     price: 44500000, // LKR 44.5M
+    costPrice: 39500000, // LKR 39.5M
     mileage: 21400,
     fuel: "diesel",
     transmission: "automatic",
@@ -70,12 +73,12 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     auctionScore: "A",
     chassisNumber: "GDJ150-0092814",
     branch: "polonnaruwa",
+    verified: false,
     importStage: "in_stock",
     expectedArrival: null,
     published: true,
     images: [
       "/images/vehicles/prado-black.jpg",
-      "/images/vehicles/land-cruiser-300.jpg",
     ],
     features: [
       "Saddle Tan Exclusive Leather Interior",
@@ -104,6 +107,16 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     engineCC: 1986,
     color: "Slate Gray Metallic",
     status: "reserved",
+    reservation: {
+      depositAmount: 1500000, // LKR 1.5M deposit
+      depositDate: "2026-11-10",
+      holdExpiryDate: "2026-11-14T18:00:00.000Z", // Hold expires today (triggers alert)
+      customerName: "Dr. K. Jayasundara",
+      customerPhone: "+94771234567",
+      notes: "Commercial Bank transfer advance payment received. Customer finalizing lease facility at BOC Polonnaruwa.",
+      reservedBy: "Showroom Director",
+      reservedAt: "2026-11-10T14:30:00.000Z",
+    },
     bodyType: "suv",
     driveType: "2WD",
     seats: 5,
@@ -113,12 +126,12 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     auctionScore: "A/A",
     chassisNumber: "MXUA80-1039482",
     branch: "polonnaruwa",
+    verified: false,
     importStage: "in_stock",
     expectedArrival: null,
     published: true,
     images: [
       "/images/vehicles/harrier-luxury.jpg",
-      "/images/vehicles/vezel-hybrid.jpg",
     ],
     features: [
       "Dimmable Electrochromic Panoramic Glass Roof",
@@ -155,12 +168,12 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     auctionScore: "A",
     chassisNumber: "RV5-1049281",
     branch: "trincomalee",
+    verified: false,
     importStage: "in_transit",
     expectedArrival: "2026-12-10",
     published: true,
     images: [
       "/images/vehicles/vezel-hybrid.jpg",
-      "/images/vehicles/harrier-luxury.jpg",
     ],
     features: [
       "Honda SENSING Advanced Driver Assistance",
@@ -197,12 +210,12 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     auctionScore: "B",
     chassisNumber: "GR3-1102934",
     branch: "trincomalee",
+    verified: false,
     importStage: "in_stock",
     expectedArrival: null,
     published: true,
     images: [
-      "/images/vehicles/crown-sedan.jpg",
-      "/images/vehicles/vezel-hybrid.jpg",
+      "/images/vehicles/placeholder-coming-soon.webp",
     ],
     features: [
       "Full Genuine Brown Leather Upholstery",
@@ -239,12 +252,12 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     auctionScore: "A",
     chassisNumber: "MXPK11-2039182",
     branch: "polonnaruwa",
+    verified: false,
     importStage: "in_stock",
     expectedArrival: null,
     published: true,
     images: [
-      "/images/vehicles/vezel-hybrid.jpg",
-      "/images/vehicles/outlander-suv.jpg",
+      "/images/vehicles/placeholder-coming-soon.webp",
     ],
     features: [
       "10.5-Inch Large Display Audio with Navigation",
@@ -265,6 +278,7 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     model: "Corolla Axio WxB",
     year: 2021,
     price: 13200000, // LKR 13.2M
+    costPrice: 11400000, // LKR 11.4M (Landed import cost)
     mileage: 38500,
     fuel: "hybrid",
     transmission: "cvt",
@@ -281,12 +295,12 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     auctionScore: "A",
     chassisNumber: "NKE165-7182931",
     branch: "polonnaruwa",
+    verified: false,
     importStage: "in_stock",
     expectedArrival: null,
     published: true,
     images: [
-      "/images/vehicles/crown-sedan.jpg",
-      "/images/vehicles/prado-black.jpg",
+      "/images/vehicles/placeholder-coming-soon.webp",
     ],
     features: [
       "WxB Sport Pattern Leather & Fabric Seats",
@@ -323,12 +337,12 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     auctionScore: "B",
     chassisNumber: "KSP130-2093847",
     branch: "trincomalee",
+    verified: false,
     importStage: "in_stock",
     expectedArrival: null,
     published: true,
     images: [
-      "/images/vehicles/vezel-hybrid.jpg",
-      "/images/vehicles/crown-sedan.jpg",
+      "/images/vehicles/placeholder-coming-soon.webp",
     ],
     features: [
       "Toyota Safety Sense with Pre-Crash Safety",
@@ -365,12 +379,12 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     auctionScore: "A",
     chassisNumber: "MH55S-9182734",
     branch: "trincomalee",
+    verified: false,
     importStage: "in_stock",
     expectedArrival: null,
     published: true,
     images: [
-      "/images/vehicles/vezel-hybrid.jpg",
-      "/images/vehicles/outlander-suv.jpg",
+      "/images/vehicles/placeholder-coming-soon.webp",
     ],
     features: [
       "Suzuki Dual Camera Brake Support",
@@ -407,12 +421,12 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     auctionScore: "A/A",
     chassisNumber: "SNT33-0019284",
     branch: "polonnaruwa",
+    verified: false,
     importStage: "japan_auction",
     expectedArrival: "2027-01-15",
     published: true,
     images: [
-      "/images/vehicles/prado-black.jpg",
-      "/images/vehicles/harrier-luxury.jpg",
+      "/images/vehicles/placeholder-coming-soon.webp",
     ],
     features: [
       "100% Electric Motor Drive with VC-Turbo Generator",
@@ -423,7 +437,7 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
       "Hands-Free Motion Activated Power Tailgate",
     ],
     description:
-      "Award-winning electrified SUV featuring Nissan's revolutionary e-POWER technology. Secured from JU Tokyo auction. Price available upon inquiry; custom clearing and delivery managed by RS Enterprises.",
+      "Award-winning electrified SUV featuring Nissan's revolutionary e-POWER technology. Secured from Japanese auction. Price available upon inquiry; custom clearing and delivery managed by RS Enterprises.",
     createdAt: "2026-11-01T15:00:00.000Z",
     updatedAt: "2026-11-12T17:30:00.000Z",
   },
@@ -450,12 +464,12 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     auctionScore: "A",
     chassisNumber: "GN0W-0028471",
     branch: "polonnaruwa",
+    verified: false,
     importStage: "in_stock",
     expectedArrival: null,
     published: true,
     images: [
       "/images/vehicles/outlander-suv.jpg",
-      "/images/vehicles/land-cruiser-300.jpg",
     ],
     features: [
       "Twin-Motor 4WD with Super All-Wheel Control (S-AWC)",
@@ -476,6 +490,7 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     model: "Premio F EX Package",
     year: 2020,
     price: 18900000, // LKR 18.9M
+    costPrice: 16500000, // LKR 16.5M (Landed import cost)
     mileage: 34000,
     fuel: "petrol",
     transmission: "cvt",
@@ -492,12 +507,12 @@ const RAW_SEED_VEHICLES: Omit<Vehicle, "archived" | "updatedBy">[] = [
     auctionScore: "A",
     chassisNumber: "NZT260-3194827",
     branch: "polonnaruwa",
+    verified: false,
     importStage: "in_stock",
     expectedArrival: null,
     published: true,
     images: [
-      "/images/vehicles/crown-sedan.jpg",
-      "/images/vehicles/harrier-luxury.jpg",
+      "/images/vehicles/placeholder-coming-soon.webp",
     ],
     features: [
       "Dark Brown Premium Fabric with Woodgrain Accents",
@@ -523,7 +538,7 @@ export const SEED_LEADS: Lead[] = [
   {
     id: "lead-001",
     name: "Kasun Perera",
-    phone: "+94 77 234 5678",
+    phone: "+94772345678",
     email: "kasun.perera@gmail.com",
     source: "website_form",
     vehicleId: "toyota-land-cruiser-300-zx-2023",
@@ -534,21 +549,57 @@ export const SEED_LEADS: Lead[] = [
     assignedTo: "staff-01",
     followUpDate: "2026-11-14T09:00:00.000Z",
     lostReason: null,
+    inquiryCount: 2,
+    isReturningBuyer: true,
+    inquiries: [
+      {
+        id: "inq-101",
+        time: "2026-11-13T10:00:00.000Z",
+        source: "website_form",
+        branch: "polonnaruwa",
+        vehicleId: "toyota-land-cruiser-300-zx-2023",
+        vehicleTitle: "2023 Toyota Land Cruiser 300 ZX",
+        requestDetails: "Wants to inspect LC300 this Saturday at Kaduruwela. Asking if price is negotiable.",
+        note: "Submitted inquiry from LC300 vehicle dossier page.",
+      },
+      {
+        id: "inq-100",
+        time: "2026-11-08T14:20:00.000Z",
+        source: "phone",
+        branch: "polonnaruwa",
+        vehicleId: "toyota-prado-tx-l-70th-2022",
+        vehicleTitle: "2022 Toyota Land Cruiser Prado TX-L",
+        requestDetails: "Inquired about Prado availability and CIF tax clearance breakdown.",
+        note: "Initial phone inquiry taken by Kasun.",
+      },
+    ],
     notes: [
+      {
+        id: "note-1-audit",
+        text: "✦ RE-INQUIRY DETECTED: Returning client submitted a new inquiry regarding '2023 Toyota Land Cruiser 300 ZX' via WEBSITE FORM at KADURUWELA MAIN SHOWROOM. Phone line matched existing record (+94 77 234 5678). Inquiries merged into single client record (Total inquiries: 2).",
+        author: "Lead Deduplication Engine",
+        time: "2026-11-13T10:00:00.000Z",
+      },
       {
         id: "note-1",
         text: "Inquiry submitted via vehicle detail page. Urgently requested call back.",
         author: "Website System",
         time: "2026-11-13T10:00:00.000Z",
       },
+      {
+        id: "note-0",
+        text: "Initial phone discussion regarding Japanese 70th Anniversary Prado import timeline.",
+        author: "Kasun (Staff)",
+        time: "2026-11-08T14:30:00.000Z",
+      },
     ],
-    createdAt: "2026-11-13T10:00:00.000Z",
+    createdAt: "2026-11-08T14:20:00.000Z",
     updatedAt: "2026-11-13T10:00:00.000Z",
   },
   {
     id: "lead-002",
     name: "Dilshan Fernando",
-    phone: "+94 71 889 1234",
+    phone: "+94718891234",
     email: "dilshan.f@lknet.lk",
     source: "whatsapp",
     vehicleId: "honda-vezel-ehev-z-2023",
@@ -559,6 +610,19 @@ export const SEED_LEADS: Lead[] = [
     assignedTo: "staff-01",
     followUpDate: "2026-11-15T14:00:00.000Z",
     lostReason: null,
+    inquiryCount: 1,
+    isReturningBuyer: false,
+    inquiries: [
+      {
+        id: "inq-002",
+        time: "2026-11-12T09:15:00.000Z",
+        source: "whatsapp",
+        branch: "polonnaruwa",
+        vehicleId: "honda-vezel-ehev-z-2023",
+        vehicleTitle: "2023 Honda Vezel e:HEV Z",
+        requestDetails: "Interested in pre-ordering incoming Vezel. Wants to verify vessel arrival date.",
+      },
+    ],
     notes: [
       {
         id: "note-2",
@@ -573,7 +637,7 @@ export const SEED_LEADS: Lead[] = [
   {
     id: "lead-003",
     name: "Nuwan Bandara",
-    phone: "+94 76 554 9876",
+    phone: "+94765549876",
     email: null,
     source: "walk_in",
     vehicleId: "toyota-prado-tx-l-70th-2022",
@@ -584,6 +648,9 @@ export const SEED_LEADS: Lead[] = [
     assignedTo: "staff-02",
     followUpDate: "2026-11-16T10:30:00.000Z",
     lostReason: null,
+    inquiryCount: 1,
+    isReturningBuyer: false,
+    inquiries: [],
     notes: [
       {
         id: "note-3",
@@ -598,7 +665,7 @@ export const SEED_LEADS: Lead[] = [
   {
     id: "lead-004",
     name: "Priyantha Silva",
-    phone: "+94 77 912 3456",
+    phone: "+94779123456",
     email: "priyantha.silva@yahoo.com",
     source: "phone",
     vehicleId: "toyota-harrier-z-leather-2022",
@@ -609,6 +676,9 @@ export const SEED_LEADS: Lead[] = [
     assignedTo: "staff-01",
     followUpDate: "2026-11-14T11:00:00.000Z",
     lostReason: null,
+    inquiryCount: 1,
+    isReturningBuyer: false,
+    inquiries: [],
     notes: [
       {
         id: "note-4a",
@@ -629,7 +699,7 @@ export const SEED_LEADS: Lead[] = [
   {
     id: "lead-005",
     name: "Chaminda Jayawardena",
-    phone: "+94 77 334 1122",
+    phone: "+94773341122",
     email: "chaminda.j@gmail.com",
     source: "vehicle_request",
     vehicleId: "toyota-corolla-axio-wxb-2021",
@@ -640,6 +710,9 @@ export const SEED_LEADS: Lead[] = [
     assignedTo: "staff-01",
     followUpDate: null,
     lostReason: null,
+    inquiryCount: 1,
+    isReturningBuyer: false,
+    inquiries: [],
     notes: [
       {
         id: "note-5",
@@ -654,7 +727,7 @@ export const SEED_LEADS: Lead[] = [
   {
     id: "lead-006",
     name: "Rohan Weerasinghe",
-    phone: "+94 71 445 6677",
+    phone: "+94714456677",
     email: "rohan.w@sltnet.lk",
     source: "website_form",
     vehicleId: "toyota-vitz-f-safety-2019",
@@ -665,6 +738,9 @@ export const SEED_LEADS: Lead[] = [
     assignedTo: "staff-02",
     followUpDate: null,
     lostReason: "Budget mismatch. Customer purchased a local registered Aqua instead.",
+    inquiryCount: 1,
+    isReturningBuyer: false,
+    inquiries: [],
     notes: [
       {
         id: "note-6",
@@ -679,7 +755,7 @@ export const SEED_LEADS: Lead[] = [
   {
     id: "lead-007",
     name: "Mohamed Rilwan",
-    phone: "+94 77 665 4433",
+    phone: "+94776654433",
     email: "rilwan.trinco@gmail.com",
     source: "whatsapp",
     vehicleId: null,
@@ -690,6 +766,9 @@ export const SEED_LEADS: Lead[] = [
     assignedTo: "staff-01",
     followUpDate: "2026-11-14T10:00:00.000Z",
     lostReason: null,
+    inquiryCount: 1,
+    isReturningBuyer: false,
+    inquiries: [],
     notes: [
       {
         id: "note-7",
@@ -704,7 +783,7 @@ export const SEED_LEADS: Lead[] = [
   {
     id: "lead-008",
     name: "Dr. Sudath Senanayake",
-    phone: "+94 77 778 9900",
+    phone: "+94777789900",
     email: "sudath.senanayake@hospital.lk",
     source: "phone",
     vehicleId: "nissan-x-trail-epower-g-2023",
@@ -715,6 +794,9 @@ export const SEED_LEADS: Lead[] = [
     assignedTo: "staff-01",
     followUpDate: "2026-11-15T09:30:00.000Z",
     lostReason: null,
+    inquiryCount: 1,
+    isReturningBuyer: false,
+    inquiries: [],
     notes: [
       {
         id: "note-8",
@@ -729,7 +811,7 @@ export const SEED_LEADS: Lead[] = [
   {
     id: "lead-009",
     name: "Tharindu Wickramasinghe",
-    phone: "+94 76 112 8899",
+    phone: "+94761128899",
     email: null,
     source: "walk_in",
     vehicleId: "suzuki-wagon-r-fx-hybrid-2021",
@@ -740,6 +822,9 @@ export const SEED_LEADS: Lead[] = [
     assignedTo: "staff-02",
     followUpDate: "2026-11-16T15:00:00.000Z",
     lostReason: null,
+    inquiryCount: 1,
+    isReturningBuyer: false,
+    inquiries: [],
     notes: [
       {
         id: "note-9",
@@ -754,7 +839,7 @@ export const SEED_LEADS: Lead[] = [
   {
     id: "lead-010",
     name: "Suresh Thambirajah",
-    phone: "+94 77 556 7788",
+    phone: "+94775567788",
     email: "suresh.t@trincobusiness.com",
     source: "whatsapp",
     vehicleId: "mitsubishi-outlander-phev-p-2022",
@@ -765,6 +850,9 @@ export const SEED_LEADS: Lead[] = [
     assignedTo: "staff-01",
     followUpDate: "2026-11-17T11:00:00.000Z",
     lostReason: null,
+    inquiryCount: 1,
+    isReturningBuyer: false,
+    inquiries: [],
     notes: [
       {
         id: "note-10",
@@ -779,7 +867,7 @@ export const SEED_LEADS: Lead[] = [
   {
     id: "lead-011",
     name: "Anura Kumara Dissanayake",
-    phone: "+94 71 223 9988",
+    phone: "+94712239988",
     email: "anura.kd@gov.lk",
     source: "website_form",
     vehicleId: "toyota-premio-f-ex-2020",
@@ -790,6 +878,9 @@ export const SEED_LEADS: Lead[] = [
     assignedTo: "staff-01",
     followUpDate: null,
     lostReason: null,
+    inquiryCount: 1,
+    isReturningBuyer: false,
+    inquiries: [],
     notes: [
       {
         id: "note-11",
@@ -804,7 +895,7 @@ export const SEED_LEADS: Lead[] = [
   {
     id: "lead-012",
     name: "Asela Ratnayake",
-    phone: "+94 77 887 6655",
+    phone: "+94778876655",
     email: "asela.r@gmail.com",
     source: "phone",
     vehicleId: "toyota-aqua-g-2022",
@@ -815,6 +906,9 @@ export const SEED_LEADS: Lead[] = [
     assignedTo: "staff-02",
     followUpDate: "2026-11-15T11:00:00.000Z",
     lostReason: null,
+    inquiryCount: 1,
+    isReturningBuyer: false,
+    inquiries: [],
     notes: [
       {
         id: "note-12",
@@ -829,7 +923,7 @@ export const SEED_LEADS: Lead[] = [
   {
     id: "lead-013",
     name: "Gayantha Karunaratne",
-    phone: "+94 77 122 3344",
+    phone: "+94771223344",
     email: "gayantha.k@hotmail.com",
     source: "website_form",
     vehicleId: null,
@@ -840,6 +934,9 @@ export const SEED_LEADS: Lead[] = [
     assignedTo: "staff-02",
     followUpDate: "2026-11-14T14:30:00.000Z",
     lostReason: null,
+    inquiryCount: 1,
+    isReturningBuyer: false,
+    inquiries: [],
     notes: [
       {
         id: "note-13",
@@ -854,7 +951,7 @@ export const SEED_LEADS: Lead[] = [
   {
     id: "lead-014",
     name: "Lalith Gunawardena",
-    phone: "+94 71 998 7766",
+    phone: "+94719987766",
     email: "lalith.guna@yahoo.com",
     source: "vehicle_request",
     vehicleId: "toyota-land-cruiser-300-zx-2023",
@@ -865,6 +962,9 @@ export const SEED_LEADS: Lead[] = [
     assignedTo: "staff-01",
     followUpDate: null,
     lostReason: "Interior color preference (wanted beige/white, ours is black).",
+    inquiryCount: 1,
+    isReturningBuyer: false,
+    inquiries: [],
     notes: [
       {
         id: "note-14",
@@ -879,7 +979,7 @@ export const SEED_LEADS: Lead[] = [
   {
     id: "lead-015",
     name: "Janaka Alahakoon",
-    phone: "+94 76 889 0011",
+    phone: "+94768890011",
     email: "janaka.a@techlk.com",
     source: "whatsapp",
     vehicleId: "honda-fit-ehev-luxe-2021",
@@ -890,6 +990,9 @@ export const SEED_LEADS: Lead[] = [
     assignedTo: "staff-02",
     followUpDate: "2026-11-16T11:30:00.000Z",
     lostReason: null,
+    inquiryCount: 1,
+    isReturningBuyer: false,
+    inquiries: [],
     notes: [
       {
         id: "note-15",
@@ -900,6 +1003,39 @@ export const SEED_LEADS: Lead[] = [
     ],
     createdAt: "2026-11-10T14:00:00.000Z",
     updatedAt: "2026-11-12T16:00:00.000Z",
+  },
+  {
+    id: "lead-016",
+    name: "Dhanushka Bandara",
+    phone: "+94775543210",
+    email: "dhanushka.b@gmail.com",
+    source: "trade_in",
+    vehicleId: null,
+    vehicleTitle: "Trade-In: 2018 Toyota Premio F-EX (Exp: LKR 14.8M)",
+    requestDetails:
+      "[TRADE-IN VALUATION REQUEST]\nVehicle: 2018 Toyota Premio F-EX\nExpected Price: LKR 14,800,000\nMileage: 68,000 km\nPowertrain: PETROL | AUTOMATIC\nRegistration: REGISTERED (WP CAA-8291)\nTrade Intent: Exchange towards an available showroom car\nPreferred Showroom Branch: Kaduruwela Main Showroom\nCondition & Options: 1st owner, company maintained with complete service records at Toyota Lanka. Original pearl white paint, beige interior, electric seats. Looking to trade in towards Land Cruiser Prado.\nPhotos Attached: 2 photo(s) submitted",
+    photos: [
+      "/images/vehicles/sample-prado.svg",
+      "/images/vehicles/sample-vezel.svg",
+    ],
+    branch: "polonnaruwa",
+    stage: "new",
+    assignedTo: "Staff 01",
+    followUpDate: "2026-11-15T09:00:00.000Z",
+    lostReason: null,
+    inquiryCount: 1,
+    isReturningBuyer: false,
+    inquiries: [],
+    notes: [
+      {
+        id: "note-16",
+        text: "Trade-in appraisal submitted via Online Services portal. Customer seeks trade-in valuation of 2018 Premio F-EX against showroom Prado.",
+        author: "Trade-In Online Portal",
+        time: "2026-11-14T09:15:00.000Z",
+      },
+    ],
+    createdAt: "2026-11-14T09:15:00.000Z",
+    updatedAt: "2026-11-14T09:15:00.000Z",
   },
 ];
 
@@ -941,4 +1077,102 @@ export const SEED_SETTINGS: CompanySettings = {
   },
   updatedAt: "2026-11-13T12:00:00.000Z",
 };
+
+export const SEED_SAVED_SEARCHES: SavedSearch[] = [
+  {
+    id: "saved-search-001",
+    customerName: "Dr. K. Jayasundara",
+    customerPhone: "+94771234567",
+    customerEmail: "k.jayasundara@hospital.lk",
+    queryTitle: "Prado under 20M",
+    criteria: {
+      make: "Toyota",
+      model: "Prado",
+      keyword: "Prado",
+      maxPrice: 20000000,
+      minPrice: null,
+      minYear: 2016,
+      maxYear: 2030,
+      bodyType: "suv",
+      fuel: "all",
+      transmission: "all",
+      branch: "all",
+    },
+    status: "active",
+    matchCount: 0,
+    matchedVehicleIds: [],
+    lastNotifiedAt: null,
+    notificationLog: [],
+    notes: "VIP Client. Seeking Land Cruiser Prado under 20M LKR. Desires immediate WhatsApp alert the moment an auction win or trade-in meets budget.",
+    createdAt: "2026-11-12T10:00:00.000Z",
+    updatedAt: "2026-11-12T10:00:00.000Z",
+  },
+  {
+    id: "saved-search-002",
+    customerName: "Nimal Perera",
+    customerPhone: "+94719876543",
+    customerEmail: null,
+    queryTitle: "Vezel under 15M",
+    criteria: {
+      make: "Honda",
+      model: "Vezel",
+      keyword: "Vezel",
+      maxPrice: 15000000,
+      minPrice: null,
+      minYear: 2021,
+      maxYear: 2030,
+      bodyType: "all",
+      fuel: "hybrid",
+      transmission: "all",
+      branch: "all",
+    },
+    status: "active",
+    matchCount: 1,
+    matchedVehicleIds: ["honda-vezel-ehev-z-2023"],
+    lastNotifiedAt: null,
+    notificationLog: [],
+    notes: "Looking for 2021+ e:HEV Z package under 15M LKR.",
+    createdAt: "2026-11-13T14:30:00.000Z",
+    updatedAt: "2026-11-13T14:30:00.000Z",
+  },
+  {
+    id: "saved-search-003",
+    customerName: "Eng. Samantha Wickramasinghe",
+    customerPhone: "+94765551234",
+    customerEmail: "samantha.w@ceb.lk",
+    queryTitle: "Harrier under 30M",
+    criteria: {
+      make: "Toyota",
+      model: "Harrier",
+      keyword: "Harrier",
+      maxPrice: 30000000,
+      minPrice: null,
+      minYear: 2020,
+      maxYear: 2030,
+      bodyType: "suv",
+      fuel: "hybrid",
+      transmission: "all",
+      branch: "all",
+    },
+    status: "notified",
+    matchCount: 1,
+    matchedVehicleIds: ["toyota-harrier-z-leather-2022"],
+    lastNotifiedAt: "2026-11-14T08:30:00.000Z",
+    notificationLog: [
+      {
+        vehicleId: "toyota-harrier-z-leather-2022",
+        vehicleTitle: "2022 Toyota Harrier Z Leather Package",
+        vehiclePrice: 28500000,
+        vehicleSlug: "2022-toyota-harrier-z-leather",
+        notifiedAt: "2026-11-14T08:30:00.000Z",
+        channel: "whatsapp",
+        messagePreview: "Hello Eng. Samantha Wickramasinghe! A vehicle matching your saved alert 'Harrier under 30M' has arrived...",
+      },
+    ],
+    notes: "Alert dispatched via WhatsApp. Customer scheduled viewing for Saturday.",
+    createdAt: "2026-11-10T11:20:00.000Z",
+    updatedAt: "2026-11-14T08:30:00.000Z",
+  },
+];
+
 

@@ -59,8 +59,11 @@ export async function getVehicles(
     new Set(allVehicles.map((v) => v.make))
   ).sort();
 
+  // Count vehicles that are strictly available in showroom stock
+  const availableCount = allVehicles.filter((v) => v.status === "available").length;
+
   // 2. In-Memory Filtering
-  let filtered = allVehicles.filter((v) => {
+  const filtered = allVehicles.filter((v) => {
     // Status filter
     if (filters.status && filters.status !== "all") {
       if (v.status !== filters.status) return false;
@@ -190,6 +193,7 @@ export async function getVehicles(
   return {
     vehicles: paginatedVehicles,
     total,
+    availableCount,
     page,
     totalPages,
     hasNext: page < totalPages,

@@ -5,10 +5,10 @@ import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
 import { Heading } from "@/components/ui/Heading";
 import { Eyebrow } from "@/components/ui/Eyebrow";
-import { Divider } from "@/components/ui/Divider";
 import { VehicleImage } from "@/components/ui/VehicleImage";
 import { StatusLabel } from "@/components/ui/StatusLabel";
 import { Numeral } from "@/components/ui/Numeral";
+import { Button } from "@/components/ui/Button";
 import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
 import { PhoneLink } from "@/components/ui/PhoneLink";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -30,36 +30,6 @@ export const metadata: Metadata = {
     description:
       "Direct Japanese imports en route to Sri Lanka. Reserve authentic auction-grade Japanese vehicles before showroom arrival.",
     url: "/incoming",
-  },
-};
-
-const STAGE_DESCRIPTIONS: Record<
-  string,
-  { label: string; stageNumber: string; detail: string }
-> = {
-  japan_auction: {
-    label: "Secured at Japan Auction",
-    stageNumber: "01",
-    detail:
-      "Vehicle won at USS Tokyo / TAA / ARAI auction. Odometer verified with JEVIC certification in Japan.",
-  },
-  in_transit: {
-    label: "Ocean Freight En Route",
-    stageNumber: "02",
-    detail:
-      "Loaded on vehicle carrier vessel sailing from Yokohama/Kobe to Hambantota or Colombo Harbor.",
-  },
-  customs_clearing: {
-    label: "Port & Customs Clearance",
-    stageNumber: "03",
-    detail:
-      "Arrived at Sri Lankan port. Sri Lanka Customs duty assessment and clearance formalities underway.",
-  },
-  in_stock: {
-    label: "Showroom Preparation",
-    stageNumber: "04",
-    detail:
-      "Transferred to Kaduruwela showroom. Pre-delivery inspection and detailing in progress.",
   },
 };
 
@@ -195,9 +165,6 @@ export default async function IncomingPage() {
           ) : (
             <div className="divide-y divide-[var(--border-hairline)]">
               {incomingVehicles.map((vehicle: Vehicle) => {
-                const stageInfo =
-                  (vehicle.importStage && STAGE_DESCRIPTIONS[vehicle.importStage]) ||
-                  STAGE_DESCRIPTIONS.in_transit;
                 const formattedPrice = vehicle.price
                   ? vehicle.price.toLocaleString("en-US")
                   : null;
@@ -282,20 +249,19 @@ export default async function IncomingPage() {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-3">
-                          <a
-                            href={`https://wa.me/${settings.mainBranch.whatsapp.replace(/[^0-9]/g, "")}?text=${whatsappPreOrderText}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="min-h-[44px] px-6 inline-flex items-center justify-center text-xs font-sans uppercase font-medium tracking-[0.16em] bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
-                          >
-                            Register Interest on WhatsApp
-                          </a>
-                          <Link
+                          <WhatsAppButton
+                            number={settings.mainBranch.whatsapp}
+                            message={whatsappPreOrderText}
+                            label="Register Interest"
+                            size="md"
+                          />
+                          <Button
+                            variant="outline"
+                            size="md"
                             href={`/vehicles/${vehicle.slug}`}
-                            className="min-h-[44px] px-5 inline-flex items-center justify-center text-xs font-sans uppercase font-medium tracking-[0.16em] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--text-primary)] transition-colors"
                           >
                             View Specs
-                          </Link>
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -312,7 +278,7 @@ export default async function IncomingPage() {
         <Container size="wide">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
             <div className="lg:col-span-5 space-y-6">
-              <Eyebrow>Bespoke Import Order</Eyebrow>
+              <Eyebrow>Custom Import Order</Eyebrow>
               <Heading level={2} className="text-3xl sm:text-4xl font-normal leading-tight">
                 Order Your Custom Vehicle Directly From Tokyo Auctions
               </Heading>

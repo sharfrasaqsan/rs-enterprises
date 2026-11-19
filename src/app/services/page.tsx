@@ -8,6 +8,7 @@ import { Eyebrow } from "@/components/ui/Eyebrow";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
 import { PhoneLink } from "@/components/ui/PhoneLink";
+import { TradeInValuationForm } from "@/components/services/TradeInValuationForm";
 import { getCompanySettings } from "@/lib/settings";
 
 export const metadata: Metadata = {
@@ -72,7 +73,7 @@ const SERVICES_LIST = [
   },
   {
     num: "05",
-    title: "Part-Exchange & Fair Valuation",
+    title: "Vehicle Trade-In & Fair Valuation",
     headline: "Upgrade your current vehicle with transparent market trade-in",
     details: [
       "On-site technical evaluation at our Kaduruwela main showroom or Trincomalee branch.",
@@ -157,7 +158,7 @@ export default async function ServicesPage() {
                 </div>
 
                 {/* Details list */}
-                <div className="lg:col-span-8">
+                <div className="lg:col-span-8 space-y-5">
                   <ul className="space-y-4">
                     {srv.details.map((detail, idx) => (
                       <li key={idx} className="flex items-start gap-4 text-sm font-light text-[var(--text-secondary)]">
@@ -166,10 +167,45 @@ export default async function ServicesPage() {
                       </li>
                     ))}
                   </ul>
+
+                  {srv.num === "05" && (
+                    <div className="pt-2">
+                      <a
+                        href="#valuation"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)] text-xs font-sans uppercase font-medium tracking-[0.16em] rounded-[2px] transition-luxury shadow-sm"
+                      >
+                        <span>Start Online Valuation Request</span>
+                        <span>&darr;</span>
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
           </div>
+        </Container>
+      </Section>
+
+      {/* Trade-In Valuation Request Form Section */}
+      <Section
+        id="valuation"
+        className="py-20 sm:py-28 bg-[var(--bg-surface)] border-t border-[var(--border-hairline)] scroll-mt-16"
+      >
+        <div id="trade-in" className="scroll-mt-16" />
+        <Container size="wide">
+          <div className="max-w-3xl mb-12 space-y-3">
+            <Eyebrow>Showroom Vehicle Trade-In & Valuation</Eyebrow>
+            <Heading level={2} className="text-3xl sm:text-4xl">
+              Request a Trade-In Valuation
+            </Heading>
+            <p className="text-sm font-light text-[var(--text-secondary)] leading-relaxed">
+              Submit your current vehicle’s make, model, year, expected price, and photographs.
+              Our valuation team will cross-reference current Sri Lankan market prices and schedule
+              a quick inspection at our Kaduruwela main showroom or Trincomalee branch.
+            </p>
+          </div>
+
+          <TradeInValuationForm settings={settings} />
         </Container>
       </Section>
 

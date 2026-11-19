@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import Link from "next/link";
 import {
   Vehicle,
-  ImportStage,
   IMPORT_STAGES,
   normalizeImportStage,
   StandardImportStage,
@@ -246,7 +245,7 @@ export function IncomingManagerClient({
                   <div className="flex items-start gap-4">
                     <div className="w-24 sm:w-28 shrink-0">
                       <VehicleImage
-                        src={vehicle.images[0] || "/images/vehicles/sample-prado.svg"}
+                        src={vehicle.images[0] || "/images/vehicles/placeholder-coming-soon.webp"}
                         alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
                         aspectRatio="16/10"
                       />

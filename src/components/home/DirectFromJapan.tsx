@@ -32,14 +32,14 @@ export function DirectFromJapan() {
           {/* Section Header */}
           <div suppressHydrationWarning className="reveal-on-scroll max-w-2xl space-y-3">
             <span className="inline-block font-sans text-xs font-semibold uppercase tracking-[0.25em] text-[var(--accent-inverted)]">
-              Import Philosophy &bull; Direct Japanese Procurement
+              Our Promise &bull; Direct Japanese Imports
             </span>
             <h2 className="font-serif text-[clamp(2rem,4.5vw,3.25rem)] font-normal leading-[1.08] text-[var(--text-inverted)]">
               Direct from Tokyo Auctions to Sri Lankan Roads
             </h2>
             <p className="text-base text-[var(--text-inverted)] opacity-80 font-light leading-relaxed">
-              We eliminate intermediaries. Affluent clients gain direct access to premier
-              Japanese automotive auctions with complete transparency and certified provenance.
+              We eliminate middlemen. You gain direct access to premier
+              Japanese vehicle auctions with complete pricing transparency and genuine auction sheet verification.
             </p>
           </div>
 

@@ -39,21 +39,28 @@ export function Header({ settings }: { settings: CompanySettings }) {
 
       <Container size="wide">
         <div className="flex items-center justify-between h-20">
-          {/* Brand Logo & Editorial Heritage Tagline */}
+          {/* Brand Logo & Editorial Heritage Tagline: Compact 'RS' on mobile, full wordmark on desktop */}
           <Link
             href="/"
-            className="flex flex-col justify-center min-h-[44px] group focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
+            className="flex items-center min-h-[44px] group focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] shrink-0"
             aria-label="RS Enterprises Home"
           >
             <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
-              <span className="font-serif text-xl sm:text-2xl font-normal tracking-[0.12em] text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">
-                RS ENTERPRISES
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shrink-0" />
+              {/* Mobile compact wordmark strictly on one line */}
+              <span className="font-serif text-xl font-normal tracking-[0.14em] text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors sm:hidden">
+                RS
               </span>
+              {/* Desktop & Tablet full brand name and location */}
+              <div className="hidden sm:flex sm:flex-col justify-center">
+                <span className="font-serif text-xl sm:text-2xl font-normal tracking-[0.12em] text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">
+                  RS ENTERPRISES
+                </span>
+                <span className="text-[10px] font-sans font-medium uppercase tracking-[0.26em] text-[var(--accent)] -mt-0.5">
+                  Kaduruwela &bull; Trincomalee
+                </span>
+              </div>
             </div>
-            <span className="text-[10px] font-sans font-medium uppercase tracking-[0.26em] text-[var(--accent)] ml-3.5 -mt-0.5">
-              Kaduruwela &bull; Trincomalee
-            </span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -69,8 +76,8 @@ export function Header({ settings }: { settings: CompanySettings }) {
             ))}
           </nav>
 
-          {/* Utility Tools: Compare Counter, Theme Toggle & Mobile Nav */}
-          <div className="flex items-center space-x-2 sm:space-x-3">
+          {/* Utility Tools: Compare Counter (Icon-only on mobile), Theme Toggle & Mobile Nav */}
+          <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
             <CompareCounter />
             <ThemeToggle />
             <MobileNav settings={settings} />

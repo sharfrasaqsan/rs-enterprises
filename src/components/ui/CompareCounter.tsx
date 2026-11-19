@@ -9,8 +9,10 @@ export function CompareCounter({ className = "" }: { className?: string }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setSlugs(getCompareSlugs());
-    setMounted(true);
+    const timer = setTimeout(() => {
+      setSlugs(getCompareSlugs());
+      setMounted(true);
+    }, 0);
 
     const handleUpdate = () => {
       setSlugs(getCompareSlugs());
@@ -20,6 +22,7 @@ export function CompareCounter({ className = "" }: { className?: string }) {
     window.addEventListener("storage", handleUpdate);
 
     return () => {
+      clearTimeout(timer);
       window.removeEventListener("rs_compare_updated", handleUpdate);
       window.removeEventListener("storage", handleUpdate);
     };
@@ -31,15 +34,16 @@ export function CompareCounter({ className = "" }: { className?: string }) {
   return (
     <Link
       href={href}
-      className={`inline-flex items-center min-h-[44px] px-3 py-2 text-xs font-sans uppercase font-medium tracking-[0.16em] transition-luxury rounded-[2px] border ${
+      className={`relative inline-flex items-center justify-center min-h-[40px] min-w-[40px] p-2 text-xs font-sans uppercase font-medium tracking-[0.16em] transition-luxury rounded-[2px] border ${
         count > 0
           ? "border-[var(--accent)] text-[var(--accent)] bg-[var(--bg-surface)] hover:bg-[var(--accent)] hover:text-[var(--accent-contrast)]"
-          : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          : "border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
       } ${className}`}
       aria-label={`Compare vehicles (${count} selected)`}
+      title={`Compare vehicles (${count} selected)`}
     >
       <svg
-        className="w-3.5 h-3.5 mr-2 stroke-current shrink-0"
+        className="w-4 h-4 stroke-current shrink-0"
         viewBox="0 0 24 24"
         fill="none"
         strokeWidth="1.6"
@@ -53,9 +57,8 @@ export function CompareCounter({ className = "" }: { className?: string }) {
         <path d="M15 15l6 6" />
         <path d="M4 4l5 5" />
       </svg>
-      <span>Compare</span>
       {count > 0 && (
-        <span className="ml-1.5 px-1.5 py-0.2 bg-[var(--accent)] text-[var(--accent-contrast)] text-[10px] font-mono font-bold rounded-[1px] leading-tight">
+        <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-[var(--accent)] text-[var(--accent-contrast)] text-[10px] font-mono font-bold rounded-full flex items-center justify-center shadow-sm">
           {count}
         </span>
       )}

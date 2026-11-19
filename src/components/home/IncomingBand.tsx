@@ -6,6 +6,7 @@ import { Heading } from "@/components/ui/Heading";
 import { Numeral } from "@/components/ui/Numeral";
 import { VehicleImage } from "@/components/ui/VehicleImage";
 import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
+import { Button } from "@/components/ui/Button";
 import { Vehicle, ImportStage } from "@/types/vehicle";
 
 interface StageConfig {
@@ -175,14 +176,16 @@ export function IncomingBand({
                       <WhatsAppButton
                         label="Reserve Vessel"
                         vehicleTitle={`${vehicle.year} ${vehicle.make} ${vehicle.model} (Incoming)`}
+                        size="md"
                         className="w-full sm:w-auto"
                       />
-                      <Link
+                      <Button
+                        variant="outline"
+                        size="md"
                         href={`/vehicles/${vehicle.slug}`}
-                        className="inline-flex items-center justify-center min-h-[48px] px-5 rounded-[2px] border border-[var(--border-subtle)] text-xs font-sans uppercase font-medium tracking-[0.16em] text-[var(--text-primary)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-luxury"
                       >
                         Specs
-                      </Link>
+                      </Button>
                     </div>
                   </div>
                 </div>

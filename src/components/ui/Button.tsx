@@ -22,21 +22,21 @@ export function Button({
 }: ButtonProps) {
   // Base: architectural rectangular (2px radius), uppercase, letter-spaced, min 44px tap target
   const baseClasses =
-    "inline-flex items-center justify-center font-sans uppercase font-medium tracking-[0.2em] rounded-[2px] transition-luxury cursor-pointer select-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed";
+    "inline-flex items-center justify-center font-sans uppercase font-semibold tracking-[0.18em] rounded-[2px] transition-luxury cursor-pointer select-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed";
 
   const sizeClasses = {
-    sm: "min-h-[44px] px-5 text-[11px] py-2.5",
-    md: "min-h-[48px] px-7 text-xs py-3",
-    lg: "min-h-[52px] px-9 text-xs sm:text-sm py-3.5",
+    sm: "min-h-[44px] px-5 text-xs py-2.5",
+    md: "min-h-[48px] px-6 text-xs py-3",
+    lg: "min-h-[52px] px-8 text-xs sm:text-sm py-3.5",
   }[size];
 
   const variantClasses = {
-    // Pure 24K Champagne Gold button
+    // Pure 24K Champagne Gold button with 1px hairline matching box model
     solid:
-      "bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)] active:translate-y-[1px] shadow-lg font-semibold",
+      "bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)] active:translate-y-[1px] shadow-sm border border-transparent",
     // Diamond Brilliant White button (Maximum luxury contrast on dark backgrounds)
     diamond:
-      "bg-white text-black hover:bg-[var(--accent)] hover:text-black active:translate-y-[1px] shadow-[0_10px_25px_-5px_rgba(255,255,255,0.15)] font-semibold",
+      "bg-white text-black hover:bg-[var(--accent)] hover:text-black active:translate-y-[1px] shadow-sm border border-transparent",
     // Hairline thin rectangular outline
     outline:
       "bg-transparent text-[var(--text-primary)] border border-[var(--border-subtle)] hover:border-[var(--accent)] hover:text-[var(--accent)] active:translate-y-[1px]",

@@ -4,9 +4,7 @@ import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { Heading } from "@/components/ui/Heading";
-import { Numeral } from "@/components/ui/Numeral";
 import { Button } from "@/components/ui/Button";
-import { StatusLabel } from "@/components/ui/StatusLabel";
 import { Vehicle } from "@/types/vehicle";
 import { CompanySettings } from "@/types/settings";
 
@@ -41,16 +39,16 @@ export function Hero({
       />
 
       <Container size="wide">
-        <div className="space-y-10 sm:space-y-14">
+        <div className="space-y-8 sm:space-y-14">
           {/* Top Editorial Row: Brand Header & Japanese Auction Provenance */}
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-[var(--border-hairline)]">
             <div className="space-y-3 max-w-2xl">
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
-                <Eyebrow>Direct Japanese Importer &bull; Kaduruwela Main Showroom</Eyebrow>
+                <Eyebrow>Direct Japanese Importer &bull; {settings.mainBranch.name}</Eyebrow>
               </div>
               <Heading level={1} className="tracking-[-0.02em]">
-                Rare Quality. Direct Japanese Provenance.
+                Rare Quality. Direct Japanese Imports.
               </Heading>
             </div>
 
@@ -60,16 +58,16 @@ export function Hero({
                   Tokyo Auction Sourcing
                 </span>
                 <span className="font-serif text-lg sm:text-xl font-light text-[var(--text-primary)] block">
-                  USS &bull; TAA &bull; CAA Tokyo
+                  {featuredVehicle.verified ? "USS • TAA • CAA Tokyo" : "Direct Japanese Import"}
                 </span>
               </div>
               <div className="hidden sm:block w-px h-10 bg-[var(--border-hairline)]" />
               <div className="space-y-1">
                 <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-[var(--accent)] block">
-                  Certified Integrity
+                  {featuredVehicle.verified ? "Certified Integrity" : "Showroom Inspection"}
                 </span>
                 <span className="font-serif text-lg sm:text-xl font-light text-[var(--text-primary)] block">
-                  100% Genuine Odometer
+                  {featuredVehicle.verified ? "100% Genuine Odometer" : "Verified Mileage"}
                 </span>
               </div>
             </div>
@@ -77,9 +75,10 @@ export function Hero({
 
           {/* Centerpiece Showcase: Monumental Automotive Presentation */}
           <div className="relative group">
+            {/* Mobile Hero Image: On top, full width, 4:3 with zero text over photo */}
             <Link
               href={`/vehicles/${featuredVehicle.slug}`}
-              className="block relative overflow-hidden rounded-[2px] bg-[var(--bg-surface)] border border-[var(--border-subtle)] aspect-[16/9] sm:aspect-[21/9] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] shadow-2xl transition-all duration-700"
+              className="block relative overflow-hidden rounded-[2px] bg-[var(--bg-surface)] border border-[var(--border-subtle)] aspect-[4/3] sm:aspect-[21/9] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] shadow-2xl transition-all duration-700"
             >
               {/* 
                 CRITICAL LCP IMAGE: Explicit priority={true}, explicit sizing, AVIF/WebP ready.
@@ -96,44 +95,44 @@ export function Hero({
                 className="object-cover object-center transition-transform duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.025]"
               />
 
-              {/* Floating Glassmorphic Badges */}
-              <div className="absolute top-4 sm:top-6 left-4 sm:left-6 z-10 flex flex-wrap items-center gap-2 sm:gap-3">
+              {/* Desktop Floating Badges (Hidden on mobile to guarantee zero text over photo) */}
+              <div className="hidden sm:flex absolute top-4 sm:top-6 left-4 sm:left-6 z-10 flex-wrap items-center gap-2 sm:gap-3">
                 <span className="px-3.5 py-1.5 bg-[var(--bg-overlay)] backdrop-blur-md border border-[var(--accent)] text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.22em] text-[var(--text-primary)] rounded-[1px] shadow-lg flex items-center gap-1.5">
                   <span className="text-[var(--accent)]">&bull;</span>
-                  {featuredVehicle.grade || "Japan Auction Grade 6 / 5A"}
+                  {featuredVehicle.grade || "Japanese Spec"}
                 </span>
-                <span className="hidden sm:inline-block px-3 py-1.5 bg-[var(--bg-overlay)] backdrop-blur-md border border-[var(--border-subtle)] text-[10px] font-sans uppercase tracking-[0.2em] text-[var(--text-secondary)] rounded-[1px]">
-                  Unregistered Import
+                <span className="px-3 py-1.5 bg-[var(--bg-overlay)] backdrop-blur-md border border-[var(--border-subtle)] text-[10px] font-sans uppercase tracking-[0.2em] text-[var(--text-secondary)] rounded-[1px]">
+                  {featuredVehicle.registrationStatus === "unregistered" ? "Unregistered Import" : "Registered Pre-Owned"}
                 </span>
               </div>
 
-              {/* Top-Right Status & Stock Number */}
-              <div className="absolute top-4 sm:top-6 right-4 sm:right-6 z-10">
+              {/* Desktop Top-Right Status (Hidden on mobile) */}
+              <div className="hidden sm:block absolute top-4 sm:top-6 right-4 sm:right-6 z-10">
                 <span className="px-3 py-1.5 bg-[var(--bg-overlay)] backdrop-blur-md border border-[var(--border-subtle)] text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.2em] text-[var(--accent)] rounded-[1px] shadow-sm">
-                  Available in Showroom
+                  {featuredVehicle.status === "available" ? "Available in Showroom" : featuredVehicle.status.toUpperCase()}
                 </span>
               </div>
 
-              {/* Subtle cinematic gradient overlay for depth and focus */}
+              {/* Desktop Cinematic Overlay (Hidden on mobile) */}
               <div
-                className="absolute inset-0 bg-gradient-to-t from-[var(--bg-base)] via-transparent to-black/25 pointer-events-none opacity-80"
+                className="hidden sm:block absolute inset-0 bg-gradient-to-t from-[var(--bg-base)] via-transparent to-black/25 pointer-events-none opacity-80"
                 aria-hidden="true"
               />
 
-              {/* Bottom In-Image Title Bar */}
-              <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-6 z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-3 text-white pointer-events-none">
+              {/* Desktop Bottom Title Bar (Hidden on mobile) */}
+              <div className="hidden sm:flex absolute bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-6 z-10 sm:items-end justify-between gap-3 text-white pointer-events-none">
                 <div className="space-y-1">
                   <span className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.25em] text-[var(--accent)] block">
-                    Flagship Showroom Acquisition
+                    Showroom Flagship Spotlight
                   </span>
                   <span className="font-serif text-2xl sm:text-4xl lg:text-5xl font-normal tracking-tight text-white drop-shadow-md">
                     {featuredVehicle.year} {featuredVehicle.make} {featuredVehicle.model}
                   </span>
                 </div>
 
-                <div className="text-left sm:text-right">
+                <div className="text-right">
                   <span className="text-[10px] font-sans uppercase tracking-[0.2em] text-white/70 block">
-                    Showroom Asking Price
+                    Showroom Price
                   </span>
                   {formattedPrice ? (
                     <span className="font-serif text-xl sm:text-3xl text-[var(--accent)] drop-shadow-md">
@@ -148,11 +147,56 @@ export function Hero({
               </div>
             </Link>
 
+            {/* Mobile Hero Card: Headline, wrapping badges, and price rendered strictly BELOW the 4:3 photo */}
+            <div className="sm:hidden mt-3 p-4 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] space-y-3.5">
+              {/* Badges that wrap cleanly without overlapping */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-2.5 py-1 bg-[var(--bg-overlay)] border border-[var(--accent)] text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--accent)] rounded-[1px] flex items-center gap-1">
+                  <span>&bull;</span>
+                  {featuredVehicle.grade || "Japanese Spec"}
+                </span>
+                <span className="px-2.5 py-1 bg-[var(--bg-overlay)] border border-[var(--border-subtle)] text-[10px] font-sans uppercase tracking-[0.16em] text-[var(--text-secondary)] rounded-[1px]">
+                  {featuredVehicle.registrationStatus === "unregistered" ? "Unregistered" : "Registered"}
+                </span>
+                <span className="px-2.5 py-1 bg-[var(--bg-overlay)] border border-[var(--border-subtle)] text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--text-primary)] rounded-[1px]">
+                  {featuredVehicle.status === "available" ? "In Stock" : featuredVehicle.status.toUpperCase()}
+                </span>
+              </div>
+
+              {/* Headline */}
+              <div className="space-y-1">
+                <span className="text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--accent)] block">
+                  Showroom Spotlight
+                </span>
+                <Link href={`/vehicles/${featuredVehicle.slug}`} className="block group">
+                  <Heading level={2} className="text-2xl font-serif text-[var(--text-primary)] leading-snug group-hover:text-[var(--accent)] transition-colors">
+                    {featuredVehicle.year} {featuredVehicle.make} {featuredVehicle.model}
+                  </Heading>
+                </Link>
+              </div>
+
+              {/* Price */}
+              <div className="pt-2 border-t border-[var(--border-hairline)] flex items-baseline justify-between">
+                <span className="text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  Showroom Price
+                </span>
+                {formattedPrice ? (
+                  <span className="font-serif text-2xl text-[var(--accent)] font-normal">
+                    LKR {formattedPrice}
+                  </span>
+                ) : (
+                  <span className="font-sans text-sm uppercase tracking-widest text-[var(--accent)]">
+                    Call For Price
+                  </span>
+                )}
+              </div>
+            </div>
+
             {/* Precision Horology Monograph Strip (Below Image) */}
-            <div className="mt-4 p-5 sm:p-6 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 items-center">
+            <div className="mt-3 sm:mt-4 p-5 sm:p-6 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 items-center">
               <div className="space-y-1 border-r-0 sm:border-r border-[var(--border-hairline)] pr-4">
                 <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--text-muted)] block">
-                  Displacement & Engine
+                  Engine & Fuel
                 </span>
                 <span className="font-serif text-lg sm:text-xl text-[var(--text-primary)] block">
                   {featuredVehicle.engineCC.toLocaleString("en-US")} CC &bull; {featuredVehicle.fuel}
@@ -161,10 +205,10 @@ export function Hero({
 
               <div className="space-y-1 border-r-0 lg:border-r border-[var(--border-hairline)] pr-4">
                 <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--text-muted)] block">
-                  Certified Odometer
+                  {featuredVehicle.verified ? "Certified Odometer" : "Odometer Reading"}
                 </span>
                 <span className="font-serif text-lg sm:text-xl text-[var(--text-primary)] block">
-                  {featuredVehicle.mileage.toLocaleString("en-US")} KM Genuine
+                  {featuredVehicle.mileage.toLocaleString("en-US")} KM{featuredVehicle.verified ? " Genuine" : ""}
                 </span>
               </div>
 

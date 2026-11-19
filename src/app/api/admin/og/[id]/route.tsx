@@ -92,7 +92,16 @@ export async function GET(
       ? "#b45309"
       : "#374151";
 
-  const branchPhone = settings.mainBranch.mobile || settings.mainBranch.phone;
+  const isTrinco = vehicle.branch === "trincomalee";
+  const branchPhone = isTrinco
+    ? settings.coastalBranch.phone || settings.mainBranch.phone
+    : settings.mainBranch.mobile || settings.mainBranch.phone;
+  const branchName = isTrinco
+    ? settings.coastalBranch.name || "Trincomalee Showroom"
+    : "Kaduruwela Showroom";
+  const branchAddress = isTrinco
+    ? settings.coastalBranch.address
+    : settings.mainBranch.address;
 
   // 1. SQUARE POSTER (1080x1080)
   if (isSquare) {
@@ -268,7 +277,7 @@ export async function GET(
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <span style={{ color: "#E4E4E7", fontWeight: 600 }}>Kaduruwela: {branchPhone}</span>
+                <span style={{ color: "#E4E4E7", fontWeight: 600 }}>{branchName}: {branchPhone}</span>
                 <span>•</span>
                 <span style={{ color: "#B89B62" }}>rsenterprises.lk</span>
               </div>
@@ -504,13 +513,13 @@ export async function GET(
           }}
         >
           <span style={{ fontSize: "18px", color: "#E4E4E7", letterSpacing: "0.08em" }}>
-            📍 No.37/1, Kaduruwela, Polonnaruwa, Sri Lanka
+            📍 {branchAddress}
           </span>
           <span style={{ fontSize: "20px", color: "#B89B62", fontWeight: 600, letterSpacing: "0.06em" }}>
             Hotlines / WhatsApp: {branchPhone}
           </span>
           <span style={{ fontSize: "14px", color: "#71717A", letterSpacing: "0.15em" }}>
-            VIEW FULL DOSSIER: rsenterprises.lk/vehicles/{vehicle.slug}
+            VIEW FULL DETAILS: rsenterprises.lk/vehicles/{vehicle.slug}
           </span>
         </div>
       </div>

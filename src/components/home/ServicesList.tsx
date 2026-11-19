@@ -35,7 +35,7 @@ export function ServicesList() {
       title: "Vehicle Valuation & Showroom Trade-In Service",
       description:
         "Fair, transparent market valuations for registered Japanese vehicles. Trade in your current vehicle against an unregistered auction-grade arrival with seamless title transfer and financing assistance.",
-      actionText: "Book Valuation Inspection",
+      actionText: "Check Trade-In Value",
       href: "/services#valuation",
     },
   ];
@@ -48,11 +48,11 @@ export function ServicesList() {
           <div suppressHydrationWarning className="reveal-on-scroll max-w-2xl space-y-3">
             <Eyebrow>Comprehensive Automotive Solutions</Eyebrow>
             <Heading level={2}>
-              Curated Automotive Services
+              Our Automotive Services
             </Heading>
             <p className="text-base text-[var(--text-secondary)] font-light leading-relaxed">
-              Beyond showroom inventory, RS Enterprises provides high-touch import consultancy,
-              custom auction bidding, and authentic parts logistics.
+              Beyond our showroom inventory, RS Enterprises provides direct auction bidding,
+              customs clearance support, and genuine Japanese spare parts.
             </p>
           </div>
 

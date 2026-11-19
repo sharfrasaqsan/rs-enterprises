@@ -24,7 +24,7 @@ import { VehiclesListSkeleton } from "@/components/vehicles/VehiclesListSkeleton
 export const metadata: Metadata = {
   title: "Japanese Vehicle Showroom & In-Transit Inventory",
   description:
-    "Curated collection of unregistered auction-grade Japanese vehicles in Sri Lanka. Toyota Land Cruiser, Prado, Harrier, Honda Vezel, Aqua, Axio at Kaduruwela main showroom.",
+    "Verified collection of unregistered auction-grade Japanese vehicles in Sri Lanka. Toyota Land Cruiser, Prado, Harrier, Honda Vezel, Aqua, Axio at Kaduruwela main showroom.",
   alternates: {
     canonical: "/vehicles",
   },
@@ -118,6 +118,7 @@ async function VehiclesListContent({
   const {
     vehicles,
     total,
+    availableCount,
     page,
     totalPages,
     hasNext,
@@ -131,6 +132,7 @@ async function VehiclesListContent({
       <VehicleFilterBar
         availableMakes={availableMakes}
         totalResults={total}
+        availableCount={availableCount}
       />
 
       {/* Vehicle Inventory List */}
@@ -182,7 +184,7 @@ export default function VehiclesPage(props: {
           <div className="space-y-3 pb-8 border-b border-[var(--border-hairline)]">
             <Eyebrow>Direct Japanese Importer &bull; Kaduruwela &bull; Trincomalee</Eyebrow>
             <Heading level={1}>
-              Curated Japanese Automotive Inventory
+              Japanese Vehicle Showroom &amp; Stock
             </Heading>
             <p className="text-base sm:text-lg font-light text-[var(--text-secondary)] max-w-2xl leading-relaxed">
               Every vehicle is personally evaluated and secured from USS, TAA, and CAA

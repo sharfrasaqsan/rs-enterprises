@@ -1,4 +1,5 @@
 import { Lead, LeadStage, LeadSource, DealershipBranch } from "@/types/lead";
+import { formatPhoneDisplay } from "@/lib/phone";
 
 /**
  * Format channel/source key to human-readable label
@@ -9,6 +10,8 @@ export function formatLeadSource(source: LeadSource): string {
       return "Website Form";
     case "vehicle_request":
       return "Vehicle Request";
+    case "trade_in":
+      return "Trade-In Valuation";
     case "whatsapp":
       return "Direct WhatsApp";
     case "phone":
@@ -204,7 +207,7 @@ export function exportLeadsToPDF(
   const closedCount = wonCount + lostCount;
   const winRate = closedCount > 0 ? Math.round((wonCount / closedCount) * 100) : 0;
 
-  const reportTitle = options?.title || "EXECUTIVE CRM LEAD DOSSIER & PIPELINE REPORT";
+  const reportTitle = options?.title || "EXECUTIVE CRM CUSTOMER ENQUIRIES & PIPELINE REPORT";
   const filterSummary = options?.filterSummary || `All Leads (${total} Records)`;
 
   const tableRowsHtml = leads
@@ -230,9 +233,14 @@ export function exportLeadsToPDF(
           <td>
             <div style="font-weight: 600; color: #111;">${escapeHtml(lead.name)}</div>
             <div style="font-size: 11px; color: #666; font-family: monospace;">${escapeHtml(lead.id)}</div>
+            ${
+              (lead.isReturningBuyer || (lead.inquiryCount && lead.inquiryCount > 1))
+                ? `<span style="font-size: 9px; padding: 1px 4px; background: #FEF3C7; color: #92400E; border: 1px solid #F59E0B; border-radius: 2px; font-weight: 600; display: inline-block; margin-top: 3px;">✦ ${lead.inquiryCount || 2}x Merged Inquiries</span>`
+                : ""
+            }
           </td>
           <td>
-            <div style="font-family: monospace; font-weight: 500; color: #111;">${escapeHtml(lead.phone)}</div>
+            <div style="font-family: monospace; font-weight: 500; color: #111;">${escapeHtml(formatPhoneDisplay(lead.phone))}</div>
             ${lead.email ? `<div style="font-size: 10px; color: #777;">${escapeHtml(lead.email)}</div>` : ""}
           </td>
           <td style="font-size: 11px;">
@@ -596,7 +604,7 @@ export function exportLeadsToPDF(
         <!-- Footer -->
         <div class="footer">
           <div>RS Enterprises (Pvt) Ltd &bull; Confidential Internal Executive Record &bull; Authorized Personnel Only</div>
-          <div>Page 1 of 1 &bull; End of Dossier</div>
+          <div>Page 1 of 1 &bull; End of Report</div>
         </div>
       </div>
 
@@ -659,7 +667,7 @@ export function exportSingleLeadToPDF(lead: Lead): void {
     <html lang="en">
     <head>
       <meta charset="UTF-8" />
-      <title>Lead Dossier - ${escapeHtml(lead.name)} - RS Enterprises</title>
+      <title>Customer Profile - ${escapeHtml(lead.name)} - RS Enterprises</title>
       <style>
         @page {
           size: A4 portrait;
@@ -765,7 +773,7 @@ export function exportSingleLeadToPDF(lead: Lead): void {
     <body>
       <div class="no-print">
         <div style="color: #d4af37; font-family: Georgia, serif; font-size: 13px; letter-spacing: 1px;">
-          RS ENTERPRISES &bull; INDIVIDUAL LEAD DOSSIER
+          RS ENTERPRISES &bull; INDIVIDUAL CUSTOMER PROFILE
         </div>
         <div style="display: flex; gap: 10px;">
           <button class="btn btn-gold" onclick="window.print()">Print / Save as PDF</button>
@@ -799,7 +807,7 @@ export function exportSingleLeadToPDF(lead: Lead): void {
           </div>
           <div class="info-cell">
             <div class="info-label">Primary Telephone</div>
-            <div class="info-value" style="font-family: monospace;">${escapeHtml(lead.phone)}</div>
+            <div class="info-value" style="font-family: monospace;">${escapeHtml(formatPhoneDisplay(lead.phone))}</div>
           </div>
           <div class="info-cell">
             <div class="info-label">Email Address</div>

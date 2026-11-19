@@ -73,7 +73,7 @@ export default async function RequestVehiclePage() {
             {/* Form (7 cols) */}
             <div className="lg:col-span-7 bg-[var(--bg-surface)] border border-[var(--border-hairline)] p-8 sm:p-12">
               <div className="mb-8">
-                <Eyebrow>Custom Order Intake</Eyebrow>
+                <Eyebrow>Vehicle Request</Eyebrow>
                 <Heading level={2} className="text-2xl sm:text-3xl mt-1">
                   Submit Vehicle Request
                 </Heading>
@@ -89,7 +89,7 @@ export default async function RequestVehiclePage() {
             {/* Editorial Guarantees & Step Guide (5 cols) */}
             <div className="lg:col-span-5 space-y-8">
               <div>
-                <Eyebrow>Auction Procurement Protocol</Eyebrow>
+                <Eyebrow>Our Import Process</Eyebrow>
                 <Heading level={3} className="text-2xl sm:text-3xl mt-1">
                   What Happens Next
                 </Heading>
@@ -105,7 +105,7 @@ export default async function RequestVehiclePage() {
                       Auction Catalog Matching
                     </strong>
                     <p className="text-xs mt-1 leading-relaxed">
-                      Our procurement team searches upcoming USS and TAA auction catalogues for units
+                      Our import team searches upcoming USS and TAA auction catalogues for units
                       matching your make, grade, and mileage criteria.
                     </p>
                   </div>

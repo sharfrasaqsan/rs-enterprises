@@ -6,6 +6,7 @@ import { Numeral } from "@/components/ui/Numeral";
 import { StatusLabel } from "@/components/ui/StatusLabel";
 import { VehicleImage } from "@/components/ui/VehicleImage";
 import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
+import { Button } from "@/components/ui/Button";
 import { VehicleCompareCheckbox } from "@/components/vehicles/VehicleCompareCheckbox";
 
 export function VehicleEntry({ vehicle }: { vehicle: Vehicle }) {
@@ -101,14 +102,20 @@ export function VehicleEntry({ vehicle }: { vehicle: Vehicle }) {
             </p>
           </div>
 
-          {/* Price & Actions Row */}
-          <div className="pt-4 border-t border-[var(--border-hairline)] flex flex-col sm:flex-row sm:items-baseline justify-between gap-4">
-            <div>
+          {/* Price & Actions Row (Stacked on tablet, side-by-side on wide desktop xl) */}
+          <div className="pt-4 border-t border-[var(--border-hairline)] flex flex-col xl:flex-row xl:items-end justify-between gap-4">
+            <div className="shrink-0">
               {formattedPrice ? (
                 <Numeral
                   value={formattedPrice}
                   prefix="LKR"
-                  label={isSold ? "Delivered at Showroom Price" : "Showroom Asking Price"}
+                  label={
+                    isSold
+                      ? "Delivered at Showroom Price"
+                      : vehicle.branch === "trincomalee"
+                      ? "Available at Trincomalee Branch"
+                      : "Available at Kaduruwela Showroom"
+                  }
                   size="md"
                 />
               ) : (
@@ -117,13 +124,13 @@ export function VehicleEntry({ vehicle }: { vehicle: Vehicle }) {
                     Call For Price / Inquire
                   </span>
                   <span className="text-[10px] text-[var(--text-muted)] block uppercase tracking-wider">
-                    Japan Auction Direct CIF
+                    Direct Import from Japan
                   </span>
                 </div>
               )}
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 xl:justify-end">
               {/* Checkbox-style quiet Compare control */}
               <VehicleCompareCheckbox
                 slug={vehicle.slug}
@@ -131,25 +138,29 @@ export function VehicleEntry({ vehicle }: { vehicle: Vehicle }) {
               />
 
               {!isSold ? (
-                <div className="flex gap-2.5">
+                <div className="flex items-center gap-2.5">
                   <WhatsAppButton
                     vehicleTitle={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
                     label="Inquire"
+                    size="md"
                   />
-                  <Link
+                  <Button
+                    variant="outline"
+                    size="md"
                     href={`/vehicles/${vehicle.slug}`}
-                    className="inline-flex items-center justify-center min-h-[46px] px-5 rounded-[2px] border border-[var(--border-subtle)] text-xs font-sans uppercase font-medium tracking-[0.2em] text-[var(--text-primary)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-luxury"
                   >
-                    Dossier
-                  </Link>
+                    View Details
+                  </Button>
                 </div>
               ) : (
-                <Link
+                <Button
+                  variant="outline"
+                  size="md"
                   href={`/contact?vehicle=${encodeURIComponent(vehicle.model)}`}
-                  className="inline-flex items-center justify-center min-h-[46px] px-4 rounded-[2px] border border-[var(--border-hairline)] text-xs font-sans uppercase font-medium tracking-[0.18em] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                  className="border-[var(--border-hairline)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                 >
                   Source Similar Unit &rarr;
-                </Link>
+                </Button>
               )}
             </div>
           </div>

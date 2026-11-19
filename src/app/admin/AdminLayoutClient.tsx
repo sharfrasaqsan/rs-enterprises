@@ -9,7 +9,7 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 interface AdminNavItem {
   href: string;
   label: string;
-  icon: "today" | "leads" | "vehicles" | "incoming" | "settings";
+  icon: "today" | "leads" | "vehicles" | "incoming" | "analytics" | "settings";
   ownerOnly?: boolean;
 }
 
@@ -18,6 +18,7 @@ const NAV_ITEMS: AdminNavItem[] = [
   { href: "/admin/leads", label: "Leads", icon: "leads" },
   { href: "/admin/vehicles", label: "Vehicles", icon: "vehicles" },
   { href: "/admin/incoming", label: "Incoming", icon: "incoming" },
+  { href: "/admin/analytics", label: "Analytics", icon: "analytics" },
   { href: "/admin/settings", label: "Settings", icon: "settings", ownerOnly: true },
 ];
 
@@ -53,6 +54,12 @@ function NavIcon({ name, className }: { name: string; className?: string }) {
           <path d="M2 20a16 16 0 0020 0M4 16l2-8h12l2 8M9 8V4h6v4" />
         </svg>
       );
+    case "analytics":
+      return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      );
     case "settings":
       return (
         <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -65,8 +72,15 @@ function NavIcon({ name, className }: { name: string; className?: string }) {
   }
 }
 
+const emptySubscribe = () => () => {};
+
 export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
   const { user, loading, signOut } = useAdminAuth();
+  const mounted = React.useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
   const pathname = usePathname();
   const router = useRouter();
 
@@ -75,50 +89,8 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
     return <div className="min-h-screen bg-[var(--bg-base)]">{children}</div>;
   }
 
-  // Loading state
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-base)] text-[var(--text-secondary)]">
-        <div className="flex flex-col items-center space-y-3">
-          <div className="w-6 h-6 border-2 border-[var(--accent)] border-t-transparent animate-spin rounded-full" />
-          <span className="text-xs uppercase tracking-widest font-mono">
-            Loading Showroom System...
-          </span>
-        </div>
-      </div>
-    );
-  }
-
-  // Not authenticated
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-base)] p-6">
-        <div className="max-w-md w-full p-8 bg-[var(--bg-surface)] border border-[var(--border-hairline)] space-y-6 text-center">
-          <span className="font-mono text-xs uppercase tracking-widest text-[var(--accent)] block">
-            Staff Portal Protected
-          </span>
-          <h2 className="font-serif text-2xl text-[var(--text-primary)]">
-            Please Sign In to Access Showroom CRM
-          </h2>
-          <p className="text-xs text-[var(--text-secondary)] font-light leading-relaxed">
-            This area is restricted to RS Enterprises sales staff and company directors.
-          </p>
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={() => router.push("/admin/login")}
-              className="w-full h-12 inline-flex items-center justify-center text-xs font-sans uppercase font-medium tracking-widest bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
-            >
-              Go to Sign In
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Filter navigation items: Settings strictly visible to owners only (5 items max)
-  const isOwner = user.role === "owner";
+  const isOwner = mounted && user?.role === "owner";
   const visibleNavItems = NAV_ITEMS.filter((item) => !item.ownerOnly || isOwner);
 
   const isItemActive = (href: string) => {
@@ -142,21 +114,25 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
         </Link>
 
         <div className="flex items-center space-x-2">
-          <span className="text-[9px] font-mono uppercase px-2 py-0.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--text-secondary)]">
-            {user.role}
-          </span>
           <ThemeToggle />
-          <button
-            type="button"
-            onClick={signOut}
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center text-[var(--text-secondary)] hover:text-red-400 transition-colors"
-            aria-label="Sign out"
-            title="Sign Out"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-          </button>
+          {mounted && user && (
+            <div className="flex items-center space-x-1.5" suppressHydrationWarning>
+              <span className="text-[9px] font-mono uppercase px-2 py-0.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--text-secondary)]">
+                {user.role}
+              </span>
+              <button
+                type="button"
+                onClick={signOut}
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-[var(--text-secondary)] hover:text-red-400 transition-colors"
+                aria-label="Sign out"
+                title="Sign Out"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
@@ -172,14 +148,16 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
               <span className="text-[10px] font-sans font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
                 Staff CRM
               </span>
-              <span className="text-[9px] font-mono px-1.5 py-0.2 bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--text-secondary)] uppercase">
-                {user.role}
-              </span>
+              {mounted && user && (
+                <span className="text-[9px] font-mono px-1.5 py-0.2 bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--text-secondary)] uppercase">
+                  {user.role}
+                </span>
+              )}
             </div>
           </Link>
 
           {/* Navigation Items (Max 5 items) */}
-          <nav className="space-y-1.5" aria-label="Desktop Admin Navigation">
+          <nav className="space-y-1.5" aria-label="Desktop Admin Navigation" suppressHydrationWarning>
             {visibleNavItems.map((item) => {
               const active = isItemActive(item.href);
               return (
@@ -201,15 +179,23 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Footer Area: User identity, Theme toggle & Sign out */}
-        <div className="space-y-4 pt-6 border-t border-[var(--border-hairline)]">
-          <div className="space-y-0.5">
-            <p className="text-xs font-serif text-[var(--text-primary)] truncate">
-              {user.displayName}
-            </p>
-            <p className="text-[10px] font-mono text-[var(--text-secondary)] truncate">
-              {user.email}
-            </p>
-          </div>
+        <div className="space-y-4 pt-6 border-t border-[var(--border-hairline)]" suppressHydrationWarning>
+          {mounted && user ? (
+            <div className="space-y-0.5">
+              <p className="text-xs font-serif text-[var(--text-primary)] truncate">
+                {user.displayName}
+              </p>
+              <p className="text-[10px] font-mono text-[var(--text-secondary)] truncate">
+                {user.email}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-0.5">
+              <p className="text-xs font-serif text-[var(--text-secondary)]">
+                Showroom Portal
+              </p>
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <Link
@@ -222,25 +208,78 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
             <ThemeToggle />
           </div>
 
-          <button
-            type="button"
-            onClick={signOut}
-            className="w-full min-h-[44px] px-3 flex items-center justify-center text-xs font-sans uppercase font-medium tracking-[0.16em] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-red-400 hover:border-red-900 transition-colors cursor-pointer"
-          >
-            Sign Out
-          </button>
+          {mounted && user ? (
+            <button
+              type="button"
+              onClick={signOut}
+              className="w-full min-h-[44px] px-3 flex items-center justify-center text-xs font-sans uppercase font-medium tracking-[0.16em] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-red-400 hover:border-red-900 transition-colors cursor-pointer"
+            >
+              Sign Out
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => router.push("/admin/login")}
+              className="w-full min-h-[44px] px-3 flex items-center justify-center text-xs font-sans uppercase font-medium tracking-[0.16em] bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
+            >
+              Sign In
+            </button>
+          )}
         </div>
       </aside>
 
       {/* Main Workspace Area (pb-24 lg:pb-12 ensures mobile bottom tab bar never covers content) */}
       <main className="flex-1 min-w-0 p-4 sm:p-8 lg:p-12 pb-24 lg:pb-12 overflow-x-hidden">
-        {children}
+        {!mounted || loading ? (
+          <>
+            <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-3">
+              <div className="w-6 h-6 border-2 border-[var(--accent)] border-t-transparent animate-spin rounded-full" />
+              <span className="text-xs uppercase tracking-widest font-mono text-[var(--text-secondary)]">
+                Loading Showroom System...
+              </span>
+            </div>
+            {/* Kept mounted for Next.js instant navigation segment validation */}
+            <div className="hidden" aria-hidden="true">
+              {children}
+            </div>
+          </>
+        ) : !user ? (
+          <div className="min-h-[60vh] flex items-center justify-center p-6">
+            <div className="max-w-md w-full p-8 bg-[var(--bg-surface)] border border-[var(--border-hairline)] space-y-6 text-center">
+              <span className="font-mono text-xs uppercase tracking-widest text-[var(--accent)] block">
+                Staff Portal Protected
+              </span>
+              <h2 className="font-serif text-2xl text-[var(--text-primary)]">
+                Please Sign In to Access Showroom CRM
+              </h2>
+              <p className="text-xs text-[var(--text-secondary)] font-light leading-relaxed">
+                This area is restricted to RS Enterprises sales staff and company directors.
+              </p>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => router.push("/admin/login")}
+                  className="w-full h-12 inline-flex items-center justify-center text-xs font-sans uppercase font-medium tracking-widest bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
+                >
+                  Go to Sign In
+                </button>
+              </div>
+            </div>
+            {/* Kept mounted for Next.js instant navigation segment validation */}
+            <div className="hidden" aria-hidden="true">
+              {children}
+            </div>
+          </div>
+        ) : (
+          children
+        )}
       </main>
 
       {/* Mobile Bottom Tab Bar (Fixed bottom navigation for mobile & tablet, >= 44px tap targets) */}
       <nav
         className="lg:hidden fixed bottom-0 inset-x-0 z-50 bg-[var(--bg-surface)] border-t border-[var(--border-hairline)] h-16 px-1 flex items-stretch justify-around backdrop-blur-md"
         aria-label="Mobile Admin Navigation"
+        suppressHydrationWarning
       >
         {visibleNavItems.map((item) => {
           const active = isItemActive(item.href);

@@ -15,6 +15,7 @@ import { VehicleGallery } from "@/components/vehicle-detail/VehicleGallery";
 import { LeadEnquiryForm } from "@/components/vehicle-detail/LeadEnquiryForm";
 import { MobileVehicleStickyBar } from "@/components/vehicle-detail/MobileVehicleStickyBar";
 import { VehicleCompareCheckbox } from "@/components/vehicles/VehicleCompareCheckbox";
+import { SaveSearchButton } from "@/components/vehicles/SaveSearchButton";
 import { LazyCompareTray } from "@/components/vehicles/LazyCompareTray";
 import { formatBodyType, formatBranch } from "@/types/vehicle";
 import {
@@ -205,10 +206,10 @@ export default async function VehicleDetailPage(props: {
                     ? "bg-emerald-950/20 text-emerald-400 border-emerald-800/40"
                     : "bg-[var(--bg-surface)] text-[var(--text-secondary)] border-[var(--border-hairline)]"
                 }`}>
-                  {vehicle.registrationStatus === "unregistered" ? "Unregistered &bull; Direct Import" : "Registered Pre-Owned"}
+                  {vehicle.registrationStatus === "unregistered" ? "Unregistered • Direct Import" : "Registered Pre-Owned"}
                 </span>
                 <span className="text-[11px] font-mono text-[var(--accent)] uppercase tracking-wider">
-                  Auction Grade {vehicle.auctionGrade} ({vehicle.auctionScore}) &bull; Verified Sheet
+                  Auction Grade {vehicle.auctionGrade} ({vehicle.auctionScore}){vehicle.verified ? " \u2022 Verified Sheet" : ""}
                 </span>
                 {vehicle.expectedArrival && (
                   <span className="text-[11px] font-mono text-[var(--text-muted)] uppercase tracking-wider">
@@ -221,6 +222,34 @@ export default async function VehicleDetailPage(props: {
               <Heading level={1} className="max-w-4xl">
                 {vehicleTitle}
               </Heading>
+
+              {/* Mobile Only: Price & WhatsApp Action Block directly under the title, before the gallery */}
+              <div className="lg:hidden pt-4 pb-1 border-t border-[var(--border-hairline)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--text-muted)] block">
+                    Showroom Price
+                  </span>
+                  {vehicle.price ? (
+                    <Numeral
+                      value={vehicle.price.toLocaleString("en-US")}
+                      prefix="LKR"
+                      size="lg"
+                    />
+                  ) : (
+                    <span className="font-serif text-2xl font-light text-[var(--accent)] block">
+                      Call For Price
+                    </span>
+                  )}
+                </div>
+
+                {!isSold && (
+                  <WhatsAppButton
+                    message={waInquiryMessage}
+                    label="Inquire via WhatsApp"
+                    className="w-full sm:w-auto text-center"
+                  />
+                )}
+              </div>
             </div>
           </Container>
         </div>
@@ -266,7 +295,7 @@ export default async function VehicleDetailPage(props: {
                 {/* 3. Detailed Specifications List (Two-Column with Hairlines) */}
                 <div className="space-y-6">
                   <div className="border-b border-[var(--border-hairline)] pb-3">
-                    <Eyebrow>Factory Dossier &bull; Specifications</Eyebrow>
+                    <Eyebrow>Factory Specifications &amp; Details</Eyebrow>
                     <Heading level={3} className="mt-1">
                       Comprehensive Vehicle Specifications
                     </Heading>
@@ -310,7 +339,7 @@ export default async function VehicleDetailPage(props: {
                     <div className="py-3.5 grid grid-cols-2">
                       <span className="text-[var(--text-muted)] uppercase tracking-wider">Previous Owners</span>
                       <span className="text-[var(--text-primary)] font-medium">
-                        {vehicle.registrationStatus === "unregistered" ? "0 (Zero Local Owners &bull; Brand New in SL)" : `${vehicle.owners} Owner(s)`}
+                        {vehicle.registrationStatus === "unregistered" ? "0 (Zero Local Owners • Brand New in SL)" : `${vehicle.owners} Owner(s)`}
                       </span>
                     </div>
                     <div className="py-3.5 grid grid-cols-2">
@@ -397,7 +426,13 @@ export default async function VehicleDetailPage(props: {
                         <Numeral
                           value={vehicle.price.toLocaleString("en-US")}
                           prefix="LKR"
-                          label={isSold ? "Sold Price Record" : "Kaduruwela Showroom Price"}
+                          label={
+                            isSold
+                              ? "Sold Price Record"
+                              : vehicle.branch === "trincomalee"
+                              ? "Trincomalee Showroom Price"
+                              : "Kaduruwela Showroom Price"
+                          }
                           size="xl"
                         />
                       ) : (
@@ -430,16 +465,38 @@ export default async function VehicleDetailPage(props: {
                         variant="outline"
                         className="w-full text-center"
                       />
+                      <SaveSearchButton
+                        label={`Set WhatsApp Alert for Similar ${vehicle.model}`}
+                        initialCriteria={{
+                          make: vehicle.make,
+                          model: vehicle.model,
+                          maxPrice: vehicle.price || null,
+                          bodyType: vehicle.bodyType,
+                        }}
+                        variant="pill"
+                        className="w-full text-center"
+                      />
                     </div>
                   ) : (
-                    <div className="p-4 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] text-center space-y-2">
-                      <span className="text-xs font-mono uppercase font-bold text-[var(--status-sold)]">
-                        Vehicle Sold &bull; Unit Delivered
+                    <div className="p-4 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] text-center space-y-3">
+                      <span className="text-xs font-mono uppercase font-bold text-[var(--status-sold)] block">
+                        Vehicle Sold • Unit Delivered
                       </span>
-                      <p className="text-xs text-[var(--text-secondary)] font-light">
+                      <p className="text-xs text-[var(--text-secondary)] font-light leading-relaxed">
                         This specific chassis has been delivered. We can source an identical
                         specification directly from upcoming Tokyo auctions.
                       </p>
+                      <SaveSearchButton
+                        label={`Set WhatsApp Alert for ${vehicle.make} ${vehicle.model}`}
+                        initialCriteria={{
+                          make: vehicle.make,
+                          model: vehicle.model,
+                          maxPrice: vehicle.price ? Math.round(vehicle.price * 1.05) : null,
+                          bodyType: vehicle.bodyType,
+                        }}
+                        variant="solid"
+                        className="w-full text-center"
+                      />
                     </div>
                   )}
 
@@ -464,11 +521,12 @@ export default async function VehicleDetailPage(props: {
                     <svg className="w-4 h-4 stroke-current" viewBox="0 0 24 24" fill="none" strokeWidth="1.6">
                       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                     </svg>
-                    <span className="uppercase tracking-wider text-[11px]">Certified Provenance</span>
+                    <span className="uppercase tracking-wider text-[11px]">Certified Japanese Authenticity</span>
                   </div>
                   <p className="text-[11px] leading-relaxed">
-                    Includes original Japanese export certificate, verified odometer reading,
-                    and USS/TAA auction inspection records.
+                    {vehicle.verified
+                      ? "Includes original Japanese export certificate, verified odometer reading, and USS/TAA auction inspection records."
+                      : "Includes Japanese export certificate, recorded odometer history, and available port clearance documentation."}
                   </p>
                 </div>
               </div>

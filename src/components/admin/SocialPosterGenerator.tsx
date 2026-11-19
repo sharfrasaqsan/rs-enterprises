@@ -43,7 +43,7 @@ Authentic Japanese auction unit with verified export certificate and JEVIC inspe
 Main Showroom: No.37/1, Kaduruwela, Polonnaruwa
 📞 Hotline: ${phone} | Mobile: ${mobile}
 📲 WhatsApp: +${whatsappDigits}
-🔗 Full specs & public dossier:
+🔗 Full specs & vehicle details:
 ${vehicleUrl}
 
 #RSEnterprises #JapaneseCarsSriLanka #${vehicle.make} #${vehicle.model.replace(/[\s-]+/g, "")} #Kaduruwela #DirectImport`;
@@ -223,7 +223,7 @@ ${vehicleUrl}`;
 
           <p className="text-[11px] text-[var(--text-secondary)] font-light leading-relaxed">
             &bull; Ready to paste directly into Facebook Page, Instagram captions, Threads, or WhatsApp broadcast groups.
-            Includes verified vehicle specifications and direct link to the live public dossier.
+            Includes verified vehicle specifications and direct link to the live vehicle listing.
           </p>
         </div>
       </div>

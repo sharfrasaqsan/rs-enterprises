@@ -39,7 +39,7 @@ export default async function HomePage() {
       <Hero featuredVehicle={featuredVehicle} settings={settings} />
 
       {/* 2. Slim Search Strip (Overlapping Hero edge) */}
-      <SearchStrip availableMakes={availableMakes} />
+      <SearchStrip availableMakes={availableMakes} settings={settings} />
 
       {/* 3. New Arrivals (Asymmetric 12-column editorial layout) */}
       <NewArrivals vehicles={newArrivals} />

@@ -118,6 +118,11 @@ export function Footer({ settings }: { settings: CompanySettings }) {
                 </Link>
               </li>
               <li>
+                <Link href="/services#trade-in" className="hover:text-[var(--text-primary)] transition-colors">
+                  Trade-In Valuation
+                </Link>
+              </li>
+              <li>
                 <Link href="/spare-parts" className="hover:text-[var(--text-primary)] transition-colors">
                   Genuine Spare Parts
                 </Link>

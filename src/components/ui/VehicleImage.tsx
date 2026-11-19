@@ -1,5 +1,5 @@
 import React from "react";
-import Image, { ImageProps } from "next/image";
+import Image from "next/image";
 
 export interface VehicleImageProps {
   src: string;
@@ -30,13 +30,17 @@ export function VehicleImage({
     "21/9": "aspect-[21/9]",
   }[aspectRatio];
 
-  // Resolve placeholders to real high-resolution luxury automotive photography
+  // Resolve to neutral coming soon placeholder if image is missing or legacy sample SVG
+  // Guarantees we never reuse another vehicle's photo
   const resolvedSrc =
-    !src || src.includes("sample-prado.svg")
-      ? "/images/vehicles/land-cruiser-300.jpg"
-      : src.includes("sample-vezel.svg")
-      ? "/images/vehicles/vezel-hybrid.jpg"
+    !src || src.includes("sample-prado.svg") || src.includes("sample-vezel.svg")
+      ? "/images/vehicles/placeholder-coming-soon.webp"
       : src;
+
+  const isSvg =
+    resolvedSrc.toLowerCase().endsWith(".svg") ||
+    resolvedSrc.includes(".svg") ||
+    resolvedSrc.startsWith("data:image/svg+xml");
 
   return (
     <div
@@ -50,6 +54,7 @@ export function VehicleImage({
         loading={priority ? undefined : "lazy"}
         sizes={sizes}
         quality={quality}
+        unoptimized={isSvg}
         className={`object-cover object-center transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.03] ${imageClassName}`}
       />
       {/* Subtle showroom gradient overlay for atmospheric depth and contrast */}

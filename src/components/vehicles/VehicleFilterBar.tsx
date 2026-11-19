@@ -1,30 +1,24 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, startTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import {
-  VehicleStatus,
-  FuelType,
-  TransmissionType,
-  BodyType,
-  DealershipBranch,
-  formatBodyType,
-  formatBranch,
-} from "@/types/vehicle";
+import { formatBodyType } from "@/types/vehicle";
+import { SaveSearchButton } from "./SaveSearchButton";
 
 export interface VehicleFilterBarProps {
   availableMakes: string[];
   totalResults: number;
+  availableCount?: number;
 }
 
 export function VehicleFilterBar({
   availableMakes,
   totalResults,
+  availableCount,
 }: VehicleFilterBarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   // Read current filters from URL
@@ -271,45 +265,62 @@ export function VehicleFilterBar({
       </div>
 
       {/* 
-        Active Filter Removable Text Tags 
+        Active Filter Removable Text Tags & Save Search Alert Action
       */}
-      <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-        <span className="text-[11px] font-sans uppercase tracking-[0.18em] text-[var(--text-muted)] mr-2 hidden sm:inline-block">
-          Active Filters:
-        </span>
-
-        {activeTags.length === 0 ? (
-          <span className="text-xs text-[var(--text-muted)] font-light italic">
-            Showing all showroom inventory ({totalResults} available)
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-sans uppercase tracking-[0.18em] text-[var(--text-muted)] mr-2 hidden sm:inline-block">
+            Active Filters:
           </span>
-        ) : (
-          <>
-            {activeTags.map((tag) => (
-              <span
-                key={tag.key}
-                className="inline-flex items-center bg-[var(--bg-surface)] border border-[var(--border-subtle)] px-2.5 py-1 rounded-[2px] text-[11px] font-sans font-medium text-[var(--text-primary)] uppercase tracking-wider space-x-1.5"
-              >
-                <span>{tag.label}</span>
-                <button
-                  type="button"
-                  onClick={() => removeParam(tag.key)}
-                  aria-label={`Remove filter ${tag.label}`}
-                  className="text-[var(--text-muted)] hover:text-[var(--accent)] font-bold px-1 min-w-[20px] min-h-[20px] cursor-pointer"
-                >
-                  &times;
-                </button>
-              </span>
-            ))}
 
-            <button
-              type="button"
-              onClick={clearAllFilters}
-              className="text-[11px] font-sans uppercase tracking-[0.16em] text-[var(--accent)] hover:underline ml-2 min-h-[36px] inline-flex items-center cursor-pointer"
-            >
-              Reset All
-            </button>
-          </>
-        )}
+          {activeTags.length === 0 ? (
+            <span className="text-xs text-[var(--text-muted)] font-light italic">
+              Showing all showroom inventory ({availableCount ?? totalResults} available)
+            </span>
+          ) : (
+            <>
+              {activeTags.map((tag) => (
+                <span
+                  key={tag.key}
+                  className="inline-flex items-center bg-[var(--bg-surface)] border border-[var(--border-subtle)] px-2.5 py-1 rounded-[2px] text-[11px] font-sans font-medium text-[var(--text-primary)] uppercase tracking-wider space-x-1.5"
+                >
+                  <span>{tag.label}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeParam(tag.key)}
+                    aria-label={`Remove filter ${tag.label}`}
+                    className="text-[var(--text-muted)] hover:text-[var(--accent)] font-bold px-1 min-w-[20px] min-h-[20px] cursor-pointer"
+                  >
+                    &times;
+                  </button>
+                </span>
+              ))}
+
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="text-[11px] font-sans uppercase tracking-[0.16em] text-[var(--accent)] hover:underline ml-2 min-h-[36px] inline-flex items-center cursor-pointer"
+              >
+                Reset All
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* 1-Tap Save Search / Stock Alert Trigger */}
+        <div className="shrink-0">
+          <SaveSearchButton
+            initialCriteria={{
+              make: currentMake !== "all" ? currentMake : undefined,
+              model: currentModel || undefined,
+              maxPrice: currentMaxPrice ? Number(currentMaxPrice) : null,
+              bodyType: currentBodyType !== "all" ? currentBodyType : undefined,
+              branch: currentBranch !== "all" ? currentBranch : undefined,
+            }}
+            label={activeTags.length > 0 ? "Save Filter & Get WhatsApp Alert" : "Set Back-in-Stock Alert"}
+            variant="pill"
+          />
+        </div>
       </div>
 
       {/* 

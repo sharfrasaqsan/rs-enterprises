@@ -12,12 +12,16 @@ export function ThemeToggle({ className = "" }: ThemeToggleProps) {
 
   useEffect(() => {
     // Read active theme from document attribute set by the blocking head script
-    const currentTheme =
-      document.documentElement.getAttribute("data-theme") === "light"
-        ? "light"
-        : "dark";
-    setTheme(currentTheme);
-    setMounted(true);
+    const timer = setTimeout(() => {
+      const currentTheme =
+        document.documentElement.getAttribute("data-theme") === "light"
+          ? "light"
+          : "dark";
+      setTheme(currentTheme);
+      setMounted(true);
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const toggleTheme = () => {
@@ -50,9 +54,10 @@ export function ThemeToggle({ className = "" }: ThemeToggleProps) {
     <button
       type="button"
       onClick={toggleTheme}
+      suppressHydrationWarning
       aria-label={`Switch to ${isLight ? "dark" : "light"} theme (currently ${theme})`}
       aria-pressed={isLight}
-      className={`relative inline-flex items-center justify-center min-w-[44px] min-h-[44px] px-3 py-2 rounded-[2px] border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-luxury cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] ${className}`}
+      className={`relative inline-flex items-center justify-center min-w-[40px] min-h-[40px] p-2 rounded-[2px] border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-luxury cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] ${className}`}
     >
       <span className="sr-only">Toggle theme</span>
       

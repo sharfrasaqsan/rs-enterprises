@@ -2,17 +2,20 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Vehicle, VehicleStatus, formatBodyType, formatBranch } from "@/types/vehicle";
+import { Vehicle, VehicleStatus, formatBodyType, formatBranch, getHoldExpiryStatus } from "@/types/vehicle";
 import {
   toggleVehiclePublishedAction,
   updateVehicleStatusAction,
   archiveVehicleAction,
   unarchiveVehicleAction,
+  releaseVehicleReservationAction,
 } from "@/app/actions/admin";
 import { useAdminAuth } from "@/app/admin/AdminAuthContext";
 import { Heading } from "@/components/ui/Heading";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { VehicleImage } from "@/components/ui/VehicleImage";
+import { ReserveVehicleModal } from "./ReserveVehicleModal";
+import { formatPhoneDisplay } from "@/lib/phone";
 
 export function VehiclesManagerClient({
   initialVehicles,
@@ -28,9 +31,22 @@ export function VehiclesManagerClient({
   const [searchQuery, setSearchQuery] = useState("");
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [archiveConfirmId, setArchiveConfirmId] = useState<string | null>(null);
+  const [reserveModalVehicle, setReserveModalVehicle] = useState<Vehicle | null>(null);
+  const [releaseConfirmId, setReleaseConfirmId] = useState<string | null>(null);
 
   const activeVehicles = vehicles.filter((v) => !v.archived);
   const archivedVehicles = vehicles.filter((v) => Boolean(v.archived));
+
+  // Hold expiry alerts across fleet
+  const reservedWithHolds = activeVehicles
+    .filter((v) => v.status === "reserved" && v.reservation?.holdExpiryDate)
+    .map((v) => ({
+      vehicle: v,
+      holdStatus: getHoldExpiryStatus(v.reservation?.holdExpiryDate),
+    }));
+
+  const expiredHolds = reservedWithHolds.filter((item) => item.holdStatus?.isExpired);
+  const expiringSoonHolds = reservedWithHolds.filter((item) => item.holdStatus?.isExpiringSoon);
 
   const targetList = viewTab === "active" ? activeVehicles : archivedVehicles;
 
@@ -73,6 +89,14 @@ export function VehiclesManagerClient({
   }
 
   async function handleStatusChange(vehicleId: string, newStatus: VehicleStatus) {
+    if (newStatus === "reserved") {
+      const target = vehicles.find((v) => v.id === vehicleId);
+      if (target) {
+        setReserveModalVehicle(target);
+        return;
+      }
+    }
+
     setLoadingId(vehicleId);
     const updatedBy = user?.displayName || "Showroom Staff";
     const res = await updateVehicleStatusAction(vehicleId, newStatus, undefined, updatedBy);
@@ -81,10 +105,39 @@ export function VehiclesManagerClient({
       setVehicles((prev) =>
         prev.map((v) =>
           v.id === vehicleId
-            ? { ...v, status: newStatus, updatedAt: new Date().toISOString(), updatedBy }
+            ? {
+                ...v,
+                status: newStatus,
+                reservation: newStatus !== "reserved" ? null : v.reservation,
+                updatedAt: new Date().toISOString(),
+                updatedBy,
+              }
             : v
         )
       );
+    }
+  }
+
+  async function handleReleaseHold(vehicleId: string) {
+    setLoadingId(vehicleId);
+    const updatedBy = user?.displayName || "Showroom Staff";
+    const res = await releaseVehicleReservationAction(vehicleId, "Staff released hold", updatedBy);
+    setLoadingId(null);
+    if (res.success) {
+      setVehicles((prev) =>
+        prev.map((v) =>
+          v.id === vehicleId
+            ? {
+                ...v,
+                status: "available",
+                reservation: null,
+                updatedAt: new Date().toISOString(),
+                updatedBy,
+              }
+            : v
+        )
+      );
+      setReleaseConfirmId(null);
     }
   }
 
@@ -157,6 +210,38 @@ export function VehiclesManagerClient({
           + Add New Vehicle
         </Link>
       </div>
+
+      {/* Active Hold Expiry Alerts Banner */}
+      {(expiredHolds.length > 0 || expiringSoonHolds.length > 0) && (
+        <div className="p-4 bg-amber-950/20 border border-amber-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <span className="text-xl">⚠️</span>
+            <div className="space-y-0.5">
+              <p className="font-serif text-base text-[var(--text-primary)] font-medium">
+                {expiredHolds.length > 0
+                  ? `${expiredHolds.length} Vehicle Reservation Hold${expiredHolds.length === 1 ? "" : "s"} Expired`
+                  : `${expiringSoonHolds.length} Vehicle Reservation Hold${expiringSoonHolds.length === 1 ? "" : "s"} Expiring Soon`}
+              </p>
+              <p className="text-xs text-[var(--text-secondary)] font-light">
+                {expiredHolds.length > 0
+                  ? "Deposit hold duration has elapsed. Contact buyer for payment settlement or release hold back to showroom stock."
+                  : "Customer deposit hold expires within 24 hours. Contact customer for final registration balance."}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setViewTab("active");
+              setStatusFilter("reserved");
+            }}
+            className="min-h-[40px] px-4 text-xs font-sans uppercase font-medium tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-colors self-start sm:self-auto cursor-pointer"
+          >
+            Filter Reserved Units ({reservedWithHolds.length})
+          </button>
+        </div>
+      )}
 
       {/* Tabs: Active vs Archived */}
       <div className="flex items-center gap-4 border-b border-[var(--border-hairline)] pb-2">
@@ -270,28 +355,30 @@ export function VehiclesManagerClient({
             return (
               <div
                 key={vehicle.id}
-                className={`p-4 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6 transition-opacity ${
+                className={`p-5 sm:p-6 space-y-4 transition-opacity ${
                   isUpdating ? "opacity-50 pointer-events-none" : ""
                 }`}
               >
                 {/* Vehicle Thumbnail + Info */}
-                <div className="flex items-start gap-4 flex-1 min-w-0">
-                  <div className="w-24 sm:w-32 shrink-0">
+                <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
+                  <div className="w-28 sm:w-36 md:w-44 shrink-0 overflow-hidden rounded-[2px] border border-[var(--border-hairline)] bg-[var(--bg-base)]">
                     <VehicleImage
-                      src={vehicle.images[0] || "/images/vehicles/sample-prado.svg"}
+                      src={vehicle.images[0] || "/images/vehicles/placeholder-coming-soon.webp"}
                       alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
                       aspectRatio="16/10"
                     />
                   </div>
 
-                  <div className="space-y-1.5 min-w-0">
+                  <div className="space-y-2 flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-serif text-lg sm:text-xl text-[var(--text-primary)] font-medium">
+                      <span className="font-serif text-lg sm:text-xl text-[var(--text-primary)] font-medium leading-snug">
                         {vehicle.year} {vehicle.make} {vehicle.model}
                       </span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--text-secondary)]">
-                        {vehicle.grade}
-                      </span>
+                      {vehicle.grade && (
+                        <span className="text-[10px] font-mono px-2 py-0.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--text-secondary)]">
+                          {vehicle.grade}
+                        </span>
+                      )}
                       {vehicle.chassisNumber && (
                         <span className="text-[10px] font-mono px-2 py-0.5 uppercase rounded-[2px] bg-amber-500/10 text-amber-400 border border-amber-500/30" title="Chassis / VIN (Admin Only)">
                           VIN: {vehicle.chassisNumber}
@@ -314,29 +401,29 @@ export function VehiclesManagerClient({
                       )}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--text-secondary)]">
                       <span className="text-[var(--accent)] font-medium">
                         {formatBranch(vehicle.branch)}
                       </span>
-                      <span>&bull;</span>
+                      <span>•</span>
                       <span>{formatBodyType(vehicle.bodyType)}</span>
-                      <span>&bull;</span>
+                      <span>•</span>
                       <span>{vehicle.driveType}</span>
-                      <span>&bull;</span>
+                      <span>•</span>
                       <span>{vehicle.seats} Seats</span>
-                      <span>&bull;</span>
-                      <span className={vehicle.registrationStatus === "unregistered" ? "text-emerald-400" : ""}>
+                      <span>•</span>
+                      <span className={vehicle.registrationStatus === "unregistered" ? "text-emerald-400 font-medium" : ""}>
                         {vehicle.registrationStatus === "unregistered" ? "Unregistered" : `Registered (${vehicle.owners} Owner)`}
                       </span>
-                      <span>&bull;</span>
+                      <span>•</span>
                       <span className="font-mono text-[var(--text-primary)]">
                         Grade {vehicle.auctionGrade} ({vehicle.auctionScore})
                       </span>
                     </div>
 
                     <p className="text-xs text-[var(--text-secondary)] font-light">
-                      {vehicle.mileage.toLocaleString("en-US")} KM &bull; {vehicle.fuel} &bull;{" "}
-                      {vehicle.transmission} &bull; {vehicle.color}
+                      {vehicle.mileage.toLocaleString("en-US")} KM • {vehicle.fuel} •{" "}
+                      {vehicle.transmission} • {vehicle.color}
                     </p>
 
                     <div className="flex items-center gap-4 pt-1 flex-wrap">
@@ -349,118 +436,254 @@ export function VehiclesManagerClient({
                         Updated: {formatDateTime(vehicle.updatedAt)} by {vehicle.updatedBy || "Staff"}
                       </span>
                     </div>
+
+                    {/* Showroom Deposit Note & Hold Alert Card for Reserved Units */}
+                    {vehicle.status === "reserved" && (
+                      <div className="mt-3 p-3.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] space-y-2">
+                        {(() => {
+                          const holdStatus = getHoldExpiryStatus(vehicle.reservation?.holdExpiryDate);
+                          return (
+                            <>
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 bg-[var(--accent)]/15 text-[var(--accent)] border border-[var(--accent)]/30 font-semibold rounded-[1px]">
+                                    Deposit Recorded
+                                  </span>
+                                  <span className="font-mono text-xs font-bold text-[var(--text-primary)]">
+                                    {vehicle.reservation?.depositAmount
+                                      ? `LKR ${vehicle.reservation.depositAmount.toLocaleString("en-US")}`
+                                      : "Deposit Pending"}
+                                  </span>
+                                  {vehicle.reservation?.depositDate && (
+                                    <span className="text-[10px] text-[var(--text-secondary)] font-mono">
+                                      • Paid {vehicle.reservation.depositDate}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {holdStatus && (
+                                  <span className={`px-2 py-0.5 text-[10px] font-mono uppercase font-semibold rounded-[1px] ${holdStatus.badgeClass}`}>
+                                    {holdStatus.label}
+                                  </span>
+                                )}
+                              </div>
+
+                              {(vehicle.reservation?.customerName || vehicle.reservation?.customerPhone) && (
+                                <p className="text-xs text-[var(--text-secondary)]">
+                                  Reserved by: <strong className="text-[var(--text-primary)] font-medium">{vehicle.reservation.customerName || "Customer"}</strong>
+                                  {vehicle.reservation.customerPhone && (
+                                    <span className="font-mono ml-1.5 text-[var(--text-secondary)]">
+                                      ({formatPhoneDisplay(vehicle.reservation.customerPhone)})
+                                    </span>
+                                  )}
+                                </p>
+                              )}
+
+                              {vehicle.reservation?.notes && (
+                                <p className="text-xs text-[var(--text-secondary)] italic font-light bg-[var(--bg-surface)] p-2 rounded-[2px] border border-[var(--border-hairline)]">
+                                  &ldquo;{vehicle.reservation.notes}&rdquo;
+                                </p>
+                              )}
+
+                              <div className="pt-1.5 flex flex-wrap items-center justify-between gap-2 text-[10px] text-[var(--text-secondary)] font-mono border-t border-[var(--border-hairline)]">
+                                <span>
+                                  Hold Expiry:{" "}
+                                  {vehicle.reservation?.holdExpiryDate
+                                    ? new Date(vehicle.reservation.holdExpiryDate).toLocaleString("en-LK", {
+                                        month: "short",
+                                        day: "numeric",
+                                        year: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })
+                                    : "Not configured"}
+                                </span>
+                                <span>Recorded by: {vehicle.reservation?.reservedBy || "Staff"}</span>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Management Controls */}
-                <div className="flex flex-wrap items-center gap-3 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-[var(--border-hairline)]">
+                {/* Dedicated Action Toolbar */}
+                <div className="pt-3.5 border-t border-[var(--border-hairline)] flex flex-wrap items-center justify-between gap-3">
                   {!vehicle.archived ? (
                     <>
-                      {/* Status Dropdown */}
-                      <div>
-                        <label
-                          htmlFor={`status-select-${vehicle.id}`}
-                          className="sr-only"
-                        >
-                          Status
-                        </label>
-                        <select
-                          id={`status-select-${vehicle.id}`}
-                          value={vehicle.status}
-                          onChange={(e) =>
-                            handleStatusChange(vehicle.id, e.target.value as VehicleStatus)
-                          }
-                          className="h-11 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
-                        >
-                          <option value="available">Available (Showroom)</option>
-                          <option value="incoming">Incoming (In-Transit)</option>
-                          <option value="reserved">Reserved</option>
-                          <option value="sold">Sold</option>
-                        </select>
-                      </div>
-
-                      {/* 1-Tap Show on Website Switch */}
-                      <button
-                        type="button"
-                        onClick={() => handleTogglePublished(vehicle.id, vehicle.published)}
-                        className={`min-h-[44px] px-3.5 text-xs font-sans uppercase font-medium tracking-wider border rounded-[2px] transition-colors cursor-pointer ${
-                          vehicle.published
-                            ? "border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-amber-700 hover:text-amber-400"
-                            : "border-green-800 bg-green-950/20 text-green-300 hover:bg-green-950/40"
-                        }`}
-                      >
-                        {vehicle.published ? "Hide from Site" : "Show on Website"}
-                      </button>
-
-                      {/* Edit Details */}
-                      <Link
-                        href={`/admin/vehicles/${vehicle.id}/edit`}
-                        className="min-h-[44px] px-3.5 inline-flex items-center text-xs font-sans uppercase font-medium tracking-wider bg-[var(--bg-base)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors"
-                      >
-                        Edit
-                      </Link>
-
-                      {/* Social Poster Kit */}
-                      <Link
-                        href={`/admin/vehicles/${vehicle.id}/edit#marketing`}
-                        className="min-h-[44px] px-3.5 inline-flex items-center text-xs font-sans uppercase font-medium tracking-wider bg-[var(--bg-base)] border border-[var(--border-subtle)] text-[var(--accent)] hover:border-[var(--accent)] transition-colors"
-                        title="Generate branded square & story posters with captions"
-                      >
-                        Poster
-                      </Link>
-
-                      {/* Live Public View */}
-                      <Link
-                        href={`/vehicles/${vehicle.slug}`}
-                        target="_blank"
-                        className="min-h-[44px] px-3 inline-flex items-center text-xs font-sans uppercase font-medium tracking-wider text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-                        title="View live dossier on public site"
-                      >
-                        Live &rarr;
-                      </Link>
-
-                      {/* Archive with confirmation */}
-                      {archiveConfirmId === vehicle.id ? (
-                        <div className="flex items-center gap-1.5 p-1 bg-amber-950/20 border border-amber-800 rounded-[2px]">
-                          <span className="text-[10px] text-amber-300 font-sans px-1">
-                            Archive vehicle?
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleArchiveVehicle(vehicle.id)}
-                            className="min-h-[38px] px-2.5 bg-amber-700 text-white text-[10px] font-sans uppercase tracking-wider hover:bg-amber-600 rounded-[2px]"
+                      {/* Left Operational Actions */}
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        {/* Status Dropdown */}
+                        <div>
+                          <label
+                            htmlFor={`status-select-${vehicle.id}`}
+                            className="sr-only"
                           >
-                            Confirm
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setArchiveConfirmId(null)}
-                            className="min-h-[38px] px-2 text-[10px] uppercase text-[var(--text-secondary)]"
+                            Status
+                          </label>
+                          <select
+                            id={`status-select-${vehicle.id}`}
+                            value={vehicle.status}
+                            onChange={(e) =>
+                              handleStatusChange(vehicle.id, e.target.value as VehicleStatus)
+                            }
+                            className="h-10 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] cursor-pointer"
                           >
-                            Cancel
-                          </button>
+                            <option value="available">Available (Showroom)</option>
+                            <option value="incoming">Incoming (In-Transit)</option>
+                            <option value="reserved">Reserved</option>
+                            <option value="sold">Sold</option>
+                          </select>
                         </div>
-                      ) : (
+
+                        {/* 1-Tap Show on Website Switch */}
                         <button
                           type="button"
-                          onClick={() => setArchiveConfirmId(vehicle.id)}
-                          className="min-h-[44px] px-2.5 text-xs uppercase tracking-wider text-[var(--text-secondary)] hover:text-amber-400 transition-colors cursor-pointer"
-                          title="Archive vehicle (unlists from website, preserves CRM records)"
+                          onClick={() => handleTogglePublished(vehicle.id, vehicle.published)}
+                          className={`min-h-[40px] px-3.5 text-xs font-sans uppercase font-medium tracking-wider border rounded-[2px] transition-colors cursor-pointer ${
+                            vehicle.published
+                              ? "border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-amber-700 hover:text-amber-400"
+                              : "border-green-800 bg-green-950/20 text-green-300 hover:bg-green-950/40"
+                          }`}
                         >
-                          Archive
+                          {vehicle.published ? "Hide from Site" : "Show on Website"}
                         </button>
-                      )}
+
+                        {/* "Reserve this vehicle" or Reservation Hold Management Controls */}
+                        {vehicle.status === "reserved" ? (
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setReserveModalVehicle(vehicle)}
+                              className="min-h-[40px] px-3.5 inline-flex items-center gap-1.5 text-xs font-sans uppercase font-medium tracking-wider bg-[var(--bg-base)] border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white transition-colors cursor-pointer"
+                              title="Edit deposit note or extend hold expiry"
+                            >
+                              <svg className="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                              <span>Edit Hold</span>
+                            </button>
+
+                            {releaseConfirmId === vehicle.id ? (
+                              <div className="flex items-center gap-1.5 p-1 bg-red-950/20 border border-red-800 rounded-[2px]">
+                                <span className="text-[10px] text-red-300 font-sans px-1">
+                                  Release hold?
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleReleaseHold(vehicle.id)}
+                                  className="min-h-[34px] px-2.5 bg-red-800 text-white text-[10px] font-sans uppercase tracking-wider hover:bg-red-700 rounded-[2px] cursor-pointer"
+                                >
+                                  Confirm
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setReleaseConfirmId(null)}
+                                  className="min-h-[34px] px-2 text-[10px] uppercase text-[var(--text-secondary)] cursor-pointer"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setReleaseConfirmId(vehicle.id)}
+                                className="min-h-[40px] px-3 inline-flex items-center gap-1 text-xs font-sans uppercase font-medium tracking-wider text-red-400 hover:text-red-300 hover:bg-red-950/20 border border-transparent hover:border-red-800 transition-colors cursor-pointer"
+                                title="Release deposit hold and return vehicle to Available showroom stock"
+                              >
+                                <span>Release Hold</span>
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setReserveModalVehicle(vehicle)}
+                            className="min-h-[40px] px-3.5 inline-flex items-center gap-1.5 text-xs font-sans uppercase font-medium tracking-wider bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors shadow-sm cursor-pointer"
+                            title="Reserve vehicle with customer deposit note & hold expiry"
+                          >
+                            <svg className="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="2">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                              <path d="M7 11V7a5 5 0 0110 0v4" />
+                            </svg>
+                            <span>Reserve this vehicle</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Right Quick Actions */}
+                      <div className="flex items-center gap-2">
+                        {/* Edit Details */}
+                        <Link
+                          href={`/admin/vehicles/${vehicle.id}/edit`}
+                          className="min-h-[40px] px-3.5 inline-flex items-center text-xs font-sans uppercase font-medium tracking-wider bg-[var(--bg-base)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors"
+                        >
+                          Edit
+                        </Link>
+
+                        {/* Social Poster Kit */}
+                        <Link
+                          href={`/admin/vehicles/${vehicle.id}/edit#marketing`}
+                          className="min-h-[40px] px-3.5 inline-flex items-center text-xs font-sans uppercase font-medium tracking-wider bg-[var(--bg-base)] border border-[var(--border-subtle)] text-[var(--accent)] hover:border-[var(--accent)] transition-colors"
+                          title="Generate branded square & story posters with captions"
+                        >
+                          Poster
+                        </Link>
+
+                        {/* Live Public View */}
+                        <Link
+                          href={`/vehicles/${vehicle.slug}`}
+                          target="_blank"
+                          className="min-h-[40px] px-3 inline-flex items-center text-xs font-sans uppercase font-medium tracking-wider text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                          title="View vehicle on public site"
+                        >
+                          Live &rarr;
+                        </Link>
+
+                        {/* Archive with confirmation */}
+                        {archiveConfirmId === vehicle.id ? (
+                          <div className="flex items-center gap-1.5 p-1 bg-amber-950/20 border border-amber-800 rounded-[2px]">
+                            <span className="text-[10px] text-amber-300 font-sans px-1">
+                              Archive vehicle?
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleArchiveVehicle(vehicle.id)}
+                              className="min-h-[34px] px-2.5 bg-amber-700 text-white text-[10px] font-sans uppercase tracking-wider hover:bg-amber-600 rounded-[2px]"
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setArchiveConfirmId(null)}
+                              className="min-h-[34px] px-2 text-[10px] uppercase text-[var(--text-secondary)]"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setArchiveConfirmId(vehicle.id)}
+                            className="min-h-[40px] px-2.5 text-xs uppercase tracking-wider text-[var(--text-secondary)] hover:text-amber-400 transition-colors cursor-pointer"
+                            title="Archive vehicle (unlists from website, preserves CRM records)"
+                          >
+                            Archive
+                          </button>
+                        )}
+                      </div>
                     </>
                   ) : (
                     /* Archived view actions */
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 w-full justify-between">
                       <span className="text-xs text-[var(--text-secondary)] italic">
                         Archived from public catalog
                       </span>
                       <button
                         type="button"
                         onClick={() => handleRestoreVehicle(vehicle.id)}
-                        className="min-h-[44px] px-4 text-xs font-sans uppercase font-medium tracking-wider border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white transition-colors cursor-pointer"
+                        className="min-h-[40px] px-4 text-xs font-sans uppercase font-medium tracking-wider border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white transition-colors cursor-pointer"
                       >
                         Restore to Draft
                       </button>
@@ -472,6 +695,18 @@ export function VehiclesManagerClient({
           })}
         </div>
       )}
+
+      {/* Reserve Vehicle & Deposit Note Modal */}
+      <ReserveVehicleModal
+        vehicle={reserveModalVehicle}
+        isOpen={Boolean(reserveModalVehicle)}
+        onClose={() => setReserveModalVehicle(null)}
+        onSuccess={(updatedVehicle) => {
+          setVehicles((prev) =>
+            prev.map((v) => (v.id === updatedVehicle.id ? updatedVehicle : v))
+          );
+        }}
+      />
     </div>
   );
 }

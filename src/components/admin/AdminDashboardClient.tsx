@@ -2,30 +2,45 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Vehicle } from "@/types/vehicle";
+import { Vehicle, getHoldExpiryStatus } from "@/types/vehicle";
 import { Lead } from "@/types/lead";
+import {
+  SavedSearch,
+  matchVehicleWithSavedSearch,
+  buildSavedSearchWhatsAppUrl,
+} from "@/types/saved-search";
 import { Heading } from "@/components/ui/Heading";
 import { Eyebrow } from "@/components/ui/Eyebrow";
+import { formatPhoneDisplay, buildWhatsAppUrl } from "@/lib/phone";
 
 export function AdminDashboardClient({
   vehicles,
   leads,
+  savedSearches = [],
 }: {
   vehicles: Vehicle[];
   leads: Lead[];
+  savedSearches?: SavedSearch[];
 }) {
   const [todayIso, setTodayIso] = useState<string>("");
+  const [oneWeekAgoMs, setOneWeekAgoMs] = useState<number>(0);
+  const [nowMs, setNowMs] = useState<number>(0);
 
   useEffect(() => {
-    setTodayIso(new Date().toISOString().split("T")[0] || "");
+    const timer = setTimeout(() => {
+      const now = Date.now();
+      setTodayIso(new Date(now).toISOString().split("T")[0] || "");
+      setOneWeekAgoMs(now - 7 * 24 * 60 * 60 * 1000);
+      setNowMs(now);
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   // Summary strip metrics
-  const nowMs = Date.now();
-  const oneWeekAgoMs = nowMs - 7 * 24 * 60 * 60 * 1000;
-  const leadsThisWeek = leads.filter(
-    (l) => new Date(l.createdAt).getTime() >= oneWeekAgoMs
-  ).length;
+  const leadsThisWeek =
+    oneWeekAgoMs > 0
+      ? leads.filter((l) => new Date(l.createdAt).getTime() >= oneWeekAgoMs).length
+      : leads.length;
 
   const vehiclesAvailable = vehicles.filter(
     (v) => v.status === "available" && !v.archived
@@ -34,6 +49,36 @@ export function AdminDashboardClient({
   const vehiclesIncoming = vehicles.filter(
     (v) => v.status === "incoming" && !v.archived
   ).length;
+
+  const vehiclesReserved = vehicles.filter(
+    (v) => v.status === "reserved" && !v.archived
+  ).length;
+
+  // Active reservation holds & urgent expiry tracking
+  const activeReservedVehicles = vehicles
+    .filter((v) => v.status === "reserved" && !v.archived && v.reservation)
+    .map((v) => ({
+      vehicle: v,
+      holdStatus: getHoldExpiryStatus(v.reservation?.holdExpiryDate),
+    }));
+
+  const urgentHolds = activeReservedVehicles.filter(
+    (item) => item.holdStatus?.isExpired || item.holdStatus?.isExpiringSoon
+  );
+
+  // Active back-in-stock alerts that have matches in current inventory
+  const alertsWithMatches = savedSearches
+    .map((search) => {
+      const matches = vehicles.filter(
+        (v) =>
+          v.published &&
+          v.status !== "sold" &&
+          !v.archived &&
+          matchVehicleWithSavedSearch(v, search)
+      );
+      return { search, matches };
+    })
+    .filter((item) => item.matches.length > 0 && item.search.status === "active");
 
   // 1. New enquiries (not yet contacted)
   const newEnquiries = leads.filter((l) => l.stage === "new");
@@ -70,16 +115,10 @@ export function AdminDashboardClient({
   }
 
   function getWhatsAppUrl(phone: string, name: string, vehicleTitle?: string | null): string {
-    const digits = phone.replace(/[^0-9]/g, "");
-    const formatted = digits.startsWith("94")
-      ? digits
-      : digits.startsWith("0")
-      ? "94" + digits.slice(1)
-      : "94" + digits;
     const msg = `Hello ${name}, this is RS Enterprises Kaduruwela Showroom contacting you regarding ${
       vehicleTitle || "your Japanese vehicle inquiry"
     }. How may we assist you today?`;
-    return `https://wa.me/${formatted}?text=${encodeURIComponent(msg)}`;
+    return buildWhatsAppUrl(phone, msg);
   }
 
   function renderLeadRow(lead: Lead, contextSubtitle?: string) {
@@ -103,10 +142,16 @@ export function AdminDashboardClient({
             <span className="text-[10px] font-mono text-[var(--accent)] font-semibold">
               {timeAgo}
             </span>
+            {(lead.isReturningBuyer || (lead.inquiryCount && lead.inquiryCount > 1)) && (
+              <span className="px-2 py-0.5 bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[9px] font-mono uppercase font-semibold rounded-[1px] flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                <span>{lead.inquiryCount || 2}x Merged</span>
+              </span>
+            )}
           </div>
 
           <p className="text-xs text-[var(--text-secondary)] font-light">
-            Interested in:{" "}
+            <span className="font-mono text-[var(--text-secondary)]">{formatPhoneDisplay(lead.phone)}</span> &bull; Interested in:{" "}
             <strong className="text-[var(--text-primary)] font-medium">
               {lead.vehicleTitle || "General Showroom Stock Inquiry"}
             </strong>
@@ -190,8 +235,8 @@ export function AdminDashboardClient({
         </div>
       </div>
 
-      {/* Small Summary Strip (No charts, pure utilitarian count blocks) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[var(--border-hairline)] border border-[var(--border-hairline)] bg-[var(--bg-surface)]">
+      {/* Small Summary Strip (Pure utilitarian count blocks) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[var(--border-hairline)] border border-[var(--border-hairline)] bg-[var(--bg-surface)]">
         <div className="p-4 sm:p-5 flex items-center justify-between">
           <div>
             <span className="text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] block">
@@ -209,10 +254,10 @@ export function AdminDashboardClient({
         <div className="p-4 sm:p-5 flex items-center justify-between">
           <div>
             <span className="text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] block">
-              Vehicles In Showroom
+              Available Fleet
             </span>
             <span className="text-xs text-[var(--text-secondary)] font-light mt-0.5 block">
-              Available at Kaduruwela
+              In showroom stock
             </span>
           </div>
           <span className="font-mono text-3xl font-semibold text-[var(--text-primary)]">
@@ -223,10 +268,28 @@ export function AdminDashboardClient({
         <div className="p-4 sm:p-5 flex items-center justify-between">
           <div>
             <span className="text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] block">
+              Reserved &amp; On Hold
+            </span>
+            <span className="text-xs text-[var(--text-secondary)] font-light mt-0.5 block">
+              {urgentHolds.length > 0 ? (
+                <span className="text-amber-400 font-medium">⚠️ {urgentHolds.length} hold alert{urgentHolds.length === 1 ? "" : "s"}</span>
+              ) : (
+                "With customer deposit"
+              )}
+            </span>
+          </div>
+          <span className={`font-mono text-3xl font-semibold ${urgentHolds.length > 0 ? "text-amber-400" : "text-[var(--text-primary)]"}`}>
+            {vehiclesReserved}
+          </span>
+        </div>
+
+        <div className="p-4 sm:p-5 flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] block">
               Incoming From Japan
             </span>
             <span className="text-xs text-[var(--text-secondary)] font-light mt-0.5 block">
-              Auction &amp; high seas transit
+              Auction &amp; sea transit
             </span>
           </div>
           <span className="font-mono text-3xl font-semibold text-[var(--text-primary)]">
@@ -234,6 +297,174 @@ export function AdminDashboardClient({
           </span>
         </div>
       </div>
+
+      {/* Urgent Attention: Vehicle Hold Expiry Alerts */}
+      {urgentHolds.length > 0 && (
+        <section className="space-y-3 p-5 bg-amber-950/20 border border-amber-500/40 rounded-[2px]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-amber-500/20">
+            <div className="flex items-center gap-2.5">
+              <span className="text-xl">⚠️</span>
+              <div>
+                <h2 className="font-serif text-xl sm:text-2xl text-[var(--text-primary)] font-medium">
+                  Vehicle Hold Expiry Alerts ({urgentHolds.length})
+                </h2>
+                <p className="text-xs text-[var(--text-secondary)] font-light">
+                  Deposit hold duration has elapsed or expires today. Contact buyer or release hold back to showroom stock.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/admin/vehicles?status=reserved"
+              className="px-4 py-2 text-xs font-sans uppercase font-medium tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-colors self-start sm:self-auto"
+            >
+              Open Inventory &rarr;
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            {urgentHolds.map(({ vehicle, holdStatus }) => {
+              const res = vehicle.reservation!;
+              const buyerWa = res.customerPhone
+                ? buildWhatsAppUrl(
+                    res.customerPhone,
+                    `Hello ${res.customerName || "Customer"}, this is RS Enterprises regarding your deposit hold on the ${vehicle.year} ${vehicle.make} ${vehicle.model}. The hold period is expiring. Could you kindly advise on the paperwork settlement?`
+                  )
+                : null;
+
+              return (
+                <div
+                  key={vehicle.id}
+                  className="p-4 bg-[var(--bg-surface)] border border-[var(--border-subtle)] space-y-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-serif text-lg text-[var(--text-primary)] font-medium">
+                        {vehicle.year} {vehicle.make} {vehicle.model}
+                      </p>
+                      <p className="text-[11px] font-mono text-[var(--accent)] font-semibold">
+                        Deposit: LKR {res.depositAmount.toLocaleString("en-US")}
+                      </p>
+                    </div>
+                    {holdStatus && (
+                      <span className={`px-2 py-0.5 text-[9px] font-mono uppercase font-semibold rounded-[1px] ${holdStatus.badgeClass}`}>
+                        {holdStatus.label}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="text-xs text-[var(--text-secondary)] space-y-0.5">
+                    <p>
+                      Buyer: <strong className="text-[var(--text-primary)]">{res.customerName || "Unknown Customer"}</strong>
+                      {res.customerPhone && (
+                        <span className="font-mono ml-1 text-[var(--text-secondary)]">
+                          ({formatPhoneDisplay(res.customerPhone)})
+                        </span>
+                      )}
+                    </p>
+                    {res.notes && (
+                      <p className="italic text-[11px] font-light truncate">
+                        &ldquo;{res.notes}&rdquo;
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-between gap-2 border-t border-[var(--border-hairline)]">
+                    <span className="text-[10px] font-mono text-[var(--text-secondary)]">
+                      Expiry: {new Date(res.holdExpiryDate).toLocaleDateString("en-LK")}
+                    </span>
+
+                    <div className="flex items-center gap-2">
+                      {buyerWa && (
+                        <a
+                          href={buyerWa}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2.5 py-1 text-[10px] font-sans uppercase font-medium tracking-wider bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors rounded-[1px]"
+                        >
+                          WhatsApp Buyer
+                        </a>
+                      )}
+                      <Link
+                        href={`/admin/vehicles/${vehicle.id}/edit`}
+                        className="px-2.5 py-1 text-[10px] font-sans uppercase font-medium tracking-wider border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors rounded-[1px]"
+                      >
+                        Manage
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Back-in-Stock Match Alerts (Waiting Buyers) */}
+      {alertsWithMatches.length > 0 && (
+        <section className="space-y-3 p-5 bg-[var(--bg-surface)] border border-amber-500/50 rounded-[2px]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[var(--border-hairline)]">
+            <div className="flex items-center gap-2.5">
+              <span className="text-xl">🔔</span>
+              <div>
+                <h2 className="font-serif text-xl sm:text-2xl text-[var(--text-primary)] font-medium">
+                  Back-in-Stock Match Alerts ({alertsWithMatches.length} Buyers Waiting)
+                </h2>
+                <p className="text-xs text-[var(--text-secondary)] font-light">
+                  Visitors saved searches that currently match available showroom stock. 1-click dispatch prepared for WhatsApp.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/admin/leads"
+              className="px-4 py-2 text-xs font-sans uppercase font-medium tracking-wider bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors self-start sm:self-auto rounded-[2px]"
+            >
+              Manage Saved Searches &rarr;
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            {alertsWithMatches.map(({ search, matches }) => {
+              const firstMatch = matches[0]!;
+              const waUrl = buildSavedSearchWhatsAppUrl(search, firstMatch);
+
+              return (
+                <div
+                  key={search.id}
+                  className="p-4 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] space-y-2 flex flex-col justify-between"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-serif text-base text-[var(--text-primary)] font-medium">
+                        {search.customerName}
+                      </span>
+                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                        &ldquo;{search.queryTitle}&rdquo;
+                      </span>
+                    </div>
+                    <p className="text-xs font-mono text-[var(--text-secondary)]">
+                      Tel: {formatPhoneDisplay(search.customerPhone)}
+                    </p>
+                    <p className="text-xs text-emerald-400 font-medium">
+                      Matched: {firstMatch.year} {firstMatch.make} {firstMatch.model} ({firstMatch.price ? `LKR ${firstMatch.price.toLocaleString("en-US")}` : "Price on Call"})
+                    </p>
+                  </div>
+
+                  <div className="pt-2">
+                    <a
+                      href={waUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full min-h-[38px] px-3 inline-flex items-center justify-center gap-2 text-xs font-sans uppercase font-medium tracking-wider bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors rounded-[2px]"
+                    >
+                      <span>📱 Send WhatsApp Stock Alert</span>
+                    </a>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Section 1: New enquiries (not yet contacted) */}
       <section className="space-y-3">

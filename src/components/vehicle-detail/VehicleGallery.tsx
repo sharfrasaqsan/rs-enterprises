@@ -14,10 +14,17 @@ export function VehicleGallery({
 }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
+  const validImages = (images || []).filter(
+    (img) => Boolean(img) && !img.includes("sample-prado") && !img.includes("sample-vezel")
+  );
+
   const displayImages =
-    images && images.length > 0
-      ? images
-      : ["/images/vehicles/sample-prado.svg", "/images/vehicles/sample-vezel.svg"];
+    validImages.length > 0
+      ? validImages
+      : ["/images/vehicles/placeholder-coming-soon.webp"];
+
+  const isPlaceholderOnly =
+    displayImages.length === 1 && displayImages[0].includes("placeholder-coming-soon");
 
   return (
     <div className="w-full space-y-4">
@@ -54,7 +61,7 @@ export function VehicleGallery({
 
         {/* Thumbnail Selector Strip */}
         {displayImages.length > 1 && (
-          <div className="flex items-center gap-3 overflow-x-auto pb-1">
+          <div className="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-none">
             {displayImages.map((img, idx) => (
               <button
                 key={idx}
@@ -112,8 +119,10 @@ export function VehicleGallery({
           </div>
 
           {/* Mobile Dot/Counter Pill */}
-          <div className="absolute bottom-3 right-4 z-10 px-2 py-0.5 bg-[var(--bg-overlay)] backdrop-blur-md border border-[var(--border-subtle)] text-[10px] font-mono text-[var(--text-primary)] rounded-[1px]">
-            {displayImages.length} Photos &bull; Swipe &rarr;
+          <div className="absolute bottom-3 right-4 z-10 px-2.5 py-0.5 bg-[var(--bg-overlay)] backdrop-blur-md border border-[var(--border-subtle)] text-[10px] font-mono text-[var(--text-primary)] rounded-[1px]">
+            {isPlaceholderOnly
+              ? "Photos Coming Soon"
+              : `${displayImages.length} Photos • Swipe →`}
           </div>
         </div>
       </div>

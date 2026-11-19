@@ -18,8 +18,8 @@ export function BranchesSection({ settings }: { settings: CompanySettings }) {
               Showroom Network &amp; Contacts
             </Heading>
             <p className="text-base text-[var(--text-secondary)] font-light leading-relaxed">
-              Experience our curated showroom collection in person or consult directly
-              with our import directors.
+              Visit our showroom in person to inspect our vehicles or speak directly
+              with our team.
             </p>
           </div>
 
@@ -40,7 +40,7 @@ export function BranchesSection({ settings }: { settings: CompanySettings }) {
                   </h3>
                 </div>
                 <span className="inline-flex px-2.5 py-1 text-[10px] uppercase font-mono tracking-wider bg-[var(--bg-surface)] text-[var(--accent)] border border-[var(--accent)] rounded-[2px]">
-                  Operational
+                  Showroom Open
                 </span>
               </div>
 

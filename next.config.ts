@@ -4,7 +4,16 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    instantInsights: {
+      validationLevel: "manual-warning",
+    },
+  },
   images: {
+    dangerouslyAllowSVG: true,
+    contentDispositionType: "attachment",
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    qualities: [75, 85, 92],
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {

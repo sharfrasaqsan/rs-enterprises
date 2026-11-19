@@ -11,13 +11,14 @@ import {
   ImportStage,
   IMPORT_STAGES,
   normalizeImportStage,
-  StandardImportStage,
   BodyType,
   DriveType,
   RegistrationStatus,
   DealershipBranch,
+  getHoldExpiryStatus,
 } from "@/types/vehicle";
 import { CompanySettings } from "@/types/settings";
+import { SavedSearch } from "@/types/saved-search";
 import { saveVehicleAction, archiveVehicleAction } from "@/app/actions/admin";
 import { useAdminAuth } from "@/app/admin/AdminAuthContext";
 import { Heading } from "@/components/ui/Heading";
@@ -51,6 +52,9 @@ export function VehicleFormClient({
   const [price, setPrice] = useState(
     initialVehicle?.price ? String(initialVehicle.price) : ""
   );
+  const [costPrice, setCostPrice] = useState(
+    initialVehicle?.costPrice ? String(initialVehicle.costPrice) : ""
+  );
   const [mileage, setMileage] = useState(
     initialVehicle?.mileage !== undefined ? String(initialVehicle.mileage) : "0"
   );
@@ -78,6 +82,34 @@ export function VehicleFormClient({
   const [auctionScore, setAuctionScore] = useState(initialVehicle?.auctionScore || "A");
   const [chassisNumber, setChassisNumber] = useState(initialVehicle?.chassisNumber || "");
   const [branch, setBranch] = useState<DealershipBranch>(initialVehicle?.branch || "polonnaruwa");
+
+  // Showroom Deposit & Reservation Hold States
+  const [depositAmount, setDepositAmount] = useState<string>(
+    initialVehicle?.reservation?.depositAmount ? String(initialVehicle.reservation.depositAmount) : ""
+  );
+  const [depositDate, setDepositDate] = useState<string>(
+    initialVehicle?.reservation?.depositDate || (initialVehicle?.status === "reserved" ? new Date().toISOString().split("T")[0] : "")
+  );
+  const [holdExpiryDate, setHoldExpiryDate] = useState<string>(() => {
+    if (initialVehicle?.reservation?.holdExpiryDate) {
+      try {
+        const exp = new Date(initialVehicle.reservation.holdExpiryDate);
+        return new Date(exp.getTime() - exp.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+      } catch {
+        return "";
+      }
+    }
+    return "";
+  });
+  const [customerName, setCustomerName] = useState<string>(
+    initialVehicle?.reservation?.customerName || ""
+  );
+  const [customerPhone, setCustomerPhone] = useState<string>(
+    initialVehicle?.reservation?.customerPhone || ""
+  );
+  const [reservationNotes, setReservationNotes] = useState<string>(
+    initialVehicle?.reservation?.notes || ""
+  );
 
   const [importStage, setImportStage] = useState<ImportStage>(
     initialVehicle?.importStage || null
@@ -107,17 +139,29 @@ export function VehicleFormClient({
   const [newImageUrl, setNewImageUrl] = useState("");
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
+  // Back-in-stock matched alerts
+  const [matchedAlerts, setMatchedAlerts] = useState<
+    {
+      search: SavedSearch;
+      whatsappUrl: string;
+      messageText: string;
+    }[]
+  >([]);
+
   // File input ref
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-generate editable slug whenever year, make, model or grade change (unless manually edited)
   useEffect(() => {
     if (!isSlugManual) {
-      const generated = `${year} ${make} ${model} ${grade}`
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
-      setSlug(generated);
+      const timer = setTimeout(() => {
+        const generated = `${year} ${make} ${model} ${grade}`
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+        setSlug(generated);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [year, make, model, grade, isSlugManual]);
 
@@ -225,7 +269,12 @@ export function VehicleFormClient({
 
       // Append to images list (filter out sample placeholder if replacing)
       setImages((prev) => {
-        const withoutPlaceholder = prev.filter((u) => !u.includes("sample-prado"));
+        const withoutPlaceholder = prev.filter(
+          (u) =>
+            !u.includes("placeholder-coming-soon") &&
+            !u.includes("sample-prado") &&
+            !u.includes("sample-vezel")
+        );
         return [...withoutPlaceholder, ...newUrls];
       });
     } catch (err) {
@@ -240,7 +289,7 @@ export function VehicleFormClient({
     setDraggedIndex(index);
   }
 
-  function handleDragOver(e: React.DragEvent, index: number) {
+  function handleDragOver(e: React.DragEvent) {
     e.preventDefault();
   }
 
@@ -273,7 +322,12 @@ export function VehicleFormClient({
   function handleAddImageUrl() {
     if (newImageUrl.trim()) {
       setImages((prev) => {
-        const withoutPlaceholder = prev.filter((u) => !u.includes("sample-prado"));
+        const withoutPlaceholder = prev.filter(
+          (u) =>
+            !u.includes("placeholder-coming-soon") &&
+            !u.includes("sample-prado") &&
+            !u.includes("sample-vezel")
+        );
         return [...withoutPlaceholder, newImageUrl.trim()];
       });
       setNewImageUrl("");
@@ -317,6 +371,7 @@ export function VehicleFormClient({
       grade: grade.trim() || "Standard",
       color: color.trim() || "Pearl White",
       price: price.trim() ? Number(price) : null,
+      costPrice: costPrice.trim() ? Number(costPrice) : null,
       mileage: Number(mileage) || 0,
       fuel,
       transmission,
@@ -331,6 +386,16 @@ export function VehicleFormClient({
       auctionScore: auctionScore.trim() || "A",
       chassisNumber: chassisNumber.trim(),
       branch,
+      reservation: status === "reserved" ? {
+        depositAmount: Number(depositAmount) || 0,
+        depositDate: depositDate || new Date().toISOString().split("T")[0],
+        holdExpiryDate: holdExpiryDate ? new Date(holdExpiryDate).toISOString() : new Date(Date.now() + 7 * 86400000).toISOString(),
+        customerName: customerName.trim() || undefined,
+        customerPhone: customerPhone.trim() || undefined,
+        notes: reservationNotes.trim() || undefined,
+        reservedBy: initialVehicle?.reservation?.reservedBy || user?.displayName || "Showroom Staff",
+        reservedAt: initialVehicle?.reservation?.reservedAt || new Date().toISOString(),
+      } : null,
       importStage: status === "incoming" ? (importStage ? (normalizeImportStage(importStage) || "purchased") : "purchased") : null,
       expectedArrival: status === "incoming" && expectedArrival ? expectedArrival : null,
       published,
@@ -345,8 +410,12 @@ export function VehicleFormClient({
     setIsPending(false);
 
     if (res.success) {
-      router.push("/admin/vehicles");
-      router.refresh();
+      if (res.matchedAlerts && res.matchedAlerts.length > 0) {
+        setMatchedAlerts(res.matchedAlerts);
+      } else {
+        router.push("/admin/vehicles");
+        router.refresh();
+      }
     } else {
       setError(res.error || "Failed to save vehicle. Please check input values.");
     }
@@ -532,13 +601,13 @@ export function VehicleFormClient({
             02. Japanese Specs &amp; Valuation
           </span>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label
                 htmlFor="veh-price"
                 className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
               >
-                Price in LKR (Leave blank for &quot;Call for price&quot;)
+                Retail Price (LKR)
               </label>
               <input
                 id="veh-price"
@@ -546,6 +615,26 @@ export function VehicleFormClient({
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="e.g. 28500000"
+                className="w-full h-11 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] font-mono"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label
+                  htmlFor="veh-cost"
+                  className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
+                >
+                  Purchase / Landed Cost (LKR)
+                </label>
+                <span className="text-[9px] font-mono text-[var(--accent)]">Admin Only</span>
+              </div>
+              <input
+                id="veh-cost"
+                type="number"
+                value={costPrice}
+                onChange={(e) => setCostPrice(e.target.value)}
+                placeholder="e.g. 25200000"
                 className="w-full h-11 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] font-mono"
               />
             </div>
@@ -651,7 +740,7 @@ export function VehicleFormClient({
         <div className="p-6 bg-[var(--bg-surface)] border border-[var(--border-hairline)] space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
             <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--accent)] font-semibold block">
-              03. Provenance, Body &amp; Dealership Routing
+              03. Origin, Body &amp; Dealership Routing
             </span>
             <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)]">
               Buyer Decision Attributes
@@ -698,8 +787,12 @@ export function VehicleFormClient({
                 onChange={(e) => setBranch(e.target.value as DealershipBranch)}
                 className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
               >
-                <option value="polonnaruwa">Kaduruwela Main Showroom (Polonnaruwa)</option>
-                <option value="trincomalee">Trincomalee Branch Showroom</option>
+                <option value="polonnaruwa">
+                  {settings?.mainBranch.name || "Kaduruwela Main Showroom"} (Polonnaruwa)
+                </option>
+                <option value="trincomalee">
+                  {settings?.coastalBranch.name || "Trincomalee Branch Showroom"}
+                </option>
               </select>
               <span className="text-[10px] text-[var(--text-secondary)] font-mono block mt-1">
                 Determines branch inquiry routing and customer viewing location.
@@ -905,7 +998,7 @@ export function VehicleFormClient({
                   key={`${imgUrl}-${idx}`}
                   draggable
                   onDragStart={() => handleDragStart(idx)}
-                  onDragOver={(e) => handleDragOver(e, idx)}
+                  onDragOver={handleDragOver}
                   onDrop={() => handleDrop(idx)}
                   className={`group relative p-1.5 bg-[var(--bg-base)] border rounded-[2px] transition-all cursor-move ${
                     idx === 0
@@ -1030,6 +1123,168 @@ export function VehicleFormClient({
               </select>
             </div>
 
+            {/* Showroom Reservation & Deposit Note Configuration */}
+            {status === "reserved" && (
+              <div className="sm:col-span-3 p-4 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[var(--border-hairline)]">
+                  <div>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--accent)] font-semibold block">
+                      Reservation with Deposit Note
+                    </span>
+                    <p className="text-xs text-[var(--text-secondary)] font-light">
+                      Record customer deposit amount, date, buyer contact, and hold expiry with active countdown alert.
+                    </p>
+                  </div>
+
+                  {(() => {
+                    const holdStatus = getHoldExpiryStatus(holdExpiryDate);
+                    return holdStatus ? (
+                      <span className={`px-2.5 py-1 text-[10px] font-mono uppercase font-semibold rounded-[1px] ${holdStatus.badgeClass}`}>
+                        {holdStatus.label}
+                      </span>
+                    ) : null;
+                  })()}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+                      Deposit Amount (LKR) *
+                    </label>
+                    <input
+                      type="number"
+                      value={depositAmount}
+                      onChange={(e) => setDepositAmount(e.target.value)}
+                      placeholder="e.g. 500000"
+                      className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs font-mono text-[var(--text-primary)] rounded-[2px]"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+                      Deposit Received Date *
+                    </label>
+                    <input
+                      type="date"
+                      value={depositDate}
+                      onChange={(e) => setDepositDate(e.target.value)}
+                      className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs font-mono text-[var(--text-primary)] rounded-[2px]"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--accent)]">
+                        Hold Expiry Date &amp; Time *
+                      </label>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-mono text-[var(--text-secondary)]">Set Hold:</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const d = new Date();
+                            d.setDate(d.getDate() + 3);
+                            d.setHours(18, 0, 0, 0);
+                            setHoldExpiryDate(new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16));
+                          }}
+                          className="px-2 py-0.5 text-[9px] font-mono uppercase bg-[var(--bg-surface)] border border-[var(--border-hairline)] hover:border-[var(--accent)] text-[var(--text-primary)] cursor-pointer"
+                        >
+                          +3 Days
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const d = new Date();
+                            d.setDate(d.getDate() + 7);
+                            d.setHours(18, 0, 0, 0);
+                            setHoldExpiryDate(new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16));
+                          }}
+                          className="px-2 py-0.5 text-[9px] font-mono uppercase bg-[var(--bg-surface)] border border-[var(--border-hairline)] hover:border-[var(--accent)] text-[var(--text-primary)] cursor-pointer"
+                        >
+                          +7 Days
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const d = new Date();
+                            d.setDate(d.getDate() + 14);
+                            d.setHours(18, 0, 0, 0);
+                            setHoldExpiryDate(new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16));
+                          }}
+                          className="px-2 py-0.5 text-[9px] font-mono uppercase bg-[var(--bg-surface)] border border-[var(--border-hairline)] hover:border-[var(--accent)] text-[var(--text-primary)] cursor-pointer"
+                        >
+                          +14 Days
+                        </button>
+                      </div>
+                    </div>
+                    <input
+                      type="datetime-local"
+                      value={holdExpiryDate}
+                      onChange={(e) => setHoldExpiryDate(e.target.value)}
+                      className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs font-mono text-[var(--text-primary)] rounded-[2px]"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+                      Customer / Buyer Name
+                    </label>
+                    <input
+                      type="text"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="e.g. Dr. K. Jayasundara"
+                      className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px]"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+                      Customer Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      placeholder="e.g. 077 123 4567"
+                      className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs font-mono text-[var(--text-primary)] rounded-[2px]"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <label className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+                      Deposit Note / Receipt Ref / Payment Conditions
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={reservationNotes}
+                      onChange={(e) => setReservationNotes(e.target.value)}
+                      placeholder="e.g. Cash advance received at Kaduruwela showroom. Balance upon registration."
+                      className="w-full p-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px]"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStatus("available");
+                      setDepositAmount("");
+                      setDepositDate("");
+                      setHoldExpiryDate("");
+                      setCustomerName("");
+                      setCustomerPhone("");
+                      setReservationNotes("");
+                    }}
+                    className="text-xs text-red-400 hover:text-red-300 font-sans uppercase tracking-wider transition-colors cursor-pointer"
+                  >
+                    Release Hold (Return to Available)
+                  </button>
+                </div>
+              </div>
+            )}
+
             {status === "incoming" && (
               <>
                 <div className="sm:col-span-2 space-y-2">
@@ -1112,7 +1367,7 @@ export function VehicleFormClient({
         {/* Section 5: Features & Description */}
         <div className="p-6 bg-[var(--bg-surface)] border border-[var(--border-hairline)] space-y-4">
           <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--accent)] font-semibold block">
-            05. Features &amp; Public Dossier
+            05. Features &amp; Vehicle Page Details
           </span>
 
           <div>
@@ -1208,6 +1463,69 @@ export function VehicleFormClient({
       {isEditing && initialVehicle && (
         <div id="marketing" className="pt-4 border-t border-[var(--border-hairline)]">
           <SocialPosterGenerator vehicle={initialVehicle} settings={settings} />
+        </div>
+      )}
+
+      {/* Back-in-Stock Matches Notification Modal */}
+      {matchedAlerts.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg bg-[var(--bg-surface)] border border-amber-500/60 shadow-2xl p-6 sm:p-8 space-y-6 text-[var(--text-primary)] animate-in fade-in zoom-in-95 duration-200">
+            <div className="text-center space-y-2">
+              <span className="text-3xl">🎉</span>
+              <h3 className="font-serif text-2xl font-medium">
+                {matchedAlerts.length} Waiting Buyer{matchedAlerts.length === 1 ? "" : "s"} Matched!
+              </h3>
+              <p className="text-xs text-[var(--text-secondary)] font-light leading-relaxed">
+                This newly saved vehicle matches active visitor alerts. You can dispatch an immediate WhatsApp alert directly to the buyer(s) below.
+              </p>
+            </div>
+
+            <div className="space-y-3 max-h-72 overflow-y-auto">
+              {matchedAlerts.map(({ search, whatsappUrl }) => (
+                <div
+                  key={search.id}
+                  className="p-4 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] space-y-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-serif font-medium text-base text-[var(--text-primary)]">
+                        {search.customerName}
+                      </p>
+                      <p className="text-xs font-mono text-[var(--text-secondary)]">
+                        {search.customerPhone}
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                      &ldquo;{search.queryTitle}&rdquo;
+                    </span>
+                  </div>
+
+                  <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full min-h-[42px] px-4 inline-flex items-center justify-center gap-2 text-xs font-sans uppercase font-medium tracking-wider bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors rounded-[2px]"
+                  >
+                    <span>📱 Send WhatsApp Alert Now</span>
+                  </a>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-2 flex justify-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setMatchedAlerts([]);
+                  router.push("/admin/vehicles");
+                  router.refresh();
+                }}
+                className="min-h-[44px] px-6 text-xs font-sans uppercase font-medium tracking-wider border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+              >
+                Continue to Inventory Manager &rarr;
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

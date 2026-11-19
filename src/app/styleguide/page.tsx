@@ -11,7 +11,6 @@ import {
   PhoneLink,
   WhatsAppButton,
   VehicleImage,
-  ThemeToggle,
   EditorialGrid,
 } from "@/components/ui";
 
@@ -141,7 +140,7 @@ const contrastData = [
 
 export default function StyleguidePage() {
   return (
-    <main className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] pb-32">
+    <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] pb-32 w-full overflow-x-hidden">
       {/* 
         Styleguide Sub-Control Bar with Verification Status
       */}
@@ -203,8 +202,8 @@ export default function StyleguidePage() {
               </p>
             </div>
 
-            <div className="overflow-x-auto border border-[var(--border-hairline)] rounded-[2px]">
-              <table className="w-full text-left text-xs font-sans">
+            <div className="w-full max-w-full min-w-0 overflow-x-auto border border-[var(--border-hairline)] rounded-[2px]">
+              <table className="w-full min-w-[640px] text-left text-xs font-sans">
                 <thead className="bg-[var(--bg-surface)] border-b border-[var(--border-hairline)] uppercase tracking-wider text-[var(--text-muted)]">
                   <tr>
                     <th className="py-3.5 px-4 font-medium">Theme</th>
@@ -339,7 +338,7 @@ export default function StyleguidePage() {
                   <Numeral
                     value="42,500,000"
                     prefix="LKR"
-                    label="Showroom Asking Price"
+                    label="Showroom Price"
                     size="lg"
                   />
                   <Numeral
@@ -394,7 +393,7 @@ export default function StyleguidePage() {
                   Download Auction Sheet
                 </Button>
                 <Button variant="text-link">
-                  View Full Technical Dossier &rarr;
+                  View Vehicle Details &rarr;
                 </Button>
                 <Button variant="solid" disabled size="md">
                   Reserved by Client
@@ -521,7 +520,7 @@ export default function StyleguidePage() {
                         className="w-full sm:w-auto"
                       />
                       <Button variant="outline" className="w-full sm:w-auto">
-                        Full Dossier
+                        View Details
                       </Button>
                     </div>
                   </div>
@@ -659,10 +658,10 @@ export default function StyleguidePage() {
                   <div className="space-y-2">
                     <Eyebrow>Direct Auction Import Portal</Eyebrow>
                     <Heading level={3}>
-                      Bespoke Japanese Vehicle Procurement Service
+                      Custom Japanese Vehicle Import Service
                     </Heading>
                     <p className="text-sm text-[var(--text-secondary)] font-light leading-relaxed">
-                      Affluent clients in Polonnaruwa, Trincomalee, and island-wide can bid
+                      Clients in Polonnaruwa, Trincomalee, and island-wide can bid
                       directly on live Japanese auction listings with transparent yen invoice
                       pricing, customs clearing at Hambantota/Colombo ports, and door-to-door
                       carrier delivery.
@@ -746,7 +745,7 @@ export default function StyleguidePage() {
                     Inquire
                   </Button>
                   <Button variant="outline" size="sm">
-                    Dossier
+                    View Details
                   </Button>
                 </div>
               </div>
@@ -785,7 +784,7 @@ export default function StyleguidePage() {
                     Inquire
                   </Button>
                   <Button variant="outline" size="sm">
-                    Dossier
+                    View Details
                   </Button>
                 </div>
               </div>
@@ -832,7 +831,7 @@ export default function StyleguidePage() {
           </div>
         </Container>
       </Section>
-    </main>
+    </div>
   );
 }
 

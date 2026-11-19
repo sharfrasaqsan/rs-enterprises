@@ -18,15 +18,20 @@ export function CompareButton({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setIsCompared(getCompareSlugs().includes(slug));
-    setMounted(true);
+    const timer = setTimeout(() => {
+      setIsCompared(getCompareSlugs().includes(slug));
+      setMounted(true);
+    }, 0);
 
     const handleUpdate = () => {
       setIsCompared(getCompareSlugs().includes(slug));
     };
 
     window.addEventListener("rs_compare_updated", handleUpdate);
-    return () => window.removeEventListener("rs_compare_updated", handleUpdate);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("rs_compare_updated", handleUpdate);
+    };
   }, [slug]);
 
   const handleToggle = (e: React.MouseEvent) => {

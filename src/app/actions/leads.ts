@@ -1,16 +1,16 @@
 "use server";
 
 import { headers } from "next/headers";
-import { revalidateTag } from "next/cache";
-import { adminDb, hasAdminCredentials } from "@/lib/firebase-admin";
-import { createLeadSchema, LeadSource, DealershipBranch } from "@/types/lead";
+import { LeadSource, DealershipBranch } from "@/types/lead";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { registerOrMergeLeadCoreAction } from "@/app/actions/admin";
 
 export interface CreateLeadResult {
   success: boolean;
   message?: string;
   error?: string;
   leadId?: string;
+  isMerged?: boolean;
 }
 
 export async function createLeadAction(
@@ -18,7 +18,6 @@ export async function createLeadAction(
 ): Promise<CreateLeadResult> {
   try {
     // 1. Honeypot Anti-Spam Check
-    // Hidden input with name "_hp_verify" that standard users never see or fill
     const honeypot = formData.get("_hp_verify")?.toString();
     if (honeypot && honeypot.trim().length > 0) {
       // Bot detected: return faux success without polluting database
@@ -52,99 +51,61 @@ export async function createLeadAction(
 
     const rawSource = formData.get("source")?.toString().trim() || "";
     let source: LeadSource = "website_form";
-    if (rawSource === "vehicle_request" || formData.get("vehicleId")) {
+    if (rawSource === "trade_in") {
+      source = "trade_in";
+    } else if (rawSource === "vehicle_request" || formData.get("vehicleId")) {
       source = "vehicle_request";
     }
 
-    const rawData = {
-      name: formData.get("name")?.toString().trim() || "",
-      phone: formData.get("phone")?.toString().trim() || "",
-      email: formData.get("email")?.toString().trim() || undefined,
-      branch,
-      vehicleId: formData.get("vehicleId")?.toString().trim() || undefined,
-      vehicleTitle: formData.get("vehicleTitle")?.toString().trim() || undefined,
-      requestDetails: formData.get("requestDetails")?.toString().trim() || undefined,
-      source,
-      stage: "new" as const,
-      initialNote: formData.get("initialNote")?.toString().trim() || undefined,
-    };
-
-    // 4. Zod Validation
-    const parsed = createLeadSchema.safeParse(rawData);
-    if (!parsed.success) {
-      const firstError = parsed.error.issues[0]?.message || "Invalid input data. Please check required fields.";
-      return { success: false, error: firstError };
+    const photosRaw = formData.get("photos")?.toString().trim();
+    let photos: string[] = [];
+    if (photosRaw) {
+      try {
+        const parsed = JSON.parse(photosRaw);
+        if (Array.isArray(parsed)) {
+          photos = parsed.filter((p) => typeof p === "string" && p.length > 0);
+        }
+      } catch {
+        photos = photosRaw.split(",").map((s) => s.trim()).filter(Boolean);
+      }
     }
 
-    const {
-      name,
-      phone,
-      email,
-      branch: validBranch,
-      vehicleId,
-      vehicleTitle,
-      requestDetails,
-      source: validSource,
-      stage,
-      initialNote,
-    } = parsed.data;
+    const name = formData.get("name")?.toString().trim() || "";
+    const phone = formData.get("phone")?.toString().trim() || "";
+    const email = formData.get("email")?.toString().trim() || null;
+    const vehicleId = formData.get("vehicleId")?.toString().trim() || null;
+    const vehicleTitle = formData.get("vehicleTitle")?.toString().trim() || null;
+    const requestDetails = formData.get("requestDetails")?.toString().trim() || null;
+    const initialNote = formData.get("initialNote")?.toString().trim() || null;
 
-    // 5. Generate Lead Document
-    const leadId = `lead-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-    const now = new Date().toISOString();
+    if (!name) {
+      return { success: false, error: "Please enter your full name." };
+    }
+    if (!phone || phone.length < 8) {
+      return { success: false, error: "Please enter a valid phone number (e.g. 077 123 4567)." };
+    }
 
-    const leadNoteText =
-      initialNote ||
-      (vehicleTitle
-        ? `Inquiry received for ${vehicleTitle}. Branch: ${validBranch.toUpperCase()}. Contact requested via Phone/WhatsApp.`
-        : `General showroom inquiry received. Branch: ${validBranch.toUpperCase()}.`);
+    // 4. Delegate to central deduplication & registration engine
+    const authorLabel =
+      source === "trade_in" ? "Trade-In Online Portal" : "Website Customer Intake";
 
-    const notes = [
+    const res = await registerOrMergeLeadCoreAction(
       {
-        id: `note-${Date.now()}`,
-        text: leadNoteText,
-        author: "Website Lead Action",
-        time: now,
-      },
-    ];
-
-    // 6. Write to Firestore via Admin SDK
-    if (hasAdminCredentials()) {
-      await adminDb.collection("leads").doc(leadId).set({
         name,
         phone,
-        email: email || null,
-        branch: validBranch,
-        vehicleId: vehicleId || null,
-        vehicleTitle: vehicleTitle || null,
-        requestDetails: requestDetails || null,
-        source: validSource,
-        stage,
-        assignedTo: null,
-        followUpDate: null,
-        lostReason: null,
-        notes,
-        createdAt: now,
-        updatedAt: now,
-      });
-    } else {
-      console.log(`ℹ️ [Development Fallback] Lead created in memory:`, {
-        leadId,
-        name,
-        phone,
-        branch: validBranch,
+        email,
+        branch,
+        source,
+        vehicleId,
         vehicleTitle,
-      });
-    }
+        requestDetails,
+        photos,
+        note: initialNote,
+      },
+      authorLabel
+    );
 
-    revalidateTag("admin-leads", "max");
-
-    return {
-      success: true,
-      message:
-        "Thank you. Your inquiry has been registered. Our Kaduruwela showroom desk will contact you via phone or WhatsApp shortly.",
-      leadId,
-    };
+    return res;
   } catch (error) {
     console.error("Failed to process lead submission:", error);
     return {

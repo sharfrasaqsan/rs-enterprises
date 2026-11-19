@@ -19,11 +19,11 @@ export function ClosingCta({ settings }: { settings: CompanySettings }) {
           <div className="space-y-3">
             <Eyebrow>Direct Japanese Auction Access</Eyebrow>
             <Heading level={2}>
-              Acquire Your Next Vehicle Directly from Japan
+              Find Your Next Vehicle Directly from Japan
             </Heading>
             <p className="text-base sm:text-lg font-light text-[var(--text-secondary)] leading-relaxed max-w-xl mx-auto">
               Visit our Kaduruwela main showroom in Polonnaruwa or consult directly
-              with our import specialists for bespoke auction bidding and incoming vessel reservations.
+              with our import specialists for custom auction bidding and reserving incoming shipments.
             </p>
           </div>
 
@@ -33,13 +33,14 @@ export function ClosingCta({ settings }: { settings: CompanySettings }) {
             </Button>
             <WhatsAppButton
               number={settings.mainBranch.whatsapp}
-              label="Priority WhatsApp Inquiry"
+              label="Chat on WhatsApp"
+              size="lg"
               className="w-full sm:w-auto"
             />
           </div>
 
           <div className="pt-8 border-t border-[var(--border-hairline)] max-w-md mx-auto text-xs font-sans uppercase tracking-[0.16em] text-[var(--text-muted)]">
-            <span>Main Showroom: No.37/1, Kaduruwela, Polonnaruwa</span>
+            <span>Main Showroom: {settings.mainBranch.address}</span>
           </div>
         </div>
       </Container>

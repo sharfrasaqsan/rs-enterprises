@@ -1,10 +1,12 @@
 import React from "react";
+import { Button, ButtonProps } from "@/components/ui/Button";
 
 export interface PhoneLinkProps {
   number: string;
   displayNumber?: string;
   label?: string;
   variant?: "solid" | "outline" | "inline";
+  size?: ButtonProps["size"];
   className?: string;
 }
 
@@ -13,6 +15,7 @@ export function PhoneLink({
   displayNumber,
   label,
   variant = "outline",
+  size = "md",
   className = "",
 }: PhoneLinkProps) {
   const cleanNumber = number.replace(/[^0-9+]/g, "");
@@ -20,7 +23,7 @@ export function PhoneLink({
 
   const telephoneIcon = (
     <svg
-      className="w-4 h-4 mr-2.5 shrink-0 stroke-current"
+      className="w-4 h-4 mr-2 shrink-0 stroke-current"
       viewBox="0 0 24 24"
       fill="none"
       strokeWidth="1.5"
@@ -45,20 +48,17 @@ export function PhoneLink({
     );
   }
 
-  const buttonClasses =
-    variant === "solid"
-      ? "bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)]"
-      : "bg-transparent text-[var(--text-primary)] border border-[var(--border-subtle)] hover:border-[var(--accent)] hover:text-[var(--accent)]";
-
   return (
-    <a
+    <Button
+      variant={variant}
+      size={size}
       href={`tel:${cleanNumber}`}
-      className={`inline-flex items-center justify-center min-h-[48px] px-6 rounded-[2px] font-sans text-xs uppercase font-medium tracking-[0.16em] transition-luxury cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] ${buttonClasses} ${className}`}
+      isExternal
+      className={className}
       aria-label={`Direct telephone line: ${label || formattedDisplay}`}
     >
       {telephoneIcon}
       <span>{label || formattedDisplay}</span>
-    </a>
+    </Button>
   );
 }
-

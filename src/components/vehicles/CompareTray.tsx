@@ -10,8 +10,10 @@ export default function CompareTray() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setSlugs(getCompareSlugs());
-    setMounted(true);
+    const timer = setTimeout(() => {
+      setSlugs(getCompareSlugs());
+      setMounted(true);
+    }, 0);
 
     const handleUpdate = () => {
       setSlugs(getCompareSlugs());
@@ -21,6 +23,7 @@ export default function CompareTray() {
     window.addEventListener("storage", handleUpdate);
 
     return () => {
+      clearTimeout(timer);
       window.removeEventListener("rs_compare_updated", handleUpdate);
       window.removeEventListener("storage", handleUpdate);
     };
@@ -48,7 +51,7 @@ export default function CompareTray() {
     >
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
         {/* Left Status & Slugs List */}
-        <div className="flex items-center space-x-4 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+        <div className="flex items-center space-x-4 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
           <div className="flex flex-col shrink-0">
             <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--accent)] font-semibold">
               Vehicle Comparison

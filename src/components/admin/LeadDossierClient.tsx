@@ -17,6 +17,7 @@ import { useAdminAuth } from "@/app/admin/AdminAuthContext";
 import { Heading } from "@/components/ui/Heading";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { exportSingleLeadToPDF } from "@/lib/export-leads";
+import { formatPhoneDisplay, buildWhatsAppUrl } from "@/lib/phone";
 
 export function LeadDossierClient({
   initialLead,
@@ -45,18 +46,13 @@ export function LeadDossierClient({
   // Delete Confirmation Modal (Owner Only)
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  const cleanPhone = lead.phone.replace(/[^0-9]/g, "");
-  const formattedDigits = cleanPhone.startsWith("94")
-    ? cleanPhone
-    : cleanPhone.startsWith("0")
-    ? "94" + cleanPhone.slice(1)
-    : "94" + cleanPhone;
-
-  const whatsappUrl = `https://wa.me/${formattedDigits}?text=${encodeURIComponent(
+  // Reliable WhatsApp Click-To-Chat URL
+  const whatsappUrl = buildWhatsAppUrl(
+    lead.phone,
     `Hello ${lead.name}, RS Enterprises Kaduruwela showroom following up regarding ${
       lead.vehicleTitle || "your Japanese vehicle inquiry"
     }. How may we assist you today?`
-  )}`;
+  );
 
   // Find linked vehicle
   const linkedVehicle = lead.vehicleId
@@ -198,15 +194,30 @@ export function LeadDossierClient({
             <span className="text-[var(--text-secondary)]">
               Source: {lead.source.replace("_", " ")}
             </span>
+            {(lead.isReturningBuyer || (lead.inquiryCount && lead.inquiryCount > 1)) && (
+              <span className="px-2 py-0.5 bg-amber-500/15 border border-amber-500/30 text-amber-400 font-semibold uppercase rounded-[1px] flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                <span>{lead.inquiryCount || 2}x Inquiries (Merged Record)</span>
+              </span>
+            )}
           </div>
 
           <Heading level={1} className="text-3xl sm:text-4xl">
             {lead.name}
           </Heading>
 
-          <p className="font-mono text-sm text-[var(--text-secondary)]">
-            Tel: {lead.phone} {lead.email ? `• ${lead.email}` : ""}
-          </p>
+          <div className="flex items-center gap-3 flex-wrap">
+            <p className="font-mono text-sm text-[var(--text-secondary)] flex items-center gap-1.5">
+              <span>Tel:</span>
+              <span className="font-semibold text-[var(--text-primary)]">
+                {formatPhoneDisplay(lead.phone)}
+              </span>
+              <span className="text-[10px] font-mono px-1 py-0.2 bg-green-950/20 text-green-400 border border-green-800 rounded-[1px]" title="Normalized Sri Lankan E.164 phone line">
+                ✓ +94
+              </span>
+              {lead.email ? <span>• {lead.email}</span> : ""}
+            </p>
+          </div>
         </div>
 
         {/* Big Action Buttons */}
@@ -242,10 +253,32 @@ export function LeadDossierClient({
             <svg className="w-4 h-4 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
             </svg>
-            <span>Print / PDF Dossier</span>
+            <span>Print / PDF Profile</span>
           </button>
         </div>
       </div>
+
+      {/* Returning Buyer & Deduplication Banner */}
+      {(lead.isReturningBuyer || (lead.inquiryCount && lead.inquiryCount > 1)) && (
+        <div className="p-4 sm:p-5 bg-amber-500/10 border border-amber-500/30 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-start sm:items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse mt-1 sm:mt-0 shrink-0" />
+            <div className="space-y-0.5">
+              <div className="font-serif text-base font-medium text-amber-300">
+                Unified Client Record — {lead.inquiryCount} Inquiries Automatically Merged by Phone Line
+              </div>
+              <p className="text-xs text-amber-200/80 font-sans font-light">
+                All submissions from <span className="font-mono font-medium">{formatPhoneDisplay(lead.phone)}</span> are aggregated into this single profile. Individual inquiries and vehicle interests are detailed in the inquiry ledger below.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-mono uppercase tracking-wider rounded-[1px] font-semibold">
+              {lead.inquiryCount}x Merged Inquiries
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Grid: Left Column Details & Controls + Right Column Timeline */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -383,7 +416,7 @@ export function LeadDossierClient({
                   target="_blank"
                   className="text-xs uppercase font-sans tracking-wider text-[var(--accent)] hover:underline inline-flex items-center pt-1"
                 >
-                  View Public Vehicle Dossier &rarr;
+                  View Public Vehicle Page &rarr;
                 </Link>
               </div>
             )}
@@ -396,6 +429,40 @@ export function LeadDossierClient({
               <p className="text-xs text-[var(--text-primary)] font-serif italic leading-relaxed whitespace-pre-line bg-[var(--bg-base)] p-3 rounded-[2px] border border-[var(--border-hairline)]">
                 &ldquo;{lead.requestDetails}&rdquo;
               </p>
+            </div>
+          )}
+
+          {/* Customer Trade-In Vehicle Photos */}
+          {lead.photos && lead.photos.length > 0 && (
+            <div className="p-6 bg-[var(--bg-surface)] border border-[var(--border-hairline)] space-y-3 rounded-[2px]">
+              <div className="flex items-center justify-between">
+                <Eyebrow>Trade-In Vehicle Photos</Eyebrow>
+                <span className="text-[10px] font-mono text-[var(--accent)] uppercase">
+                  {lead.photos.length} photo{lead.photos.length === 1 ? "" : "s"} submitted
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+                {lead.photos.map((photoUrl, idx) => (
+                  <a
+                    key={idx}
+                    href={photoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group relative block aspect-video rounded-[2px] overflow-hidden border border-[var(--border-subtle)] hover:border-[var(--accent)] transition-colors bg-[var(--bg-base)]"
+                    title="Click to view full-resolution photo in new tab"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photoUrl}
+                      alt={`Customer Trade-In Photo ${idx + 1}`}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <span className="absolute bottom-1 right-1 bg-black/80 px-1.5 py-0.5 text-[9px] font-mono text-[var(--accent)] rounded-[1px]">
+                      View #{idx + 1} &rarr;
+                    </span>
+                  </a>
+                ))}
+              </div>
             </div>
           )}
 
@@ -438,8 +505,63 @@ export function LeadDossierClient({
           )}
         </div>
 
-        {/* Right Column: Notes History Timeline (7 cols) */}
+        {/* Right Column: Notes History & Inquiries Ledger (7 cols) */}
         <div className="lg:col-span-7 space-y-6">
+          {/* Customer Inquiry Ledger (Shows all merged inquiries when customer has submitted multiple times) */}
+          {lead.inquiries && lead.inquiries.length > 0 && (
+            <div className="p-6 bg-[var(--bg-surface)] border border-[var(--border-hairline)] space-y-4 rounded-[2px]">
+              <div className="flex items-center justify-between pb-3 border-b border-[var(--border-hairline)]">
+                <div>
+                  <Eyebrow>Client Intake Ledger</Eyebrow>
+                  <h3 className="font-serif text-2xl text-[var(--text-primary)] mt-0.5">
+                    Unified Inquiry History
+                  </h3>
+                </div>
+                <span className="text-xs font-mono px-2 py-0.5 bg-amber-500/15 text-amber-400 border border-amber-500/30 font-semibold rounded-[1px]">
+                  {lead.inquiries.length} Inquiries Logged
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {lead.inquiries.map((inq, idx) => (
+                  <div
+                    key={inq.id || idx}
+                    className="p-4 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] space-y-2 transition-all hover:border-[var(--border-subtle)]"
+                  >
+                    <div className="flex items-center justify-between gap-3 text-[10px] font-mono">
+                      <div className="flex items-center gap-2">
+                        <span className="px-1.5 py-0.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--accent)] uppercase font-semibold">
+                          Inquiry #{lead.inquiries.length - idx}
+                        </span>
+                        <span className="text-[var(--text-secondary)] uppercase">
+                          Via {inq.source?.replace("_", " ") || "Direct"}
+                        </span>
+                        <span className="text-[var(--text-muted)]">•</span>
+                        <span className="text-[var(--text-secondary)] uppercase">
+                          {inq.branch === "trincomalee" ? "Trincomalee" : "Kaduruwela Main"}
+                        </span>
+                      </div>
+                      <span className="text-[var(--text-secondary)]">
+                        {formatDateTime(inq.time)}
+                      </span>
+                    </div>
+
+                    <div className="pt-1">
+                      <span className="font-serif text-base text-[var(--text-primary)] block">
+                        {inq.vehicleTitle || "General Showroom & Import Inquiry"}
+                      </span>
+                      {inq.requestDetails && (
+                        <p className="text-xs text-[var(--text-secondary)] font-light mt-1 italic">
+                          &ldquo;{inq.requestDetails}&rdquo;
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="p-6 bg-[var(--bg-surface)] border border-[var(--border-hairline)] space-y-6 rounded-[2px]">
             <div className="flex items-center justify-between pb-3 border-b border-[var(--border-hairline)]">
               <div>

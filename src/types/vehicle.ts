@@ -151,6 +151,73 @@ export function formatBranch(branch?: DealershipBranch | string): string {
   }
 }
 
+export const vehicleReservationSchema = z.object({
+  depositAmount: z.number().positive(),
+  depositDate: z.string(), // ISO date (YYYY-MM-DD or ISO timestamp)
+  holdExpiryDate: z.string(), // ISO date (YYYY-MM-DDTHH:mm or ISO timestamp)
+  customerName: z.string().optional(),
+  customerPhone: z.string().optional(),
+  notes: z.string().optional(),
+  reservedBy: z.string().optional(),
+  reservedAt: z.string().optional(),
+});
+export type VehicleReservation = z.infer<typeof vehicleReservationSchema>;
+
+export interface HoldExpiryStatus {
+  isExpired: boolean;
+  isExpiringSoon: boolean; // within 24 hours
+  daysRemaining: number;
+  hoursRemaining: number;
+  label: string;
+  badgeClass: string;
+  urgency: "normal" | "warning" | "danger";
+}
+
+export function getHoldExpiryStatus(holdExpiryDate?: string | null): HoldExpiryStatus | null {
+  if (!holdExpiryDate) return null;
+  const expiry = new Date(holdExpiryDate).getTime();
+  if (isNaN(expiry)) return null;
+  const now = Date.now();
+  const diffMs = expiry - now;
+  const diffHours = Math.round(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMs <= 0) {
+    const expiredDaysAgo = Math.abs(diffDays);
+    return {
+      isExpired: true,
+      isExpiringSoon: false,
+      daysRemaining: diffDays,
+      hoursRemaining: diffHours,
+      label: expiredDaysAgo === 0 ? "Hold Expired Today" : `Hold Expired (${expiredDaysAgo}d ago)`,
+      badgeClass: "bg-red-500/15 text-red-400 border border-red-500/30",
+      urgency: "danger",
+    };
+  }
+
+  if (diffHours <= 24) {
+    return {
+      isExpired: false,
+      isExpiringSoon: true,
+      daysRemaining: diffDays,
+      hoursRemaining: diffHours,
+      label: diffHours <= 1 ? "Hold Expires in < 1h" : `Hold Expires in ${diffHours}h`,
+      badgeClass: "bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse",
+      urgency: "warning",
+    };
+  }
+
+  return {
+    isExpired: false,
+    isExpiringSoon: false,
+    daysRemaining: diffDays,
+    hoursRemaining: diffHours,
+    label: `Hold active (${diffDays}d remaining)`,
+    badgeClass: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30",
+    urgency: "normal",
+  };
+}
+
 export const vehicleSchema = z.object({
   id: z.string(),
   slug: z.string().min(3),
@@ -158,6 +225,7 @@ export const vehicleSchema = z.object({
   model: z.string().min(1),
   year: z.number().int().min(1990).max(2030),
   price: z.number().positive().nullable(), // null = "Call for price"
+  costPrice: z.number().positive().nullable().optional(), // Admin-only: Landed / Purchase Cost for profit calculation
   mileage: z.number().nonnegative(), // in km
   fuel: fuelTypeSchema,
   transmission: transmissionSchema,
@@ -165,6 +233,7 @@ export const vehicleSchema = z.object({
   engineCC: z.number().int().positive(),
   color: z.string().min(1),
   status: vehicleStatusSchema,
+  reservation: vehicleReservationSchema.nullable().optional(),
   bodyType: bodyTypeSchema.default("suv"),
   driveType: driveTypeSchema.default("2WD"),
   seats: z.number().int().positive().default(5),
@@ -174,6 +243,7 @@ export const vehicleSchema = z.object({
   auctionScore: z.string().default("A"),
   chassisNumber: z.string().default(""), // Admin only - strictly withheld from public display
   branch: dealershipBranchSchema.default("polonnaruwa"),
+  verified: z.boolean().default(false),
   importStage: importStageSchema.default(null),
   expectedArrival: z.string().nullable().default(null),
   published: z.boolean().default(true),
@@ -209,6 +279,7 @@ export interface VehicleFilterParams {
 export interface PaginatedVehiclesResult {
   vehicles: Vehicle[];
   total: number;
+  availableCount: number;
   page: number;
   totalPages: number;
   hasNext: boolean;
@@ -227,6 +298,7 @@ export const vehicleConverter: FirestoreDataConverter<Vehicle> = {
       model: vehicle.model,
       year: vehicle.year,
       price: vehicle.price,
+      costPrice: vehicle.costPrice !== undefined ? vehicle.costPrice : null,
       mileage: vehicle.mileage,
       fuel: vehicle.fuel,
       transmission: vehicle.transmission,
@@ -243,6 +315,17 @@ export const vehicleConverter: FirestoreDataConverter<Vehicle> = {
       auctionScore: vehicle.auctionScore,
       chassisNumber: vehicle.chassisNumber || "",
       branch: vehicle.branch,
+      verified: Boolean(vehicle.verified),
+      reservation: vehicle.reservation ? {
+        depositAmount: Number(vehicle.reservation.depositAmount) || 0,
+        depositDate: vehicle.reservation.depositDate || "",
+        holdExpiryDate: vehicle.reservation.holdExpiryDate || "",
+        customerName: vehicle.reservation.customerName || "",
+        customerPhone: vehicle.reservation.customerPhone || "",
+        notes: vehicle.reservation.notes || "",
+        reservedBy: vehicle.reservation.reservedBy || "",
+        reservedAt: vehicle.reservation.reservedAt || new Date().toISOString(),
+      } : null,
       importStage: vehicle.importStage,
       expectedArrival: vehicle.expectedArrival,
       published: vehicle.published,
@@ -275,6 +358,7 @@ export const vehicleConverter: FirestoreDataConverter<Vehicle> = {
       model: data.model || "",
       year: Number(data.year) || 2020,
       price: data.price !== undefined && data.price !== null ? Number(data.price) : null,
+      costPrice: data.costPrice !== undefined && data.costPrice !== null ? Number(data.costPrice) : null,
       mileage: Number(data.mileage) || 0,
       fuel: data.fuel || "petrol",
       transmission: data.transmission || "automatic",
@@ -291,6 +375,19 @@ export const vehicleConverter: FirestoreDataConverter<Vehicle> = {
       auctionScore: data.auctionScore || "A",
       chassisNumber: data.chassisNumber || "",
       branch: data.branch || "polonnaruwa",
+      verified: Boolean(data.verified),
+      reservation: data.reservation
+        ? {
+            depositAmount: Number(data.reservation.depositAmount) || 0,
+            depositDate: String(data.reservation.depositDate || ""),
+            holdExpiryDate: String(data.reservation.holdExpiryDate || ""),
+            customerName: data.reservation.customerName || undefined,
+            customerPhone: data.reservation.customerPhone || undefined,
+            notes: data.reservation.notes || undefined,
+            reservedBy: data.reservation.reservedBy || undefined,
+            reservedAt: data.reservation.reservedAt || undefined,
+          }
+        : null,
       importStage: data.importStage || null,
       expectedArrival: data.expectedArrival || null,
       published: Boolean(data.published),

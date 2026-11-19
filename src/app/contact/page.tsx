@@ -246,7 +246,7 @@ export default async function ContactPage() {
 
               <div className="pt-2 flex flex-wrap gap-3">
                 <WhatsAppButton
-                  number={settings.mainBranch.whatsapp}
+                  number={settings.coastalBranch.whatsapp || settings.mainBranch.whatsapp}
                   label="Trincomalee Enquiries"
                 />
                 <PhoneLink

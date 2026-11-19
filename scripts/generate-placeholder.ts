@@ -1,0 +1,233 @@
+import * as fs from "fs";
+import * as path from "path";
+import sharp from "sharp";
+
+const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750">
+  <defs>
+    <!-- Studio Dark Obsidian Radial Gradient -->
+    <radialGradient id="studio-bg" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#181A22"/>
+      <stop offset="45%" stop-color="#0E0F14"/>
+      <stop offset="100%" stop-color="#050608"/>
+    </radialGradient>
+
+    <!-- Metallic Champagne Gold Gradient -->
+    <linearGradient id="gold-linear" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#C59B27"/>
+      <stop offset="35%" stop-color="#F3E5AB"/>
+      <stop offset="70%" stop-color="#D4AF37"/>
+      <stop offset="100%" stop-color="#996515"/>
+    </linearGradient>
+
+    <!-- Soft Gold Horizon Glow -->
+    <linearGradient id="horizon-glow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="rgba(212, 175, 55, 0)"/>
+      <stop offset="25%" stop-color="rgba(212, 175, 55, 0.25)"/>
+      <stop offset="50%" stop-color="rgba(243, 229, 171, 0.5)"/>
+      <stop offset="75%" stop-color="rgba(212, 175, 55, 0.25)"/>
+      <stop offset="100%" stop-color="rgba(212, 175, 55, 0)"/>
+    </linearGradient>
+
+    <!-- Vehicle LED DRL Cyan-Gold Glow -->
+    <linearGradient id="drl-glow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#E2F1FF"/>
+      <stop offset="50%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#D4AF37"/>
+    </linearGradient>
+
+    <!-- Subtle Drop Shadow Filter for Typography -->
+    <filter id="luxury-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.8"/>
+    </filter>
+
+    <filter id="glow-filter" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1200" height="750" fill="url(#studio-bg)"/>
+
+  <!-- Luxury Architectural Framing Border -->
+  <rect x="28" y="28" width="1144" height="694" fill="none" stroke="rgba(212, 175, 55, 0.22)" stroke-width="1.2"/>
+  <rect x="36" y="36" width="1128" height="678" fill="none" stroke="rgba(255, 255, 255, 0.04)" stroke-width="1"/>
+
+  <!-- Decorative Corner Brackets -->
+  <path d="M 28 50 L 28 28 L 50 28" fill="none" stroke="url(#gold-linear)" stroke-width="2.5"/>
+  <path d="M 1172 50 L 1172 28 L 1150 28" fill="none" stroke="url(#gold-linear)" stroke-width="2.5"/>
+  <path d="M 28 700 L 28 722 L 50 722" fill="none" stroke="url(#gold-linear)" stroke-width="2.5"/>
+  <path d="M 1172 700 L 1172 722 L 1150 722" fill="none" stroke="url(#gold-linear)" stroke-width="2.5"/>
+
+  <!-- Showroom Reflection Floor & Horizon Line -->
+  <ellipse cx="600" cy="500" rx="420" ry="32" fill="rgba(212, 175, 55, 0.06)"/>
+  <line x1="120" y1="500" x2="1080" y2="500" stroke="url(#horizon-glow)" stroke-width="1.5"/>
+
+  <!-- Automotive Silhouette Contour Art -->
+  <g transform="translate(300, 160)">
+    <!-- Aerodynamic Fastback SUV Silhouette -->
+    <!-- Shadow beneath car -->
+    <ellipse cx="300" cy="275" rx="260" ry="12" fill="rgba(0, 0, 0, 0.7)"/>
+
+    <!-- Car Body Silhouette Line -->
+    <path d="M 30 260 
+             C 45 255, 60 220, 110 200 
+             L 170 170 
+             L 245 75 
+             C 275 42, 335 38, 420 52 
+             L 485 105 
+             L 535 155 
+             C 565 185, 575 225, 570 260 Z"
+          fill="none" 
+          stroke="rgba(212, 175, 55, 0.28)" 
+          stroke-width="2" 
+          stroke-linejoin="round"/>
+
+    <!-- Illuminated LED Light Signature & Beltline -->
+    <path d="M 170 170 L 245 75 C 275 42, 335 38, 420 52 L 485 105" 
+          fill="none" 
+          stroke="url(#gold-linear)" 
+          stroke-width="2.4" 
+          stroke-linecap="round"
+          filter="url(#glow-filter)"/>
+
+    <!-- Sharp LED Headlight Flare -->
+    <path d="M 535 170 L 565 178 L 545 190" 
+          fill="none" 
+          stroke="url(#drl-glow)" 
+          stroke-width="3" 
+          stroke-linecap="round"
+          filter="url(#glow-filter)"/>
+
+    <!-- Rear Tail Light Bar Contour -->
+    <path d="M 35 220 L 70 215" 
+          fill="none" 
+          stroke="rgba(239, 68, 68, 0.75)" 
+          stroke-width="2.5" 
+          stroke-linecap="round"/>
+
+    <!-- Wheel Arches & Minimal Alloy Wire Wheels -->
+    <path d="M 30 260 L 95 260 C 105 220, 155 220, 165 260 L 435 260 C 445 220, 495 220, 505 260 L 570 260" 
+          fill="none" 
+          stroke="rgba(212, 175, 55, 0.35)" 
+          stroke-width="1.8"/>
+
+    <!-- Front & Rear Wheels -->
+    <circle cx="130" cy="260" r="32" fill="#0A0B0F" stroke="rgba(212, 175, 55, 0.5)" stroke-width="1.8"/>
+    <circle cx="130" cy="260" r="18" fill="none" stroke="rgba(212, 175, 55, 0.3)" stroke-width="1.2"/>
+    <circle cx="470" cy="260" r="32" fill="#0A0B0F" stroke="rgba(212, 175, 55, 0.5)" stroke-width="1.8"/>
+    <circle cx="470" cy="260" r="18" fill="none" stroke="rgba(212, 175, 55, 0.3)" stroke-width="1.2"/>
+  </g>
+
+  <!-- Center Studio Camera / Aperture Emblem -->
+  <g transform="translate(566, 120)" filter="url(#luxury-shadow)">
+    <circle cx="34" cy="34" r="34" fill="#0B0C11" stroke="url(#gold-linear)" stroke-width="1.8"/>
+    <!-- Camera Body -->
+    <path d="M 21 27 L 26 21 L 42 21 L 47 27 L 51 27 C 53.2 27, 55 28.8, 55 31 L 55 45 C 55 47.2, 53.2 49, 51 49 L 17 49 C 14.8 49, 13 47.2, 13 45 L 13 31 C 13 28.8, 14.8 27, 17 27 Z" 
+          fill="none" 
+          stroke="#D4AF37" 
+          stroke-width="1.8" 
+          stroke-linejoin="round"/>
+    <!-- Lens -->
+    <circle cx="34" cy="38" r="7.5" fill="none" stroke="#F3E5AB" stroke-width="1.8"/>
+    <circle cx="47" cy="31" r="1.5" fill="#D4AF37"/>
+  </g>
+
+  <!-- Typography Hierarchy -->
+
+  <!-- 1. Top Brand Eyebrow -->
+  <text x="600" y="440" 
+        font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" 
+        font-size="12" 
+        font-weight="700" 
+        letter-spacing="0.32em" 
+        text-anchor="middle" 
+        fill="#D4AF37">
+    RS ENTERPRISES • OFFICIAL SHOWROOM
+  </text>
+
+  <!-- 2. Bold High-Contrast Coming Soon Headline (Legible at card scale) -->
+  <text x="600" y="492" 
+        font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" 
+        font-size="38" 
+        font-weight="800" 
+        letter-spacing="0.14em" 
+        text-anchor="middle" 
+        fill="#FFFFFF"
+        filter="url(#luxury-shadow)">
+    PHOTOS COMING SOON
+  </text>
+
+  <!-- 3. Status Pill Badge -->
+  <g transform="translate(425, 524)">
+    <rect x="0" y="0" width="350" height="28" rx="2" fill="rgba(212, 175, 55, 0.08)" stroke="rgba(212, 175, 55, 0.45)" stroke-width="1"/>
+    <text x="175" y="18" 
+          font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" 
+          font-size="11" 
+          font-weight="600" 
+          letter-spacing="0.22em" 
+          text-anchor="middle" 
+          fill="#F3E5AB">
+      DIRECT TOKYO IMPORT • IN TRANSIT
+    </text>
+  </g>
+
+  <!-- 4. Subtitle / Assurance Note -->
+  <text x="600" y="590" 
+        font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" 
+        font-size="13" 
+        font-weight="400" 
+        letter-spacing="0.12em" 
+        text-anchor="middle" 
+        fill="#94A3B8">
+    Vehicle unit arriving shortly or undergoing showroom prep.
+  </text>
+
+  <text x="600" y="616" 
+        font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" 
+        font-size="12" 
+        font-weight="500" 
+        letter-spacing="0.18em" 
+        text-anchor="middle" 
+        fill="#D4AF37">
+    Auction Sheet &amp; Walk-Around Video Available via WhatsApp
+  </text>
+</svg>`;
+
+async function main() {
+  const publicVehiclesDir = path.resolve(__dirname, "../public/images/vehicles");
+  if (!fs.existsSync(publicVehiclesDir)) {
+    fs.mkdirSync(publicVehiclesDir, { recursive: true });
+  }
+
+  // 1. Write the primary SVG file
+  const svgPath = path.join(publicVehiclesDir, "placeholder-coming-soon.svg");
+  fs.writeFileSync(svgPath, svgContent, "utf8");
+  console.log(`✓ Generated SVG: ${svgPath}`);
+
+  // 2. Render high-res WebP version using Sharp (1200x750)
+  const webpPath = path.join(publicVehiclesDir, "placeholder-coming-soon.webp");
+  await sharp(Buffer.from(svgContent))
+    .resize(1200, 750)
+    .webp({ quality: 92 })
+    .toFile(webpPath);
+  console.log(`✓ Rendered WebP: ${webpPath}`);
+
+  // 3. Render high-res PNG version using Sharp (1200x750)
+  const pngPath = path.join(publicVehiclesDir, "placeholder-coming-soon.png");
+  await sharp(Buffer.from(svgContent))
+    .resize(1200, 750)
+    .png({ compressionLevel: 9 })
+    .toFile(pngPath);
+  console.log(`✓ Rendered PNG: ${pngPath}`);
+
+  console.log("\nAll placeholder assets generated successfully!");
+}
+
+main().catch((err) => {
+  console.error("Error generating placeholder:", err);
+  process.exit(1);
+});

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Lead, LeadStage, LeadSource, DealershipBranch } from "@/types/lead";
@@ -21,6 +21,21 @@ import {
   exportLeadsToPDF,
   exportSingleLeadToPDF,
 } from "@/lib/export-leads";
+import {
+  formatPhoneDisplay,
+  buildWhatsAppUrl,
+  normalizePhoneNumber,
+  isSamePhoneNumber,
+} from "@/lib/phone";
+import {
+  SavedSearch,
+} from "@/types/saved-search";
+import {
+  triggerManualSavedSearchAlertAction,
+  updateSavedSearchStatusAction,
+  deleteSavedSearchAction,
+} from "@/app/actions/saved-searches";
+import { SavedSearchesManager } from "./SavedSearchesManager";
 
 const BOARD_COLUMNS: { key: "new" | "contacted" | "viewing" | "negotiating" | "closed"; label: string }[] = [
   { key: "new", label: "New Enquiries" },
@@ -33,15 +48,36 @@ const BOARD_COLUMNS: { key: "new" | "contacted" | "viewing" | "negotiating" | "c
 export function LeadsPipelineClient({
   initialLeads,
   vehicles = [],
+  initialSavedSearches = [],
 }: {
   initialLeads: Lead[];
   vehicles?: Vehicle[];
+  initialSavedSearches?: SavedSearch[];
 }) {
   const { user } = useAdminAuth();
   const searchParams = useSearchParams();
   const isOwner = user?.role === "owner";
 
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
+  const [savedSearches, setSavedSearches] = useState<SavedSearch[]>(initialSavedSearches);
+  const [activeTab, setActiveTab] = useState<"pipeline" | "saved_searches">("pipeline");
+
+  // View Mode: Kanban Drag & Drop Board vs High-Density Table View (for long-term scale)
+  const [viewMode, setViewMode] = useState<"board" | "table">("board");
+
+  // Lifecycle Scope: "active" (open leads + closed within 30 days) vs "all" (complete historical archive)
+  const [pipelineScope, setPipelineScope] = useState<"active" | "all">("active");
+
+  // Urgency filter pills
+  const [urgencyFilter, setUrgencyFilter] = useState<"all" | "followup_due" | "unassigned" | "multi_inquiry">("all");
+
+  // Table view sorting
+  const [tableSortField, setTableSortField] = useState<"date" | "name" | "followup" | "stage">("date");
+  const [tableSortOrder, setTableSortOrder] = useState<"asc" | "desc">("desc");
+
+  // Monthly Customers Filter: "all" | "this_month" | "last_month" | "YYYY-MM"
+  const [filterMonth, setFilterMonth] = useState<string>("all");
+
   const [selectedMobileStage, setSelectedMobileStage] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterBranch, setFilterBranch] = useState<string>("all");
@@ -96,29 +132,184 @@ export function LeadsPipelineClient({
     };
   }, []);
 
-  // Check URL query param for default opened lead or add action
+  const [currentTimeMs, setCurrentTimeMs] = useState(0);
+
+  function handleViewModeChange(mode: "board" | "table") {
+    setViewMode(mode);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("rs_admin_leads_view", mode);
+      } catch {
+        // ignore storage errors
+      }
+    }
+  }
+
+  // Check URL query param for default opened lead, add action, view mode, or month
   useEffect(() => {
-    const qLead = searchParams.get("lead");
-    if (qLead) {
-      setActiveLeadId(qLead);
-    }
-    const qAction = searchParams.get("action");
-    if (qAction === "new") {
-      setShowAddModal(true);
-    }
+    const timer = setTimeout(() => {
+      setCurrentTimeMs(new Date().getTime());
+      const qLead = searchParams.get("lead");
+      if (qLead) {
+        setActiveLeadId(qLead);
+      }
+      const qAction = searchParams.get("action");
+      if (qAction === "new") {
+        setShowAddModal(true);
+      }
+      const qView = searchParams.get("view");
+      if (qView === "table" || qView === "board") {
+        setViewMode(qView);
+      } else if (typeof window !== "undefined") {
+        try {
+          const savedView = localStorage.getItem("rs_admin_leads_view");
+          if (savedView === "table" || savedView === "board") {
+            setViewMode(savedView);
+          }
+        } catch {
+          // ignore storage errors
+        }
+      }
+      const qMonth = searchParams.get("month");
+      if (qMonth) {
+        setFilterMonth(qMonth);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
   }, [searchParams]);
 
   // Derived active lead
   const activeLead = leads.find((l) => l.id === activeLeadId) || null;
 
+  // Dynamic Month Computations for Monthly Customers Filter
+  const currentYearMonth = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  }, []);
+
+  const lastYearMonth = useMemo(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  }, []);
+
+  const currentMonthName = useMemo(() => {
+    return new Date().toLocaleDateString("en-GB", { month: "short" });
+  }, []);
+
+  const lastMonthName = useMemo(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toLocaleDateString("en-GB", { month: "short" });
+  }, []);
+
+  const availableMonths = useMemo(() => {
+    const monthMap = new Map<string, { label: string; count: number }>();
+    for (const l of leads) {
+      if (!l.createdAt) continue;
+      const d = new Date(l.createdAt);
+      if (isNaN(d.getTime())) continue;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const label = d.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+      const current = monthMap.get(key) || { label, count: 0 };
+      current.count += 1;
+      monthMap.set(key, current);
+    }
+    return Array.from(monthMap.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([key, val]) => ({ key, label: val.label, count: val.count }));
+  }, [leads]);
+
+  const thisMonthCount = useMemo(() => {
+    return leads.filter((l) => {
+      if (!l.createdAt) return false;
+      const d = new Date(l.createdAt);
+      if (isNaN(d.getTime())) return false;
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      return ym === currentYearMonth;
+    }).length;
+  }, [leads, currentYearMonth]);
+
+  const lastMonthCount = useMemo(() => {
+    return leads.filter((l) => {
+      if (!l.createdAt) return false;
+      const d = new Date(l.createdAt);
+      if (isNaN(d.getTime())) return false;
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      return ym === lastYearMonth;
+    }).length;
+  }, [leads, lastYearMonth]);
+
+  const activeMonthLabel = useMemo(() => {
+    if (filterMonth === "all") return "All Time";
+    if (filterMonth === "this_month") {
+      return new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+    }
+    if (filterMonth === "last_month") {
+      const d = new Date();
+      d.setMonth(d.getMonth() - 1);
+      return d.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+    }
+    if (/^\d{4}-\d{2}$/.test(filterMonth)) {
+      const [y, m] = filterMonth.split("-").map(Number);
+      const d = new Date(y, m - 1, 1);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+      }
+    }
+    const found = availableMonths.find((m) => m.key === filterMonth);
+    return found ? found.label : filterMonth;
+  }, [filterMonth, availableMonths]);
+
   // Filtered Leads
   const filteredLeads = leads.filter((l) => {
+    // 0. Monthly Customers Filter
+    if (filterMonth !== "all") {
+      let targetYM = filterMonth;
+      if (filterMonth === "this_month") targetYM = currentYearMonth;
+      if (filterMonth === "last_month") targetYM = lastYearMonth;
+
+      const d = new Date(l.createdAt);
+      if (isNaN(d.getTime())) return false;
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      if (ym !== targetYM) return false;
+    }
+
+    // 1. Pipeline Scope: In "active" mode, exclude closed won/lost leads that are older than 30 days
+    // Note: If user selected a specific past month, do not hide that month's closed deals
+    if (
+      pipelineScope === "active" &&
+      (filterMonth === "all" || filterMonth === "this_month") &&
+      (l.stage === "won" || l.stage === "lost")
+    ) {
+      const updatedTime = new Date(l.updatedAt || l.createdAt).getTime();
+      const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+      if (currentTimeMs && currentTimeMs - updatedTime > thirtyDaysMs) {
+        return false;
+      }
+    }
+
+    // 2. Urgency Filter
+    if (urgencyFilter === "followup_due") {
+      if (!l.followUpDate) return false;
+      const todayStr = new Date().toISOString().split("T")[0];
+      const dueDateStr = l.followUpDate.split("T")[0];
+      if (dueDateStr > todayStr || l.stage === "won" || l.stage === "lost") return false;
+    } else if (urgencyFilter === "unassigned") {
+      if ((l.assignedTo && l.assignedTo.trim() !== "") || l.stage === "won" || l.stage === "lost") return false;
+    } else if (urgencyFilter === "multi_inquiry") {
+      if (!l.isReturningBuyer && (!l.inquiryCount || l.inquiryCount <= 1)) return false;
+    }
+
+    // 3. Dropdown Filters
     if (filterBranch !== "all" && l.branch !== filterBranch) return false;
     if (filterSource !== "all" && l.source !== filterSource) return false;
     if (filterStaff !== "all") {
       if (filterStaff === "unassigned" && l.assignedTo) return false;
       if (filterStaff !== "unassigned" && l.assignedTo !== filterStaff) return false;
     }
+
+    // 4. Search Query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       const matchName = l.name.toLowerCase().includes(q);
@@ -126,8 +317,69 @@ export function LeadsPipelineClient({
       const matchVehicle = l.vehicleTitle?.toLowerCase().includes(q) || false;
       if (!matchName && !matchPhone && !matchVehicle) return false;
     }
+
     return true;
   });
+
+  // Monthly KPI performance summary for the filtered leads
+  const monthlyMetrics = useMemo(() => {
+    const total = filteredLeads.length;
+    const won = filteredLeads.filter((l) => l.stage === "won").length;
+    const lost = filteredLeads.filter((l) => l.stage === "lost").length;
+    const active = filteredLeads.filter((l) => l.stage !== "won" && l.stage !== "lost").length;
+    const winRate = total > 0 ? Math.round((won / total) * 100) : 0;
+    const tradeIns = filteredLeads.filter((l) => l.source === "trade_in").length;
+    return { total, won, lost, active, winRate, tradeIns };
+  }, [filteredLeads]);
+
+  // Table Sorted Leads
+  const sortedTableLeads = [...filteredLeads].sort((a, b) => {
+    let comparison = 0;
+    if (tableSortField === "date") {
+      comparison = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    } else if (tableSortField === "name") {
+      comparison = a.name.localeCompare(b.name);
+    } else if (tableSortField === "followup") {
+      const aDate = a.followUpDate ? new Date(a.followUpDate).getTime() : 0;
+      const bDate = b.followUpDate ? new Date(b.followUpDate).getTime() : 0;
+      comparison = bDate - aDate;
+    } else if (tableSortField === "stage") {
+      comparison = a.stage.localeCompare(b.stage);
+    }
+    return tableSortOrder === "asc" ? -comparison : comparison;
+  });
+
+  const toggleTableSort = (field: "date" | "name" | "followup" | "stage") => {
+    if (tableSortField === field) {
+      setTableSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setTableSortField(field);
+      setTableSortOrder("desc");
+    }
+  };
+
+  // Urgency Counts
+  const followUpDueCount = leads.filter((l) => {
+    if (!l.followUpDate) return false;
+    const todayStr = new Date().toISOString().split("T")[0];
+    const dueDateStr = l.followUpDate.split("T")[0];
+    return dueDateStr <= todayStr && l.stage !== "won" && l.stage !== "lost";
+  }).length;
+
+  const unassignedCount = leads.filter(
+    (l) => (!l.assignedTo || l.assignedTo.trim() === "") && l.stage !== "won" && l.stage !== "lost"
+  ).length;
+
+  const multiInquiryCount = leads.filter(
+    (l) => l.isReturningBuyer || (l.inquiryCount && l.inquiryCount > 1)
+  ).length;
+
+  const totalArchivedClosedCount = leads.filter((l) => {
+    if (l.stage !== "won" && l.stage !== "lost") return false;
+    const updatedTime = new Date(l.updatedAt || l.createdAt).getTime();
+    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+    return currentTimeMs && currentTimeMs - updatedTime > thirtyDaysMs;
+  }).length;
 
   // Unique staff list for filter
   const staffList = Array.from(
@@ -135,22 +387,38 @@ export function LeadsPipelineClient({
   );
 
   // Helpers for formatting
+  function formatSourceLabel(source: LeadSource): string {
+    switch (source) {
+      case "website_form":
+        return "Web Form";
+      case "vehicle_request":
+        return "Vehicle Req";
+      case "trade_in":
+        return "Trade-In";
+      case "whatsapp":
+        return "WhatsApp";
+      case "phone":
+        return "Phone Call";
+      case "walk_in":
+        return "Walk-in";
+      default:
+        return source;
+    }
+  }
+
   function getWhatsAppUrl(phone: string, name: string, vehicleTitle?: string | null): string {
-    const digits = phone.replace(/[^0-9]/g, "");
-    const formatted = digits.startsWith("94")
-      ? digits
-      : digits.startsWith("0")
-      ? "94" + digits.slice(1)
-      : "94" + digits;
     const msg = `Hello ${name}, this is RS Enterprises Kaduruwela Showroom contacting you regarding ${
       vehicleTitle || "your Japanese vehicle inquiry"
     }. How may we assist you today?`;
-    return `https://wa.me/${formatted}?text=${encodeURIComponent(msg)}`;
+    return buildWhatsAppUrl(phone, msg);
   }
 
   function formatRelativeTime(dateStr: string): string {
     try {
-      const diffMs = Date.now() - new Date(dateStr).getTime();
+      if (!currentTimeMs) {
+        return new Date(dateStr).toLocaleDateString("en-LK", { month: "short", day: "numeric" });
+      }
+      const diffMs = currentTimeMs - new Date(dateStr).getTime();
       const diffMins = Math.floor(diffMs / (1000 * 60));
       if (diffMins < 1) return "Just now";
       if (diffMins < 60) return `${diffMins}m ago`;
@@ -280,36 +548,71 @@ export function LeadsPipelineClient({
     setIsAdding(false);
 
     if (res.success && res.leadId) {
-      const newLeadObj: Lead = {
-        id: res.leadId,
-        name: addName.trim(),
-        phone: addPhone.trim(),
-        email: null,
-        source: addSource,
-        branch: addBranch,
-        vehicleId: null,
-        vehicleTitle: addVehicleTitle.trim() || null,
-        requestDetails: addNote.trim() || null,
-        stage: "new",
-        assignedTo: user?.displayName || "Staff",
-        followUpDate: null,
-        lostReason: null,
-        updatedBy: author,
-        notes: addNote.trim()
-          ? [
-              {
-                id: `note-${Date.now()}`,
-                text: addNote.trim(),
-                author,
-                time: new Date().toISOString(),
-              },
-            ]
-          : [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+      if (res.isMerged) {
+        // Update existing lead in local state
+        setLeads((prev) =>
+          prev.map((l) => {
+            if (l.id === res.leadId) {
+              const updatedCount = res.inquiryCount || (l.inquiryCount || 1) + 1;
+              return {
+                ...l,
+                phone: normalizePhoneNumber(addPhone),
+                vehicleTitle: addVehicleTitle.trim() || l.vehicleTitle,
+                stage: "new",
+                isReturningBuyer: true,
+                inquiryCount: updatedCount,
+                updatedAt: new Date().toISOString(),
+              };
+            }
+            return l;
+          })
+        );
+      } else {
+        const newLeadObj: Lead = {
+          id: res.leadId,
+          name: addName.trim(),
+          phone: normalizePhoneNumber(addPhone.trim()),
+          email: null,
+          source: addSource,
+          branch: addBranch,
+          vehicleId: null,
+          vehicleTitle: addVehicleTitle.trim() || null,
+          requestDetails: addNote.trim() || null,
+          stage: "new",
+          assignedTo: user?.displayName || "Staff",
+          followUpDate: null,
+          lostReason: null,
+          updatedBy: author,
+          inquiryCount: 1,
+          isReturningBuyer: false,
+          inquiries: [
+            {
+              id: `inq-${Date.now()}`,
+              time: new Date().toISOString(),
+              source: addSource,
+              branch: addBranch,
+              vehicleId: null,
+              vehicleTitle: addVehicleTitle.trim() || null,
+              requestDetails: addNote.trim() || null,
+            },
+          ],
+          notes: addNote.trim()
+            ? [
+                {
+                  id: `note-${Date.now()}`,
+                  text: addNote.trim(),
+                  author,
+                  time: new Date().toISOString(),
+                },
+              ]
+            : [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
 
-      setLeads((prev) => [newLeadObj, ...prev]);
+        setLeads((prev) => [newLeadObj, ...prev]);
+      }
+
       setShowAddModal(false);
       setAddName("");
       setAddPhone("");
@@ -333,11 +636,12 @@ export function LeadsPipelineClient({
     setIsSubmittingNote(false);
 
     if (res.success) {
+      const nowIso = new Date().toISOString();
       const newNote = {
-        id: `note-${Date.now()}`,
+        id: `note-${nowIso.replace(/[^0-9]/g, "")}`,
         text,
         author,
-        time: new Date().toISOString(),
+        time: nowIso,
       };
       setLeads((prev) =>
         prev.map((l) =>
@@ -387,6 +691,45 @@ export function LeadsPipelineClient({
     await deleteLeadAction(leadId);
   }
 
+  // Send WhatsApp Alert to Buyer for Saved Search
+  async function handleSendSavedSearchAlert(savedSearchId: string, vehicleId: string) {
+    const res = await triggerManualSavedSearchAlertAction(savedSearchId, vehicleId);
+    if (res.success && res.whatsappUrl) {
+      window.open(res.whatsappUrl, "_blank", "noopener,noreferrer");
+      setSavedSearches((prev) =>
+        prev.map((s) =>
+          s.id === savedSearchId
+            ? {
+                ...s,
+                status: "notified",
+                lastNotifiedAt: new Date().toISOString(),
+                matchedVehicleIds: s.matchedVehicleIds.includes(vehicleId)
+                  ? s.matchedVehicleIds
+                  : [...s.matchedVehicleIds, vehicleId],
+              }
+            : s
+        )
+      );
+    } else {
+      alert(res.error || "Failed to trigger alert.");
+    }
+  }
+
+  // Fulfill Saved Search Alert
+  async function handleFulfillSavedSearch(savedSearchId: string) {
+    setSavedSearches((prev) =>
+      prev.map((s) => (s.id === savedSearchId ? { ...s, status: "fulfilled" } : s))
+    );
+    await updateSavedSearchStatusAction(savedSearchId, "fulfilled");
+  }
+
+  // Delete Saved Search Alert
+  async function handleDeleteSavedSearch(savedSearchId: string) {
+    if (!confirm("Are you sure you want to remove this back-in-stock alert?")) return;
+    setSavedSearches((prev) => prev.filter((s) => s.id !== savedSearchId));
+    await deleteSavedSearchAction(savedSearchId);
+  }
+
   // Find linked vehicle
   const linkedVehicle = activeLead?.vehicleId
     ? vehicles.find((v) => v.id === activeLead.vehicleId || v.slug === activeLead.vehicleId)
@@ -414,6 +757,7 @@ export function LeadsPipelineClient({
               onClick={() => {
                 if (filteredLeads.length === leads.length) {
                   exportLeadsToPDF(leads, {
+                    title: "RS ENTERPRISES • CUSTOMER ENQUIRIES & PIPELINE REPORT",
                     filterSummary: `All Showroom Enquiries (${leads.length} Records)`,
                   });
                 } else {
@@ -448,7 +792,14 @@ export function LeadsPipelineClient({
                     type="button"
                     onClick={() => {
                       exportLeadsToPDF(filteredLeads, {
-                        filterSummary: `Filtered View (${filteredLeads.length} of ${leads.length} Records)`,
+                        title:
+                          filterMonth !== "all"
+                            ? `RS ENTERPRISES • ${activeMonthLabel.toUpperCase()} CUSTOMERS & ENQUIRIES REPORT`
+                            : "RS ENTERPRISES • FILTERED CUSTOMERS & ENQUIRIES REPORT",
+                        filterSummary:
+                          filterMonth !== "all"
+                            ? `${activeMonthLabel} Monthly Customers (${filteredLeads.length} of ${leads.length} Records)`
+                            : `Filtered View (${filteredLeads.length} of ${leads.length} Records)`,
                       });
                       setShowExportMenu(false);
                     }}
@@ -457,7 +808,7 @@ export function LeadsPipelineClient({
                     <div>
                       <div className="font-medium flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]"></span>
-                        <span>Filtered View</span>
+                        <span>{filterMonth !== "all" ? `${activeMonthLabel} Report` : "Filtered View"}</span>
                       </div>
                       <div className="text-[10px] text-[var(--text-secondary)] mt-0.5">
                         {filteredLeads.length} leads matching filter
@@ -472,7 +823,8 @@ export function LeadsPipelineClient({
                     type="button"
                     onClick={() => {
                       exportLeadsToPDF(leads, {
-                        filterSummary: `Complete Showroom Dossier (${leads.length} Total Records)`,
+                        title: "RS ENTERPRISES • COMPLETE CUSTOMERS & ENQUIRIES REPORT",
+                        filterSummary: `All Showroom Records (${leads.length} Total Records)`,
                       });
                       setShowExportMenu(false);
                     }}
@@ -481,7 +833,7 @@ export function LeadsPipelineClient({
                     <div>
                       <div className="font-medium flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-neutral-500"></span>
-                        <span>All Leads Dossier</span>
+                        <span>All Showroom Records</span>
                       </div>
                       <div className="text-[10px] text-[var(--text-secondary)] mt-0.5">
                         {leads.length} total showroom records
@@ -506,75 +858,383 @@ export function LeadsPipelineClient({
         </div>
       </div>
 
-      {/* Filter & Search Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-        <div className="sm:col-span-5">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by customer name, phone number, or vehicle..."
-            className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
-          />
+      {/* View Switcher: Pipeline vs Back-in-Stock & Saved Searches */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[var(--border-hairline)] gap-4 pb-2">
+        <div className="flex space-x-6">
+          <button
+            type="button"
+            onClick={() => setActiveTab("pipeline")}
+            className={`pb-3 text-xs font-sans uppercase tracking-[0.14em] font-medium transition-colors relative cursor-pointer ${
+              activeTab === "pipeline"
+                ? "text-[var(--accent)] border-b-2 border-[var(--accent)]"
+                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            }`}
+          >
+            <span>Enquiry Pipeline</span>
+            <span className="ml-2 px-1.5 py-0.5 text-[10px] font-mono bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-full">
+              {leads.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("saved_searches")}
+            className={`pb-3 text-xs font-sans uppercase tracking-[0.14em] font-medium transition-colors relative cursor-pointer ${
+              activeTab === "saved_searches"
+                ? "text-[var(--accent)] border-b-2 border-[var(--accent)]"
+                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            }`}
+          >
+            <span>Saved Searches &amp; Stock Alerts</span>
+            <span className="ml-2 px-1.5 py-0.5 text-[10px] font-mono bg-[var(--accent)] text-white rounded-full">
+              {savedSearches.length}
+            </span>
+          </button>
         </div>
 
-        <div className="sm:col-span-2">
-          <select
-            value={filterBranch}
-            onChange={(e) => setFilterBranch(e.target.value)}
-            className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
-          >
-            <option value="all">All Branches</option>
-            <option value="polonnaruwa">Kaduruwela</option>
-            <option value="trincomalee">Trincomalee</option>
-          </select>
-        </div>
+        {/* Board vs Table Toggle */}
+        {activeTab === "pipeline" && (
+          <div className="flex items-center gap-2 self-start sm:self-auto pb-2 sm:pb-0">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] hidden md:inline">
+              Layout:
+            </span>
+            <div className="inline-flex p-0.5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px]">
+              <button
+                type="button"
+                onClick={() => handleViewModeChange("board")}
+                className={`h-8 px-3 inline-flex items-center gap-1.5 text-xs font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer ${
+                  viewMode === "board"
+                    ? "bg-[var(--accent)] text-white font-medium shadow-sm"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                }`}
+                title="Kanban Drag & Drop Board"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                </svg>
+                <span>Board</span>
+              </button>
 
-        <div className="sm:col-span-3">
-          <select
-            value={filterSource}
-            onChange={(e) => setFilterSource(e.target.value)}
-            className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
-          >
-            <option value="all">All Channels</option>
-            <option value="website_form">Website Contact Form</option>
-            <option value="vehicle_request">Vehicle Request</option>
-            <option value="whatsapp">Direct WhatsApp</option>
-            <option value="phone">Direct Phone Call</option>
-            <option value="walk_in">Showroom Walk-in</option>
-          </select>
-        </div>
-
-        <div className="sm:col-span-2">
-          <select
-            value={filterStaff}
-            onChange={(e) => setFilterStaff(e.target.value)}
-            className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
-          >
-            <option value="all">All Staff</option>
-            {staffList.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-            <option value="unassigned">Unassigned</option>
-          </select>
-        </div>
+              <button
+                type="button"
+                onClick={() => handleViewModeChange("table")}
+                className={`h-8 px-3 inline-flex items-center gap-1.5 text-xs font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer ${
+                  viewMode === "table"
+                    ? "bg-[var(--accent)] text-white font-medium shadow-sm"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                }`}
+                title="High-Density Table View for Long-Term Scale & Triage"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                <span>Table</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* MOBILE: Stage Filter Chips */}
-      <div className="lg:hidden flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-        <button
-          type="button"
-          onClick={() => setSelectedMobileStage("all")}
-          className={`min-h-[44px] px-4 shrink-0 text-xs font-sans uppercase font-medium tracking-wider rounded-[2px] border ${
-            selectedMobileStage === "all"
-              ? "bg-[var(--accent)] text-white border-[var(--accent)]"
-              : "bg-[var(--bg-surface)] text-[var(--text-secondary)] border-[var(--border-hairline)]"
-          }`}
-        >
-          All ({filteredLeads.length})
-        </button>
+      {activeTab === "pipeline" ? (
+        <>
+          {/* Filter & Search Bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
+            {/* Search Input */}
+            <div className="sm:col-span-2 lg:col-span-3">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search customer, phone, vehicle..."
+                className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
+              />
+            </div>
+
+            {/* Monthly Customer Filter: Calendar Month Input */}
+            <div className="sm:col-span-1 lg:col-span-3">
+              <div className="relative flex items-center">
+                <input
+                  type="month"
+                  value={
+                    filterMonth === "all"
+                      ? ""
+                      : filterMonth === "this_month"
+                      ? currentYearMonth
+                      : filterMonth === "last_month"
+                      ? lastYearMonth
+                      : filterMonth
+                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFilterMonth(val || "all");
+                  }}
+                  onClick={(e) => {
+                    try {
+                      (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.();
+                    } catch {
+                      // Fallback
+                    }
+                  }}
+                  className="w-full h-11 pl-9 pr-9 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] font-mono cursor-pointer"
+                  title="Click to open calendar and select any month"
+                  aria-label="Select Calendar Month"
+                />
+
+                {/* Left Calendar Icon */}
+                <div className="absolute left-3 pointer-events-none text-[var(--accent)]">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                </div>
+
+                {/* Clear / All indicator */}
+                {filterMonth !== "all" ? (
+                  <button
+                    type="button"
+                    onClick={() => setFilterMonth("all")}
+                    className="absolute right-2.5 h-6 w-6 flex items-center justify-center text-xs text-[var(--text-secondary)] hover:text-red-400 hover:bg-[var(--bg-base)] rounded-[1px] transition-colors cursor-pointer"
+                    title="Clear month filter (Show all time)"
+                  >
+                    ✕
+                  </button>
+                ) : (
+                  <span className="absolute right-2.5 text-[9px] font-mono text-[var(--text-muted)] pointer-events-none uppercase">
+                    All
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Branch Filter */}
+            <div className="sm:col-span-1 lg:col-span-2">
+              <select
+                value={filterBranch}
+                onChange={(e) => setFilterBranch(e.target.value)}
+                className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
+              >
+                <option value="all">All Branches</option>
+                <option value="polonnaruwa">Kaduruwela</option>
+                <option value="trincomalee">Trincomalee</option>
+              </select>
+            </div>
+
+            {/* Source / Channel Filter */}
+            <div className="sm:col-span-1 lg:col-span-2">
+              <select
+                value={filterSource}
+                onChange={(e) => setFilterSource(e.target.value)}
+                className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
+              >
+                <option value="all">All Channels</option>
+                <option value="website_form">Web Form</option>
+                <option value="vehicle_request">Vehicle Request</option>
+                <option value="trade_in">Trade-In</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="phone">Direct Call</option>
+                <option value="walk_in">Showroom Walk-in</option>
+              </select>
+            </div>
+
+            {/* Staff Filter */}
+            <div className="sm:col-span-1 lg:col-span-2">
+              <select
+                value={filterStaff}
+                onChange={(e) => setFilterStaff(e.target.value)}
+                className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
+              >
+                <option value="all">All Staff</option>
+                {staffList.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+                <option value="unassigned">Unassigned</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Scope, Urgency, & Filter Control Pills */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Quick Monthly Switcher Pills */}
+              <div className="inline-flex p-0.5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px]">
+                <button
+                  type="button"
+                  onClick={() => setFilterMonth("all")}
+                  className={`h-7 px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer ${
+                    filterMonth === "all"
+                      ? "bg-[var(--accent)] text-white font-medium shadow-sm"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  }`}
+                  title="Show all customer inquiries across all dates"
+                >
+                  All Months
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterMonth("this_month")}
+                  className={`h-7 px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    filterMonth === "this_month"
+                      ? "bg-[var(--accent)] text-white font-medium shadow-sm"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  }`}
+                  title="Filter to current month customer inquiries"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span>This Month ({currentMonthName} &bull; {thisMonthCount})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterMonth("last_month")}
+                  className={`h-7 px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer ${
+                    filterMonth === "last_month"
+                      ? "bg-[var(--accent)] text-white font-medium shadow-sm"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  }`}
+                  title="Filter to last month customer inquiries"
+                >
+                  Last Month ({lastMonthName} &bull; {lastMonthCount})
+                </button>
+                {filterMonth !== "all" && filterMonth !== "this_month" && filterMonth !== "last_month" && (
+                  <button
+                    type="button"
+                    onClick={() => setFilterMonth(filterMonth)}
+                    className="h-7 px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer bg-[var(--accent)] text-white font-medium shadow-sm flex items-center gap-1.5"
+                    title={`Calendar Selected Month: ${activeMonthLabel}`}
+                  >
+                    <span>📅 {activeMonthLabel}</span>
+                  </button>
+                )}
+              </div>
+
+              <span className="text-[var(--border-hairline)] hidden sm:inline">|</span>
+
+              {/* Urgency Pills */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setUrgencyFilter("all")}
+                  className={`min-h-[30px] px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] border transition-colors cursor-pointer ${
+                    urgencyFilter === "all"
+                      ? "bg-[var(--accent)] text-white border-[var(--accent)] font-medium shadow-sm"
+                      : "bg-[var(--bg-surface)] text-[var(--text-secondary)] border-[var(--border-hairline)] hover:text-[var(--text-primary)]"
+                  }`}
+                >
+                  All Status ({filteredLeads.length})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setUrgencyFilter("followup_due")}
+                  className={`min-h-[30px] px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] border transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    urgencyFilter === "followup_due"
+                      ? "bg-amber-600 text-white border-amber-600 font-medium shadow-sm"
+                      : "bg-[var(--bg-surface)] text-amber-400 border-amber-500/30 hover:border-amber-500"
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  <span>Follow-up Due ({followUpDueCount})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setUrgencyFilter("unassigned")}
+                  className={`min-h-[30px] px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] border transition-colors cursor-pointer ${
+                    urgencyFilter === "unassigned"
+                      ? "bg-purple-700 text-white border-purple-700 font-medium shadow-sm"
+                      : "bg-[var(--bg-surface)] text-purple-300 border-purple-500/30 hover:border-purple-500"
+                  }`}
+                >
+                  Unassigned ({unassignedCount})
+                </button>
+
+                {multiInquiryCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setUrgencyFilter("multi_inquiry")}
+                    className={`min-h-[30px] px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] border transition-colors cursor-pointer ${
+                      urgencyFilter === "multi_inquiry"
+                        ? "bg-blue-600 text-white border-blue-600 font-medium shadow-sm"
+                        : "bg-[var(--bg-surface)] text-blue-300 border-blue-500/30 hover:border-blue-500"
+                    }`}
+                  >
+                    Merged / Returning ({multiInquiryCount})
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Pipeline Scope Selector (Active Deals vs Complete History) */}
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] hidden lg:inline">
+                Scope:
+              </span>
+              <div className="inline-flex p-0.5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px]">
+                <button
+                  type="button"
+                  onClick={() => setPipelineScope("active")}
+                  className={`h-7 px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer ${
+                    pipelineScope === "active"
+                      ? "bg-[var(--accent)] text-white font-medium shadow-sm"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  }`}
+                  title="Active open inquiries + deals closed within the last 30 days"
+                >
+                  Active Deals
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPipelineScope("all")}
+                  className={`h-7 px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer ${
+                    pipelineScope === "all"
+                      ? "bg-[var(--accent)] text-white font-medium shadow-sm"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  }`}
+                  title="Include all historical closed and lost leads"
+                >
+                  All Archive ({leads.length})
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Archived notice if older closed records are hidden */}
+          {pipelineScope === "active" && totalArchivedClosedCount > 0 && (
+            <div className="px-3.5 py-2 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] flex items-center justify-between text-xs text-[var(--text-secondary)]">
+              <div className="flex items-center gap-2">
+                <span className="text-[var(--accent)] font-bold">●</span>
+                <span>
+                  Showing active showroom inquiries. {totalArchivedClosedCount} older closed deals are safely archived.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPipelineScope("all")}
+                className="text-[10px] font-sans uppercase font-medium text-[var(--accent)] hover:underline ml-2 cursor-pointer"
+              >
+                View Complete History ({leads.length})
+              </button>
+            </div>
+          )}
+
+          {viewMode === "board" ? (
+            <>
+              {/* MOBILE: Stage Filter Chips */}
+              <div className="lg:hidden flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+                <button
+                  type="button"
+                  onClick={() => setSelectedMobileStage("all")}
+                  className={`min-h-[44px] px-4 shrink-0 text-xs font-sans uppercase font-medium tracking-wider rounded-[2px] border ${
+                    selectedMobileStage === "all"
+                      ? "bg-[var(--accent)] text-white border-[var(--accent)]"
+                      : "bg-[var(--bg-surface)] text-[var(--text-secondary)] border-[var(--border-hairline)]"
+                  }`}
+                >
+                  All ({filteredLeads.length})
+                </button>
         {BOARD_COLUMNS.map((col) => {
           const count =
             col.key === "closed"
@@ -645,11 +1305,16 @@ export function LeadsPipelineClient({
                             : "border-[var(--border-hairline)] shadow-sm"
                         }`}
                       >
-                        {/* Name & Channel */}
+                        {/* Name & Phone */}
                         <div className="flex items-start justify-between gap-2">
-                          <span className="font-serif text-base text-[var(--text-primary)] font-medium leading-snug">
-                            {lead.name}
-                          </span>
+                          <div>
+                            <span className="font-serif text-base text-[var(--text-primary)] font-medium leading-snug block">
+                              {lead.name}
+                            </span>
+                            <span className="text-[10px] font-mono text-[var(--text-secondary)]">
+                              {formatPhoneDisplay(lead.phone)}
+                            </span>
+                          </div>
                           <span className="text-[9px] font-mono text-[var(--text-secondary)] shrink-0">
                             {formatRelativeTime(lead.createdAt)}
                           </span>
@@ -665,6 +1330,16 @@ export function LeadsPipelineClient({
                           <span className="px-1.5 py-0.2 bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--text-secondary)] uppercase">
                             {lead.branch === "polonnaruwa" ? "Kadu" : "Trinco"}
                           </span>
+
+                          {(lead.isReturningBuyer || (lead.inquiryCount && lead.inquiryCount > 1)) && (
+                            <span
+                              className="px-1.5 py-0.2 bg-amber-500/15 text-amber-400 border border-amber-500/30 font-semibold rounded-[1px] flex items-center gap-1"
+                              title={`${lead.inquiryCount || 2} inquiries merged into this client file`}
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                              <span>{lead.inquiryCount || 2}x Merged</span>
+                            </span>
+                          )}
 
                           {isClosed ? (
                             <span
@@ -787,6 +1462,15 @@ export function LeadsPipelineClient({
                   <span className="px-2 py-0.5 uppercase bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--text-secondary)]">
                     {lead.branch}
                   </span>
+                  <span className="text-[var(--text-secondary)]">
+                    {formatPhoneDisplay(lead.phone)}
+                  </span>
+                  {(lead.isReturningBuyer || (lead.inquiryCount && lead.inquiryCount > 1)) && (
+                    <span className="px-2 py-0.5 bg-amber-500/15 text-amber-400 border border-amber-500/30 font-semibold rounded-[1px] flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                      <span>{lead.inquiryCount || 2}x Merged</span>
+                    </span>
+                  )}
                 </div>
 
                 <div
@@ -823,6 +1507,449 @@ export function LeadsPipelineClient({
           });
         })()}
       </div>
+    </>
+  ) : (
+    /* HIGH-DENSITY TABLE VIEW (OPTIMIZED FOR LONG-TERM SCALE & TRIAGE) */
+    <div className="space-y-4">
+      {/* Monthly Customer Table View KPI & Filter Header */}
+      <div className="p-4 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-sm">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--accent)] font-semibold">
+              Monthly Customers Table View
+            </span>
+            {filterMonth !== "all" && (
+              <span className="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider bg-[var(--accent)]/15 text-[var(--accent)] border border-[var(--accent)]/30 rounded-[1px] font-semibold">
+                {activeMonthLabel}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+            <span>
+              Showing <strong className="text-[var(--text-primary)] font-semibold">{sortedTableLeads.length}</strong> {filterMonth !== "all" ? `${activeMonthLabel}` : "total"} customer inquiries
+            </span>
+            {filterMonth !== "all" && (
+              <button
+                type="button"
+                onClick={() => setFilterMonth("all")}
+                className="text-[var(--accent)] hover:underline text-[11px] cursor-pointer"
+              >
+                (View All Months)
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Monthly Performance KPI Strip */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs font-mono">
+          <div className="px-3 py-1.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] flex items-center gap-2">
+            <span className="text-[var(--text-secondary)] uppercase text-[10px]">Total:</span>
+            <span className="font-semibold text-[var(--text-primary)]">{monthlyMetrics.total}</span>
+          </div>
+          <div className="px-3 py-1.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+            <span className="text-[var(--text-secondary)] uppercase text-[10px]">Won (Sold):</span>
+            <span className="font-semibold text-green-400">{monthlyMetrics.won}</span>
+            {monthlyMetrics.total > 0 && (
+              <span className="text-[10px] text-green-500/80">({monthlyMetrics.winRate}%)</span>
+            )}
+          </div>
+          <div className="px-3 py-1.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+            <span className="text-[var(--text-secondary)] uppercase text-[10px]">Active Pipeline:</span>
+            <span className="font-semibold text-amber-300">{monthlyMetrics.active}</span>
+          </div>
+          <div className="px-3 py-1.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400" />
+            <span className="text-[var(--text-secondary)] uppercase text-[10px]">Lost:</span>
+            <span className="font-semibold text-neutral-400">{monthlyMetrics.lost}</span>
+          </div>
+          {monthlyMetrics.tradeIns > 0 && (
+            <div className="px-3 py-1.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] flex items-center gap-2">
+              <span className="text-[var(--text-secondary)] uppercase text-[10px]">Trade-Ins:</span>
+              <span className="font-semibold text-[var(--accent)]">{monthlyMetrics.tradeIns}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop Data Table */}
+      <div className="hidden md:block bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-[var(--border-hairline)] bg-[var(--bg-base)] text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)]">
+                <th className="py-3 px-4">
+                  <button
+                    type="button"
+                    onClick={() => toggleTableSort("name")}
+                    className="inline-flex items-center gap-1 hover:text-[var(--text-primary)] cursor-pointer"
+                  >
+                    <span>Customer</span>
+                    {tableSortField === "name" && (
+                      <span className="text-[var(--accent)]">{tableSortOrder === "asc" ? "↑" : "↓"}</span>
+                    )}
+                  </button>
+                </th>
+                <th className="py-3 px-4">Vehicle of Interest</th>
+                <th className="py-3 px-4">Channel / Branch</th>
+                <th className="py-3 px-4">
+                  <button
+                    type="button"
+                    onClick={() => toggleTableSort("stage")}
+                    className="inline-flex items-center gap-1 hover:text-[var(--text-primary)] cursor-pointer"
+                  >
+                    <span>Stage (1-Tap Change)</span>
+                    {tableSortField === "stage" && (
+                      <span className="text-[var(--accent)]">{tableSortOrder === "asc" ? "↑" : "↓"}</span>
+                    )}
+                  </button>
+                </th>
+                <th className="py-3 px-4">
+                  <button
+                    type="button"
+                    onClick={() => toggleTableSort("followup")}
+                    className="inline-flex items-center gap-1 hover:text-[var(--text-primary)] cursor-pointer"
+                  >
+                    <span>Next Follow-Up</span>
+                    {tableSortField === "followup" && (
+                      <span className="text-[var(--accent)]">{tableSortOrder === "asc" ? "↑" : "↓"}</span>
+                    )}
+                  </button>
+                </th>
+                <th className="py-3 px-4">Staff</th>
+                <th className="py-3 px-4">
+                  <button
+                    type="button"
+                    onClick={() => toggleTableSort("date")}
+                    className="inline-flex items-center gap-1 hover:text-[var(--text-primary)] cursor-pointer"
+                  >
+                    <span>Logged (Date &amp; Month)</span>
+                    {tableSortField === "date" && (
+                      <span className="text-[var(--accent)]">{tableSortOrder === "asc" ? "↑" : "↓"}</span>
+                    )}
+                  </button>
+                </th>
+                <th className="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border-hairline)] text-xs">
+              {sortedTableLeads.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-[var(--text-secondary)]">
+                    <p className="italic">
+                      {filterMonth !== "all"
+                        ? `No customer inquiries recorded for ${activeMonthLabel}.`
+                        : "No customer inquiries match this filter criteria."}
+                    </p>
+                    {filterMonth !== "all" && (
+                      <button
+                        type="button"
+                        onClick={() => setFilterMonth("all")}
+                        className="mt-3 px-4 py-1.5 text-xs font-sans uppercase tracking-wider bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] rounded-[2px] transition-colors cursor-pointer"
+                      >
+                        Show All Months
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ) : (
+                sortedTableLeads.map((lead) => {
+                  const waUrl = getWhatsAppUrl(lead.phone, lead.name, lead.vehicleTitle);
+                  const isClosed = lead.stage === "won" || lead.stage === "lost";
+
+                  return (
+                    <tr
+                      key={lead.id}
+                      onClick={() => setActiveLeadId(lead.id)}
+                      className={`hover:bg-[var(--bg-base)]/80 transition-colors cursor-pointer group ${
+                        activeLeadId === lead.id ? "bg-[var(--accent)]/5" : ""
+                      }`}
+                    >
+                      {/* Customer Name & Phone */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-serif text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">
+                            {lead.name}
+                          </span>
+                          {(lead.isReturningBuyer || (lead.inquiryCount && lead.inquiryCount > 1)) && (
+                            <span className="px-1.5 py-0.2 text-[9px] font-mono bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded-[1px] font-semibold">
+                              {lead.inquiryCount || 2}x Merged
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs font-mono text-[var(--text-secondary)] block mt-0.5">
+                          {formatPhoneDisplay(lead.phone)}
+                        </span>
+                      </td>
+
+                      {/* Vehicle Title */}
+                      <td className="py-3.5 px-4 max-w-[220px]">
+                        <span className="text-xs text-[var(--text-primary)] font-medium line-clamp-1">
+                          {lead.vehicleTitle || "General Showroom Inquiry"}
+                        </span>
+                        {lead.requestDetails && (
+                          <span className="text-[10px] text-[var(--text-secondary)] italic font-light line-clamp-1 mt-0.5">
+                            &ldquo;{lead.requestDetails}&rdquo;
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Channel / Branch */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-1.5 py-0.5 text-[9px] font-mono uppercase bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--text-secondary)] rounded-[1px]">
+                            {formatSourceLabel(lead.source)}
+                          </span>
+                          <span className="px-1.5 py-0.5 text-[9px] font-mono uppercase bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--accent)] rounded-[1px] font-medium">
+                            {lead.branch === "polonnaruwa" ? "Kadurwela" : "Trinco"}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Stage (1-Tap Dropdown) */}
+                      <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
+                        <select
+                          value={lead.stage}
+                          onChange={(e) => handleStageChange(lead.id, e.target.value as LeadStage)}
+                          className={`h-8 px-2 text-[10px] font-mono uppercase tracking-wider rounded-[2px] border cursor-pointer focus:outline-none focus:border-[var(--accent)] ${
+                            lead.stage === "won"
+                              ? "bg-green-950/30 text-green-400 border-green-800"
+                              : lead.stage === "lost"
+                              ? "bg-neutral-800/40 text-neutral-400 border-neutral-700"
+                              : lead.stage === "negotiating"
+                              ? "bg-amber-950/30 text-amber-300 border-amber-800"
+                              : lead.stage === "viewing"
+                              ? "bg-blue-950/30 text-blue-300 border-blue-800"
+                              : lead.stage === "contacted"
+                              ? "bg-purple-950/30 text-purple-300 border-purple-800"
+                              : "bg-[var(--bg-base)] text-[var(--accent)] border-[var(--accent)]/40"
+                          }`}
+                        >
+                          <option value="new">New</option>
+                          <option value="contacted">Contacted</option>
+                          <option value="viewing">Viewing / Test</option>
+                          <option value="negotiating">Negotiating</option>
+                          <option value="won">Won (Sold)</option>
+                          <option value="lost">Lost</option>
+                        </select>
+                      </td>
+
+                      {/* Next Follow-Up */}
+                      <td className="py-3.5 px-4">
+                        {(() => {
+                          if (!lead.followUpDate) {
+                            return (
+                              <span className="text-[10px] font-mono text-[var(--text-secondary)] italic">
+                                No follow-up set
+                              </span>
+                            );
+                          }
+                          const todayStr = new Date().toISOString().split("T")[0];
+                          const dueDateStr = lead.followUpDate.split("T")[0];
+                          const isOverdue = dueDateStr < todayStr && !isClosed;
+                          const isDueToday = dueDateStr === todayStr && !isClosed;
+
+                          return (
+                            <span
+                              className={`inline-block px-2 py-0.5 text-[10px] font-mono uppercase rounded-[2px] font-semibold ${
+                                isOverdue
+                                  ? "bg-red-950/30 text-red-400 border border-red-800"
+                                  : isDueToday
+                                  ? "bg-amber-950/30 text-amber-300 border border-amber-800"
+                                  : "bg-[var(--bg-base)] text-[var(--text-secondary)] border border-[var(--border-hairline)]"
+                              }`}
+                            >
+                              {isOverdue ? "Overdue: " : isDueToday ? "Due Today: " : "Due: "}
+                              {dueDateStr}
+                            </span>
+                          );
+                        })()}
+                      </td>
+
+                      {/* Assigned Staff */}
+                      <td className="py-3.5 px-4">
+                        <span className="text-xs font-mono text-[var(--text-secondary)]">
+                          {lead.assignedTo || "Unassigned"}
+                        </span>
+                      </td>
+
+                      {/* Date Logged with Clear Month & Day */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-mono text-[var(--text-primary)] whitespace-nowrap font-medium">
+                            {new Date(lead.createdAt).toLocaleDateString("en-GB", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </span>
+                          <span className="text-[9px] font-mono text-[var(--text-secondary)]">
+                            {formatRelativeTime(lead.createdAt)}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-1.5 justify-end">
+                          <a
+                            href={`tel:${lead.phone}`}
+                            className="h-8 px-2.5 inline-flex items-center text-[10px] font-sans uppercase font-medium tracking-wider border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--accent)] hover:text-[var(--accent)] rounded-[2px] transition-colors"
+                            title="Call client"
+                          >
+                            Call
+                          </a>
+                          <a
+                            href={waUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="h-8 px-2.5 inline-flex items-center text-[10px] font-sans uppercase font-medium tracking-wider bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] rounded-[2px] transition-colors"
+                            title="Open WhatsApp chat"
+                          >
+                            WA
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => setActiveLeadId(lead.id)}
+                            className="h-8 px-2.5 inline-flex items-center text-[10px] font-sans uppercase font-medium tracking-wider bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-subtle)] rounded-[2px] transition-colors"
+                            title="Open customer details"
+                          >
+                            Details &rarr;
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Mobile High-Density Compact List */}
+      <div className="md:hidden space-y-2.5">
+        {sortedTableLeads.length === 0 ? (
+          <div className="p-8 text-center bg-[var(--bg-surface)] border border-[var(--border-hairline)] space-y-2">
+            <p className="font-serif text-lg text-[var(--text-primary)]">
+              {filterMonth !== "all"
+                ? `No inquiries recorded for ${activeMonthLabel}`
+                : "No inquiries match this filter"}
+            </p>
+            <p className="text-xs text-[var(--text-secondary)] font-light">
+              Try switching months or clearing search filters.
+            </p>
+            {filterMonth !== "all" && (
+              <button
+                type="button"
+                onClick={() => setFilterMonth("all")}
+                className="mt-2 px-4 py-1.5 text-xs font-sans uppercase tracking-wider bg-[var(--accent)] text-white rounded-[2px]"
+              >
+                Show All Months
+              </button>
+            )}
+          </div>
+        ) : (
+          sortedTableLeads.map((lead) => {
+            const waUrl = getWhatsAppUrl(lead.phone, lead.name, lead.vehicleTitle);
+
+            return (
+              <div
+                key={lead.id}
+                onClick={() => setActiveLeadId(lead.id)}
+                className="p-3.5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] space-y-2.5 cursor-pointer hover:border-[var(--accent)]"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-serif text-base font-medium text-[var(--text-primary)]">
+                        {lead.name}
+                      </span>
+                      {(lead.isReturningBuyer || (lead.inquiryCount && lead.inquiryCount > 1)) && (
+                        <span className="px-1.5 py-0.2 text-[9px] font-mono bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded-[1px]">
+                          {lead.inquiryCount || 2}x
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs font-mono text-[var(--text-secondary)]">
+                      {formatPhoneDisplay(lead.phone)}
+                    </span>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-[10px] font-mono text-[var(--text-primary)] font-medium block">
+                      {new Date(lead.createdAt).toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                      })}
+                    </span>
+                    <span className="text-[9px] font-mono text-[var(--text-secondary)] block">
+                      {formatRelativeTime(lead.createdAt)}
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-xs text-[var(--text-secondary)] line-clamp-1">
+                  {lead.vehicleTitle || "General Showroom Inquiry"}
+                </p>
+
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-[var(--border-hairline)]">
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <select
+                      value={lead.stage}
+                      onChange={(e) => handleStageChange(lead.id, e.target.value as LeadStage)}
+                      className="h-8 px-2 text-[10px] font-mono uppercase bg-[var(--bg-base)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-[2px]"
+                    >
+                      <option value="new">New</option>
+                      <option value="contacted">Contacted</option>
+                      <option value="viewing">Viewing</option>
+                      <option value="negotiating">Negotiating</option>
+                      <option value="won">Won (Sold)</option>
+                      <option value="lost">Lost</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    <a
+                      href={`tel:${lead.phone}`}
+                      className="h-8 px-2.5 inline-flex items-center text-[10px] font-sans uppercase font-medium tracking-wider border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-[2px]"
+                    >
+                      Call
+                    </a>
+                    <a
+                      href={waUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="h-8 px-2.5 inline-flex items-center text-[10px] font-sans uppercase font-medium tracking-wider bg-[var(--accent)] text-white rounded-[2px]"
+                    >
+                      WA
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setActiveLeadId(lead.id)}
+                      className="h-8 px-2.5 inline-flex items-center text-[10px] font-sans uppercase text-[var(--text-secondary)]"
+                    >
+                      &rarr;
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  )}
+</>
+) : (
+<SavedSearchesManager
+          savedSearches={savedSearches}
+          vehicles={vehicles}
+          onSendAlert={handleSendSavedSearchAlert}
+          onFulfill={handleFulfillSavedSearch}
+          onDelete={handleDeleteSavedSearch}
+        />
+      )}
 
       {/* SLIDE-OVER LEAD DOSSIER PANEL */}
       {activeLead && (
@@ -838,13 +1965,23 @@ export function LeadsPipelineClient({
             {/* Close button & Header */}
             <div className="flex items-start justify-between pb-4 border-b border-[var(--border-hairline)]">
               <div>
-                <Eyebrow>Lead Dossier</Eyebrow>
+                <Eyebrow>Customer Lead Profile</Eyebrow>
                 <Heading level={2} className="text-2xl sm:text-3xl mt-0.5">
                   {activeLead.name}
                 </Heading>
-                <p className="font-mono text-xs text-[var(--text-secondary)] mt-0.5">
-                  Tel: {activeLead.phone} {activeLead.email ? `• ${activeLead.email}` : ""}
-                </p>
+                <div className="flex items-center gap-2 mt-0.5 font-mono text-xs text-[var(--text-secondary)]">
+                  <span>Tel: {formatPhoneDisplay(activeLead.phone)}</span>
+                  <span className="text-[10px] px-1 py-0.2 bg-green-950/20 text-green-400 border border-green-800 rounded-[1px]">
+                    ✓ +94 E.164
+                  </span>
+                  {activeLead.email ? <span>• {activeLead.email}</span> : ""}
+                </div>
+                {(activeLead.isReturningBuyer || (activeLead.inquiryCount && activeLead.inquiryCount > 1)) && (
+                  <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-mono rounded-[1px]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    <span>Returning Customer ({activeLead.inquiryCount || 2} Merged Inquiries)</span>
+                  </div>
+                )}
               </div>
 
               <button
@@ -892,7 +2029,7 @@ export function LeadsPipelineClient({
                 <svg className="w-4 h-4 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
-                <span>Print / Export Lead Dossier (.PDF)</span>
+                <span>Print / Export Lead Profile (.PDF)</span>
               </button>
             </div>
 
@@ -1022,7 +2159,7 @@ export function LeadsPipelineClient({
                     target="_blank"
                     className="text-[10px] uppercase font-sans tracking-wider text-[var(--text-secondary)] hover:text-[var(--text-primary)] underline"
                   >
-                    View Public Dossier &rarr;
+                    View Public Vehicle &rarr;
                   </Link>
                 </div>
               )}
@@ -1190,21 +2327,51 @@ export function LeadsPipelineClient({
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="lead-phone"
-                    className="block text-[10px] font-sans uppercase tracking-wider text-[var(--text-secondary)] mb-1"
-                  >
-                    Telephone / WhatsApp *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label
+                      htmlFor="lead-phone"
+                      className="block text-[10px] font-sans uppercase tracking-wider text-[var(--text-secondary)]"
+                    >
+                      Telephone / WhatsApp *
+                    </label>
+                    {addPhone.trim() && (
+                      <span className="text-[10px] font-mono text-[var(--accent)] font-medium">
+                        {normalizePhoneNumber(addPhone)}
+                      </span>
+                    )}
+                  </div>
                   <input
                     id="lead-phone"
                     type="tel"
                     required
                     value={addPhone}
                     onChange={(e) => setAddPhone(e.target.value)}
-                    placeholder="e.g. 077 123 4567"
+                    placeholder="e.g. 077 123 4567 or +94 77 123 4567"
                     className="w-full h-11 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] font-mono"
                   />
+                  {/* Live duplicate detection match */}
+                  {(() => {
+                    if (!addPhone.trim()) return null;
+                    const matchedLead = leads.find(
+                      (l) =>
+                        normalizePhoneNumber(l.phone) === normalizePhoneNumber(addPhone) ||
+                        isSamePhoneNumber(l.phone, addPhone)
+                    );
+                    if (matchedLead) {
+                      return (
+                        <div className="mt-1.5 p-2 bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-300 rounded-[2px] space-y-0.5">
+                          <div className="font-semibold flex items-center gap-1 text-amber-400">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                            <span>Recurring Customer Match</span>
+                          </div>
+                          <p className="text-[10px] text-amber-200/80 font-light">
+                            Existing record found for <strong>{matchedLead.name}</strong> ({formatPhoneDisplay(matchedLead.phone)}). Submitting will automatically merge and append this new inquiry to their customer history.
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               </div>
 
@@ -1243,6 +2410,7 @@ export function LeadsPipelineClient({
                     <option value="walk_in">Showroom Walk-In</option>
                     <option value="whatsapp">Direct WhatsApp</option>
                     <option value="website_form">Website Form</option>
+                    <option value="trade_in">Trade-In Valuation</option>
                   </select>
                 </div>
 

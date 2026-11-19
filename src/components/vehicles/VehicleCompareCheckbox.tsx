@@ -17,15 +17,20 @@ export function VehicleCompareCheckbox({
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
-    setIsChecked(getCompareSlugs().includes(slug));
-    setMounted(true);
+    const timer = setTimeout(() => {
+      setIsChecked(getCompareSlugs().includes(slug));
+      setMounted(true);
+    }, 0);
 
     const handleUpdate = () => {
       setIsChecked(getCompareSlugs().includes(slug));
     };
 
     window.addEventListener("rs_compare_updated", handleUpdate);
-    return () => window.removeEventListener("rs_compare_updated", handleUpdate);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("rs_compare_updated", handleUpdate);
+    };
   }, [slug]);
 
   const handleToggle = (e: React.MouseEvent) => {

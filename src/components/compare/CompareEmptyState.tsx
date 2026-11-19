@@ -1,5 +1,4 @@
 import React from "react";
-import Link from "next/link";
 import { Heading } from "@/components/ui/Heading";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { Button } from "@/components/ui/Button";
@@ -31,7 +30,7 @@ export function CompareEmptyState({
         <div className="p-4 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] max-w-sm mx-auto text-left flex items-center space-x-4">
           <div className="relative w-24 h-16 shrink-0 overflow-hidden rounded-[1px]">
             <VehicleImage
-              src={singleVehicle.images[0] || "/images/vehicles/sample-prado.svg"}
+              src={singleVehicle.images[0] || "/images/vehicles/placeholder-coming-soon.webp"}
               alt={`${singleVehicle.year} ${singleVehicle.make} ${singleVehicle.model}`}
               aspectRatio="16/10"
             />

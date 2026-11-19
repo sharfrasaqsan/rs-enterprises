@@ -71,7 +71,6 @@ export function ImportStageStepper({
           {STAGES.map((stage, idx) => {
             const isCompleted = idx < resolvedIndex;
             const isCurrent = idx === resolvedIndex;
-            const isUpcoming = idx > resolvedIndex;
 
             return (
               <li

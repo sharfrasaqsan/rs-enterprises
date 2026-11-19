@@ -29,30 +29,34 @@ const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefin
 
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    // Check local storage for persistent session
-    const stored = localStorage.getItem("rs_admin_session");
-    if (stored) {
+    // 1. Immediately read cached localStorage session on client mount
+    const timer = setTimeout(() => {
       try {
-        const parsed = JSON.parse(stored);
-        if (parsed?.email) {
-          setUser(parsed);
+        const stored = localStorage.getItem("rs_admin_session");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed?.email) {
+            setUser(parsed);
+            setLoading(false);
+          }
+        } else {
           setLoading(false);
-          return;
         }
       } catch {
-        localStorage.removeItem("rs_admin_session");
+        setLoading(false);
       }
-    }
+    }, 0);
 
-    // Try attaching Firebase Auth listener
+    // 2. Attach Firebase Auth listener
+    let unsubscribe = () => {};
     try {
       const auth = getFirebaseClientAuth();
-      const unsubscribe = onAuthStateChanged(auth, async (fbUser: FirebaseUser | null) => {
+      unsubscribe = onAuthStateChanged(auth, async (fbUser: FirebaseUser | null) => {
         if (fbUser && fbUser.email) {
           const tokenResult = await fbUser.getIdTokenResult().catch(() => null);
           const role: "owner" | "staff" =
@@ -66,15 +70,22 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
           };
           setUser(adminUser);
           localStorage.setItem("rs_admin_session", JSON.stringify(adminUser));
-        } else if (!stored) {
-          setUser(null);
+        } else {
+          const hasStored = localStorage.getItem("rs_admin_session");
+          if (!hasStored) {
+            setUser(null);
+          }
         }
         setLoading(false);
       });
-      return () => unsubscribe();
     } catch {
-      setLoading(false);
+      // Firebase auth client initialization failed (offline / demo fallback handled by session timer)
     }
+
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, pass: string) => {

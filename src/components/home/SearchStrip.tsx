@@ -1,13 +1,16 @@
 import React from "react";
 import { Container } from "@/components/ui/Container";
+import { CompanySettings } from "@/types/settings";
 
 export interface SearchStripProps {
   availableMakes?: string[];
+  settings?: CompanySettings;
   className?: string;
 }
 
 export function SearchStrip({
   availableMakes = ["Toyota", "Honda", "Nissan", "Suzuki", "Mitsubishi"],
+  settings,
   className = "",
 }: SearchStripProps) {
   return (
@@ -97,8 +100,12 @@ export function SearchStrip({
                   className="w-full min-h-[50px] px-4 py-3 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px] text-xs font-sans uppercase tracking-wider focus:border-[var(--accent)] focus:outline-none transition-luxury appearance-none cursor-pointer hover:border-[var(--border-subtle)]"
                 >
                   <option value="all">All Locations</option>
-                  <option value="polonnaruwa">Kaduruwela Main Showroom</option>
-                  <option value="trincomalee">Trincomalee Branch</option>
+                  <option value="polonnaruwa">
+                    {settings?.mainBranch.name || "Kaduruwela Main Showroom"}
+                  </option>
+                  <option value="trincomalee">
+                    {settings?.coastalBranch.name || "Trincomalee Branch"}
+                  </option>
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-[var(--text-muted)]">
                   <svg className="w-3.5 h-3.5 stroke-current" viewBox="0 0 24 24" fill="none" strokeWidth="1.5">

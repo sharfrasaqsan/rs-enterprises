@@ -47,9 +47,9 @@ export default async function AboutPage() {
               A Benchmark in Japanese Automotive Imports
             </Heading>
             <p className="text-base sm:text-lg font-light text-[var(--text-secondary)] leading-relaxed pt-2">
-              RS Enterprises Company Pvt Ltd was founded with a singular conviction: discerning Sri Lankan
-              motorists deserve uncompromised access to verified, auction-grade Japanese vehicles
-              and genuine spare parts, backed by absolute institutional integrity.
+              RS Enterprises Company Pvt Ltd was founded with a clear conviction: Sri Lankan
+              motorists deserve direct access to verified, auction-grade Japanese vehicles
+              and genuine spare parts, backed by complete honesty and transparency.
             </p>
           </div>
 
@@ -146,7 +146,7 @@ export default async function AboutPage() {
                     Sterling &amp; Kobe Partnership
                   </p>
                   <p className="text-[11px] leading-relaxed">
-                    Collaborating with Sterling &amp; Kobe vehicle inspection networks in Japan for verified auction acquisition, odometer certification, and institutional quality clearance.
+                    Collaborating with Sterling &amp; Kobe vehicle inspection networks in Japan for verified auction purchasing, odometer certification, and strict quality checks.
                   </p>
                 </div>
 

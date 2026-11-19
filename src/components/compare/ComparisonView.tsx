@@ -71,7 +71,7 @@ export function ComparisonView({
           {/* ========================================================= */}
           <div className="p-4 bg-[var(--bg-surface)] flex flex-col justify-between sticky left-0 z-30 border-b border-[var(--border-hairline)]">
             <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--accent)] font-semibold">
-              Vehicle Dossier
+              Vehicle Details
             </span>
             <span className="text-xs text-[var(--text-muted)] font-light">
               Comparing {vehicles.length} Units
@@ -98,7 +98,7 @@ export function ComparisonView({
 
                   <Link href={`/vehicles/${v.slug}`} className="block group">
                     <VehicleImage
-                      src={v.images[0] || "/images/vehicles/sample-prado.svg"}
+                      src={v.images[0] || "/images/vehicles/placeholder-coming-soon.webp"}
                       alt={`${v.year} ${v.make} ${v.model}`}
                       aspectRatio="16/10"
                     />

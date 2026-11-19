@@ -8,6 +8,7 @@ import { StatusLabel } from "@/components/ui/StatusLabel";
 import { VehicleImage } from "@/components/ui/VehicleImage";
 import { CompareButton } from "@/components/ui/CompareButton";
 import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
+import { Button } from "@/components/ui/Button";
 import { Vehicle } from "@/types/vehicle";
 
 export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
@@ -26,7 +27,7 @@ export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
             className="reveal-on-scroll flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-[var(--border-hairline)]"
           >
             <div className="space-y-2">
-              <Eyebrow>Showroom Acquisitions</Eyebrow>
+              <Eyebrow>Latest Stock</Eyebrow>
               <Heading level={2}>
                 Recent Japanese Arrivals
               </Heading>
@@ -40,7 +41,10 @@ export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
           </div>
 
           {/* Asymmetric 12-Column Composition */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+          <div
+            suppressHydrationWarning
+            className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start"
+          >
             {/* Major Feature Article: 7 Columns */}
             {leadVehicle && (
               <article
@@ -71,7 +75,7 @@ export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
 
                 <div className="space-y-3">
                   <div className="text-[10px] font-mono text-[var(--accent)] uppercase tracking-[0.2em]">
-                    ✦ {leadVehicle.grade} &bull; Auction Grade Verified
+                    ✦ {leadVehicle.grade} {leadVehicle.verified ? "• Auction Sheet Verified" : "• Japanese Specification"}
                   </div>
                   <Link href={`/vehicles/${leadVehicle.slug}`} className="block group">
                     <Heading level={3} className="group-hover:text-[var(--accent)] transition-colors">
@@ -98,7 +102,11 @@ export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
                       <Numeral
                         value={leadVehicle.price.toLocaleString("en-US")}
                         prefix="LKR"
-                        label="Available at Kaduruwela Showroom"
+                        label={
+                          leadVehicle.branch === "trincomalee"
+                            ? "Available at Trincomalee Branch"
+                            : "Available at Kaduruwela Showroom"
+                        }
                         size="md"
                       />
                     ) : (
@@ -112,13 +120,15 @@ export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
                     <WhatsAppButton
                       vehicleTitle={`${leadVehicle.year} ${leadVehicle.make} ${leadVehicle.model}`}
                       label="Inquire"
+                      size="md"
                     />
-                    <Link
+                    <Button
+                      variant="outline"
+                      size="md"
                       href={`/vehicles/${leadVehicle.slug}`}
-                      className="inline-flex items-center justify-center min-h-[46px] px-6 rounded-[2px] bg-white text-black hover:bg-[var(--accent)] hover:text-black text-xs font-sans uppercase font-semibold tracking-[0.2em] shadow-md transition-luxury"
                     >
-                      Dossier
-                    </Link>
+                      View Details
+                    </Button>
                   </div>
                 </div>
               </article>
@@ -150,7 +160,7 @@ export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
                         style={{ viewTransitionName: `vehicle-thumb-${vehicle.slug}` }}
                       >
                         <VehicleImage
-                          src={vehicle.images[0] || "/images/vehicles/vezel-hybrid.jpg"}
+                          src={vehicle.images[0] || "/images/vehicles/placeholder-coming-soon.webp"}
                           alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
                           aspectRatio="4/3"
                         />

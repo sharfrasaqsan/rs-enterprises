@@ -7,10 +7,10 @@ import { Numeral } from "@/components/ui/Numeral";
 import { StatusLabel } from "@/components/ui/StatusLabel";
 import { VehicleImage } from "@/components/ui/VehicleImage";
 import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
+import { Button } from "@/components/ui/Button";
 import { VehicleCompareCheckbox } from "@/components/vehicles/VehicleCompareCheckbox";
 
 export function FeaturedVehicleEntry({ vehicle }: { vehicle: Vehicle }) {
-  const isSold = vehicle.status === "sold";
   const formattedPrice = vehicle.price
     ? vehicle.price.toLocaleString("en-US")
     : null;
@@ -44,7 +44,7 @@ export function FeaturedVehicleEntry({ vehicle }: { vehicle: Vehicle }) {
         {/* Editorial Content & Expanded Spec (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
           <div className="space-y-2.5">
-            <Eyebrow>Showroom Spotlight &bull; Tokyo Auction Provenance</Eyebrow>
+            <Eyebrow>Showroom Spotlight &bull; Direct Japanese Import</Eyebrow>
             <Link href={`/vehicles/${vehicle.slug}`} className="block group">
               <Heading
                 level={2}
@@ -62,7 +62,7 @@ export function FeaturedVehicleEntry({ vehicle }: { vehicle: Vehicle }) {
           {vehicle.features.length > 0 && (
             <div className="py-3 border-y border-[var(--border-hairline)] space-y-2">
               <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--accent)] block">
-                Highlight Equipment
+                Key Features
               </span>
               <div className="flex flex-wrap gap-2 pt-0.5">
                 {vehicle.features.slice(0, 3).map((f) => (
@@ -94,17 +94,19 @@ export function FeaturedVehicleEntry({ vehicle }: { vehicle: Vehicle }) {
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-3">
               <WhatsAppButton
                 vehicleTitle={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
                 label="Priority Inquiry"
+                size="md"
               />
-              <Link
+              <Button
+                variant="outline"
+                size="md"
                 href={`/vehicles/${vehicle.slug}`}
-                className="inline-flex items-center justify-center min-h-[48px] px-7 rounded-[2px] bg-white text-black hover:bg-[var(--accent)] hover:text-black text-xs font-sans uppercase font-semibold tracking-[0.2em] shadow-lg transition-luxury"
               >
-                Full Dossier &rarr;
-              </Link>
+                View Details &rarr;
+              </Button>
               <VehicleCompareCheckbox
                 slug={vehicle.slug}
                 title={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
