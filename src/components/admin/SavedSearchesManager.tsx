@@ -89,10 +89,10 @@ export function SavedSearchesManager({
         </div>
 
         <div className="p-4 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] space-y-1">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-status-success font-semibold">
             Active Tokyo Auction Watch
           </span>
-          <p className="font-serif text-2xl text-emerald-400 font-medium">
+          <p className="font-serif text-2xl text-status-success font-medium">
             {activeAlertsCount}
           </p>
           <span className="text-[10px] text-[var(--text-secondary)] font-light">
@@ -175,7 +175,7 @@ export function SavedSearchesManager({
                         href={waInquiryUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[10px] font-mono uppercase px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/50 rounded-[1px] transition-colors"
+                        className="text-[10px] font-mono uppercase px-2 py-0.5 badge-status-success font-semibold rounded-[1px] transition-colors"
                       >
                         Chat WhatsApp
                       </a>
@@ -256,13 +256,13 @@ export function SavedSearchesManager({
                 {/* Showroom Matching Vehicles Section */}
                 <div className="pt-2">
                   {hasMatches ? (
-                    <div className="p-4 bg-amber-950/20 border border-amber-800/60 rounded-[2px] space-y-3">
+                    <div className="p-4 badge-status-warning rounded-[2px] space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-mono uppercase font-semibold text-amber-300 flex items-center gap-1.5">
+                        <span className="text-xs font-mono uppercase font-semibold text-status-warning flex items-center gap-1.5">
                           <span>⚡</span>
                           <span>{matches.length} Matching Vehicle{matches.length === 1 ? "" : "s"} In Stock!</span>
                         </span>
-                        <span className="text-[10px] font-mono text-amber-400">
+                        <span className="text-[10px] font-mono text-status-warning opacity-90">
                           Ready for WhatsApp Dispatch
                         </span>
                       </div>
@@ -296,7 +296,7 @@ export function SavedSearchesManager({
                                   {isAlreadyNotified && (
                                     <>
                                       <span>&bull;</span>
-                                      <span className="text-emerald-400">✓ Notified</span>
+                                      <span className="text-status-success font-semibold">✓ Notified</span>
                                     </>
                                   )}
                                 </div>

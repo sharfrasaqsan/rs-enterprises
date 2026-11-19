@@ -473,7 +473,7 @@ export function VehicleFormClient({
       </div>
 
       {error && (
-        <div className="p-4 bg-red-950/20 border border-red-800 text-xs text-red-300">
+        <div className="p-4 badge-status-danger text-xs font-medium">
           {error}
         </div>
       )}
@@ -981,7 +981,7 @@ export function VehicleFormClient({
           </div>
 
           {uploadStatus && (
-            <div className="p-3 bg-blue-950/20 border border-blue-800 text-xs text-blue-300 font-mono">
+            <div className="p-3 badge-status-info text-xs font-mono">
               {uploadStatus}
             </div>
           )}
@@ -1408,8 +1408,8 @@ export function VehicleFormClient({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-[var(--border-hairline)]">
           {isEditing ? (
             archiveConfirm ? (
-              <div className="flex items-center gap-2 p-2 bg-amber-950/20 border border-amber-800 rounded-[2px]">
-                <span className="text-xs text-amber-300">
+              <div className="flex items-center gap-2 p-2 badge-status-warning rounded-[2px]">
+                <span className="text-xs text-status-warning font-semibold">
                   Archive this vehicle from showroom?
                 </span>
                 <button
@@ -1432,7 +1432,7 @@ export function VehicleFormClient({
               <button
                 type="button"
                 onClick={() => setArchiveConfirm(true)}
-                className="min-h-[44px] px-4 text-xs font-sans uppercase font-medium tracking-wider border border-amber-800 text-amber-400 hover:bg-amber-950/20 transition-colors cursor-pointer self-start sm:self-auto"
+                className="min-h-[44px] px-4 text-xs font-sans uppercase font-medium tracking-wider badge-status-warning hover:opacity-90 transition-opacity cursor-pointer self-start sm:self-auto"
               >
                 Archive Vehicle Record
               </button>

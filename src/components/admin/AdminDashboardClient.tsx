@@ -143,8 +143,8 @@ export function AdminDashboardClient({
               {timeAgo}
             </span>
             {(lead.isReturningBuyer || (lead.inquiryCount && lead.inquiryCount > 1)) && (
-              <span className="px-2 py-0.5 bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[9px] font-mono uppercase font-semibold rounded-[1px] flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              <span className="px-2 py-0.5 badge-status-warning text-[9px] font-mono uppercase font-semibold rounded-[1px] flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                 <span>{lead.inquiryCount || 2}x Merged</span>
               </span>
             )}
@@ -158,7 +158,7 @@ export function AdminDashboardClient({
           </p>
 
           {contextSubtitle ? (
-            <p className="text-[11px] font-mono text-amber-400/90 pt-0.5">
+            <p className="text-[11px] font-mono text-status-warning pt-0.5 font-medium">
               &bull; {contextSubtitle}
             </p>
           ) : lead.requestDetails ? (
@@ -300,8 +300,8 @@ export function AdminDashboardClient({
 
       {/* Urgent Attention: Vehicle Hold Expiry Alerts */}
       {urgentHolds.length > 0 && (
-        <section className="space-y-3 p-5 bg-amber-950/20 border border-amber-500/40 rounded-[2px]">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-amber-500/20">
+        <section className="space-y-3 p-5 badge-status-warning rounded-[2px]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[var(--status-warning-border)]">
             <div className="flex items-center gap-2.5">
               <span className="text-xl">⚠️</span>
               <div>
@@ -315,7 +315,7 @@ export function AdminDashboardClient({
             </div>
             <Link
               href="/admin/vehicles?status=reserved"
-              className="px-4 py-2 text-xs font-sans uppercase font-medium tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-colors self-start sm:self-auto"
+              className="px-4 py-2 text-xs font-sans uppercase font-medium tracking-wider badge-status-warning hover:opacity-90 transition-opacity self-start sm:self-auto"
             >
               Open Inventory &rarr;
             </Link>
@@ -437,14 +437,14 @@ export function AdminDashboardClient({
                       <span className="font-serif text-base text-[var(--text-primary)] font-medium">
                         {search.customerName}
                       </span>
-                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 badge-status-warning font-semibold">
                         &ldquo;{search.queryTitle}&rdquo;
                       </span>
                     </div>
                     <p className="text-xs font-mono text-[var(--text-secondary)]">
                       Tel: {formatPhoneDisplay(search.customerPhone)}
                     </p>
-                    <p className="text-xs text-emerald-400 font-medium">
+                    <p className="text-xs text-status-success font-semibold">
                       Matched: {firstMatch.year} {firstMatch.make} {firstMatch.model} ({firstMatch.price ? `LKR ${firstMatch.price.toLocaleString("en-US")}` : "Price on Call"})
                     </p>
                   </div>

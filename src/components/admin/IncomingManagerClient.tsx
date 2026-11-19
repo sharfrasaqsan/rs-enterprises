@@ -180,7 +180,7 @@ export function IncomingManagerClient({
         </div>
 
         <div className="p-3.5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] col-span-2 sm:col-span-1">
-          <span className="text-[10px] font-sans uppercase tracking-[0.16em] text-emerald-400 block">
+          <span className="text-[10px] font-sans uppercase tracking-[0.16em] text-status-success font-semibold block">
             5. Ready (Stock)
           </span>
           <span className="font-mono text-xl sm:text-2xl font-bold text-[var(--text-primary)] mt-1 block">

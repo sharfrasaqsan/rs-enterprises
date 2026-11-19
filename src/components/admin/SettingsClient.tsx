@@ -119,7 +119,7 @@ export function SettingsClient({
         </div>
 
         {!isOwner && (
-          <span className="text-[10px] font-mono px-3 py-1 bg-amber-950/20 text-amber-400 border border-amber-800 self-start sm:self-auto">
+          <span className="text-[10px] font-mono px-3 py-1 badge-status-warning font-semibold self-start sm:self-auto">
             Staff View &bull; Director permissions required to save changes
           </span>
         )}
@@ -127,10 +127,10 @@ export function SettingsClient({
 
       {statusMsg && (
         <div
-          className={`p-4 text-xs ${
+          className={`p-4 text-xs font-medium ${
             statusMsg.type === "success"
-              ? "bg-green-950/20 border border-green-800 text-green-300"
-              : "bg-red-950/20 border border-red-800 text-red-300"
+              ? "badge-status-success"
+              : "badge-status-danger"
           }`}
         >
           {statusMsg.text}

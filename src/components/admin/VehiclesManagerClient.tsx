@@ -213,7 +213,7 @@ export function VehiclesManagerClient({
 
       {/* Active Hold Expiry Alerts Banner */}
       {(expiredHolds.length > 0 || expiringSoonHolds.length > 0) && (
-        <div className="p-4 bg-amber-950/20 border border-amber-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-4 badge-status-warning rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
             <span className="text-xl">⚠️</span>
             <div className="space-y-0.5">
@@ -380,20 +380,20 @@ export function VehiclesManagerClient({
                         </span>
                       )}
                       {vehicle.chassisNumber && (
-                        <span className="text-[10px] font-mono px-2 py-0.5 uppercase rounded-[2px] bg-amber-500/10 text-amber-400 border border-amber-500/30" title="Chassis / VIN (Admin Only)">
+                        <span className="text-[10px] font-mono px-2 py-0.5 uppercase rounded-[2px] badge-status-warning font-semibold" title="Chassis / VIN (Admin Only)">
                           VIN: {vehicle.chassisNumber}
                         </span>
                       )}
                       {vehicle.archived ? (
-                        <span className="text-[9px] font-mono px-2 py-0.5 uppercase rounded-[2px] bg-red-950/30 text-red-400 border border-red-800">
+                        <span className="text-[9px] font-mono px-2 py-0.5 uppercase rounded-[2px] badge-status-danger font-semibold">
                           Archived
                         </span>
                       ) : (
                         <span
-                          className={`text-[9px] font-mono px-2 py-0.5 uppercase rounded-[2px] ${
+                          className={`text-[9px] font-mono px-2 py-0.5 uppercase rounded-[2px] font-semibold ${
                             vehicle.published
-                              ? "bg-green-950/30 text-green-400 border border-green-800"
-                              : "bg-amber-950/30 text-amber-400 border border-amber-800"
+                              ? "badge-status-success"
+                              : "badge-status-warning"
                           }`}
                         >
                           {vehicle.published ? "Live on Site" : "Hidden Draft"}
@@ -412,7 +412,7 @@ export function VehiclesManagerClient({
                       <span>•</span>
                       <span>{vehicle.seats} Seats</span>
                       <span>•</span>
-                      <span className={vehicle.registrationStatus === "unregistered" ? "text-emerald-400 font-medium" : ""}>
+                      <span className={vehicle.registrationStatus === "unregistered" ? "text-status-success font-medium" : ""}>
                         {vehicle.registrationStatus === "unregistered" ? "Unregistered" : `Registered (${vehicle.owners} Owner)`}
                       </span>
                       <span>•</span>
@@ -543,8 +543,8 @@ export function VehiclesManagerClient({
                           onClick={() => handleTogglePublished(vehicle.id, vehicle.published)}
                           className={`min-h-[40px] px-3.5 text-xs font-sans uppercase font-medium tracking-wider border rounded-[2px] transition-colors cursor-pointer ${
                             vehicle.published
-                              ? "border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-amber-700 hover:text-amber-400"
-                              : "border-green-800 bg-green-950/20 text-green-300 hover:bg-green-950/40"
+                              ? "border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-amber-700 hover:text-amber-500"
+                              : "badge-status-success hover:opacity-90"
                           }`}
                         >
                           {vehicle.published ? "Hide from Site" : "Show on Website"}
@@ -566,8 +566,8 @@ export function VehiclesManagerClient({
                             </button>
 
                             {releaseConfirmId === vehicle.id ? (
-                              <div className="flex items-center gap-1.5 p-1 bg-red-950/20 border border-red-800 rounded-[2px]">
-                                <span className="text-[10px] text-red-300 font-sans px-1">
+                              <div className="flex items-center gap-1.5 p-1 badge-status-danger rounded-[2px]">
+                                <span className="text-[10px] text-status-danger font-sans px-1 font-semibold">
                                   Release hold?
                                 </span>
                                 <button
@@ -589,7 +589,7 @@ export function VehiclesManagerClient({
                               <button
                                 type="button"
                                 onClick={() => setReleaseConfirmId(vehicle.id)}
-                                className="min-h-[40px] px-3 inline-flex items-center gap-1 text-xs font-sans uppercase font-medium tracking-wider text-red-400 hover:text-red-300 hover:bg-red-950/20 border border-transparent hover:border-red-800 transition-colors cursor-pointer"
+                                className="min-h-[40px] px-3 inline-flex items-center gap-1 text-xs font-sans uppercase font-medium tracking-wider text-status-danger hover:opacity-80 transition-colors cursor-pointer"
                                 title="Release deposit hold and return vehicle to Available showroom stock"
                               >
                                 <span>Release Hold</span>
@@ -643,8 +643,8 @@ export function VehiclesManagerClient({
 
                         {/* Archive with confirmation */}
                         {archiveConfirmId === vehicle.id ? (
-                          <div className="flex items-center gap-1.5 p-1 bg-amber-950/20 border border-amber-800 rounded-[2px]">
-                            <span className="text-[10px] text-amber-300 font-sans px-1">
+                          <div className="flex items-center gap-1.5 p-1 badge-status-warning rounded-[2px]">
+                            <span className="text-[10px] text-status-warning font-sans px-1 font-semibold">
                               Archive vehicle?
                             </span>
                             <button

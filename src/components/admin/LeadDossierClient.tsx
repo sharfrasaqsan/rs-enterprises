@@ -212,7 +212,7 @@ export function LeadDossierClient({
               <span className="font-semibold text-[var(--text-primary)]">
                 {formatPhoneDisplay(lead.phone)}
               </span>
-              <span className="text-[10px] font-mono px-1 py-0.2 bg-green-950/20 text-green-400 border border-green-800 rounded-[1px]" title="Normalized Sri Lankan E.164 phone line">
+              <span className="text-[10px] font-mono px-1.5 py-0.2 badge-status-success rounded-[1px] font-semibold" title="Normalized Sri Lankan E.164 phone line">
                 ✓ +94
               </span>
               {lead.email ? <span>• {lead.email}</span> : ""}

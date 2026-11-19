@@ -190,7 +190,7 @@ export function getHoldExpiryStatus(holdExpiryDate?: string | null): HoldExpiryS
       daysRemaining: diffDays,
       hoursRemaining: diffHours,
       label: expiredDaysAgo === 0 ? "Hold Expired Today" : `Hold Expired (${expiredDaysAgo}d ago)`,
-      badgeClass: "bg-red-500/15 text-red-400 border border-red-500/30",
+      badgeClass: "badge-status-danger font-semibold",
       urgency: "danger",
     };
   }
@@ -202,7 +202,7 @@ export function getHoldExpiryStatus(holdExpiryDate?: string | null): HoldExpiryS
       daysRemaining: diffDays,
       hoursRemaining: diffHours,
       label: diffHours <= 1 ? "Hold Expires in < 1h" : `Hold Expires in ${diffHours}h`,
-      badgeClass: "bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse",
+      badgeClass: "badge-status-warning font-semibold animate-pulse",
       urgency: "warning",
     };
   }
@@ -213,7 +213,7 @@ export function getHoldExpiryStatus(holdExpiryDate?: string | null): HoldExpiryS
     daysRemaining: diffDays,
     hoursRemaining: diffHours,
     label: `Hold active (${diffDays}d remaining)`,
-    badgeClass: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30",
+    badgeClass: "badge-status-success font-semibold",
     urgency: "normal",
   };
 }

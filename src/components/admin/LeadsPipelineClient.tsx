@@ -1333,26 +1333,26 @@ export function LeadsPipelineClient({
 
                           {(lead.isReturningBuyer || (lead.inquiryCount && lead.inquiryCount > 1)) && (
                             <span
-                              className="px-1.5 py-0.2 bg-amber-500/15 text-amber-400 border border-amber-500/30 font-semibold rounded-[1px] flex items-center gap-1"
+                              className="px-1.5 py-0.2 badge-status-warning font-semibold rounded-[1px] flex items-center gap-1"
                               title={`${lead.inquiryCount || 2} inquiries merged into this client file`}
                             >
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                               <span>{lead.inquiryCount || 2}x Merged</span>
                             </span>
                           )}
 
                           {isClosed ? (
                             <span
-                              className={`px-1.5 py-0.2 uppercase rounded-[1px] ${
+                              className={`px-1.5 py-0.2 uppercase rounded-[1px] font-semibold ${
                                 lead.stage === "won"
-                                  ? "bg-green-950/30 text-green-400 border border-green-800"
-                                  : "bg-neutral-800 text-neutral-400 border border-neutral-700"
+                                  ? "badge-status-success"
+                                  : "badge-status-neutral"
                               }`}
                             >
                               {lead.stage === "won" ? "Won (Sold)" : "Lost"}
                             </span>
                           ) : lead.followUpDate ? (
-                            <span className="px-1.5 py-0.2 bg-amber-950/20 text-amber-300 border border-amber-800">
+                            <span className="px-1.5 py-0.2 badge-status-warning font-semibold rounded-[1px]">
                               Due: {lead.followUpDate.split("T")[0]}
                             </span>
                           ) : null}
@@ -1547,22 +1547,22 @@ export function LeadsPipelineClient({
             <span className="font-semibold text-[var(--text-primary)]">{monthlyMetrics.total}</span>
           </div>
           <div className="px-3 py-1.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             <span className="text-[var(--text-secondary)] uppercase text-[10px]">Won (Sold):</span>
-            <span className="font-semibold text-green-400">{monthlyMetrics.won}</span>
+            <span className="font-semibold text-status-success">{monthlyMetrics.won}</span>
             {monthlyMetrics.total > 0 && (
-              <span className="text-[10px] text-green-500/80">({monthlyMetrics.winRate}%)</span>
+              <span className="text-[10px] text-status-success opacity-85">({monthlyMetrics.winRate}%)</span>
             )}
           </div>
           <div className="px-3 py-1.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
             <span className="text-[var(--text-secondary)] uppercase text-[10px]">Active Pipeline:</span>
-            <span className="font-semibold text-amber-300">{monthlyMetrics.active}</span>
+            <span className="font-semibold text-status-warning">{monthlyMetrics.active}</span>
           </div>
           <div className="px-3 py-1.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-neutral-400" />
             <span className="text-[var(--text-secondary)] uppercase text-[10px]">Lost:</span>
-            <span className="font-semibold text-neutral-400">{monthlyMetrics.lost}</span>
+            <span className="font-semibold text-[var(--text-secondary)]">{monthlyMetrics.lost}</span>
           </div>
           {monthlyMetrics.tradeIns > 0 && (
             <div className="px-3 py-1.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] flex items-center gap-2">
@@ -1712,26 +1712,26 @@ export function LeadsPipelineClient({
                         <select
                           value={lead.stage}
                           onChange={(e) => handleStageChange(lead.id, e.target.value as LeadStage)}
-                          className={`h-8 px-2 text-[10px] font-mono uppercase tracking-wider rounded-[2px] border cursor-pointer focus:outline-none focus:border-[var(--accent)] ${
+                          className={`h-8 px-2 text-[10px] font-mono uppercase tracking-wider rounded-[2px] font-semibold cursor-pointer focus:outline-none focus:border-[var(--accent)] ${
                             lead.stage === "won"
-                              ? "bg-green-950/30 text-green-400 border-green-800"
+                              ? "badge-status-success"
                               : lead.stage === "lost"
-                              ? "bg-neutral-800/40 text-neutral-400 border-neutral-700"
+                              ? "badge-status-neutral"
                               : lead.stage === "negotiating"
-                              ? "bg-amber-950/30 text-amber-300 border-amber-800"
+                              ? "badge-status-warning"
                               : lead.stage === "viewing"
-                              ? "bg-blue-950/30 text-blue-300 border-blue-800"
+                              ? "badge-status-info"
                               : lead.stage === "contacted"
-                              ? "bg-purple-950/30 text-purple-300 border-purple-800"
-                              : "bg-[var(--bg-base)] text-[var(--accent)] border-[var(--accent)]/40"
+                              ? "badge-status-purple"
+                              : "bg-[var(--bg-base)] text-[var(--accent)] border border-[var(--accent)]/50"
                           }`}
                         >
-                          <option value="new">New</option>
-                          <option value="contacted">Contacted</option>
-                          <option value="viewing">Viewing / Test</option>
-                          <option value="negotiating">Negotiating</option>
-                          <option value="won">Won (Sold)</option>
-                          <option value="lost">Lost</option>
+                          <option value="new" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">New</option>
+                          <option value="contacted" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Contacted</option>
+                          <option value="viewing" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Viewing / Test</option>
+                          <option value="negotiating" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Negotiating</option>
+                          <option value="won" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Won (Sold)</option>
+                          <option value="lost" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Lost</option>
                         </select>
                       </td>
 
@@ -1754,9 +1754,9 @@ export function LeadsPipelineClient({
                             <span
                               className={`inline-block px-2 py-0.5 text-[10px] font-mono uppercase rounded-[2px] font-semibold ${
                                 isOverdue
-                                  ? "bg-red-950/30 text-red-400 border border-red-800"
+                                  ? "badge-status-danger"
                                   : isDueToday
-                                  ? "bg-amber-950/30 text-amber-300 border border-amber-800"
+                                  ? "badge-status-warning"
                                   : "bg-[var(--bg-base)] text-[var(--text-secondary)] border border-[var(--border-hairline)]"
                               }`}
                             >
@@ -1971,14 +1971,14 @@ export function LeadsPipelineClient({
                 </Heading>
                 <div className="flex items-center gap-2 mt-0.5 font-mono text-xs text-[var(--text-secondary)]">
                   <span>Tel: {formatPhoneDisplay(activeLead.phone)}</span>
-                  <span className="text-[10px] px-1 py-0.2 bg-green-950/20 text-green-400 border border-green-800 rounded-[1px]">
+                  <span className="text-[10px] px-1.5 py-0.2 badge-status-success rounded-[1px] font-semibold">
                     ✓ +94 E.164
                   </span>
                   {activeLead.email ? <span>• {activeLead.email}</span> : ""}
                 </div>
                 {(activeLead.isReturningBuyer || (activeLead.inquiryCount && activeLead.inquiryCount > 1)) && (
-                  <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-mono rounded-[1px]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 badge-status-warning font-semibold text-[10px] font-mono rounded-[1px]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                     <span>Returning Customer ({activeLead.inquiryCount || 2} Merged Inquiries)</span>
                   </div>
                 )}
@@ -2481,7 +2481,7 @@ export function LeadsPipelineClient({
 
           <div className="relative w-full max-w-md bg-[var(--bg-surface)] border border-[var(--border-hairline)] p-6 sm:p-8 space-y-5 shadow-2xl z-10 rounded-[2px]">
             <div>
-              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-green-400 font-semibold block">
+              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-status-success font-semibold block">
                 Sale Closed
               </span>
               <h3 className="font-serif text-2xl text-[var(--text-primary)] mt-1">

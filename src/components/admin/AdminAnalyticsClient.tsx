@@ -623,19 +623,19 @@ export function AdminAnalyticsClient({
       {/* ========================================================= */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {/* Realized Gross Profit */}
-        <div className="p-5 bg-[var(--bg-surface)] border border-emerald-900/40 rounded-[2px] shadow-sm relative overflow-hidden group">
+        <div className="p-5 bg-[var(--bg-surface)] border border-emerald-500/30 rounded-[2px] shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
-          <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-emerald-400 font-semibold block">
+          <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-status-success font-semibold block">
             Realized Gross Profit
           </span>
           <div className="mt-2 font-serif text-2xl text-[var(--text-primary)]">
             {formatLKR(metrics.totalGrossProfit)}
           </div>
-          <div className="mt-1 flex items-center gap-2 text-[10px] font-mono text-emerald-400">
-            <span className="px-1.5 py-0.2 bg-emerald-950/40 border border-emerald-800 rounded-[1px] font-semibold">
+          <div className="mt-1 flex items-center gap-2 text-[10px] font-mono">
+            <span className="px-1.5 py-0.2 badge-status-success rounded-[1px] font-semibold">
               {metrics.overallMargin}% Margin
             </span>
-            <span>from {metrics.soldCount} sold</span>
+            <span className="text-[var(--text-secondary)]">from {metrics.soldCount} sold</span>
           </div>
         </div>
 
@@ -673,14 +673,14 @@ export function AdminAnalyticsClient({
           <div className="mt-2 font-serif text-2xl text-[var(--text-primary)]">
             {metrics.soldCount > 0 ? formatLKR(metrics.averageProfitPerUnit) : "—"}
           </div>
-          <div className="mt-1 text-[10px] font-mono text-emerald-400">
+          <div className="mt-1 text-[10px] font-mono text-status-success">
             {metrics.soldCount > 0 ? "Per vehicle delivered" : "No sold units in period"}
           </div>
         </div>
 
         {/* Active Lot Inventory Value */}
         <div className="p-5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] shadow-sm">
-          <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-blue-400 font-semibold block">
+          <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-status-info font-semibold block">
             Lot Stock Value
           </span>
           <div className="mt-2 font-serif text-2xl text-[var(--text-primary)]">
@@ -693,7 +693,7 @@ export function AdminAnalyticsClient({
 
         {/* Incoming In-Transit Value */}
         <div className="p-5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] shadow-sm">
-          <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-amber-400 font-semibold block">
+          <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-status-warning font-semibold block">
             In-Transit Fleet
           </span>
           <div className="mt-2 font-serif text-2xl text-[var(--text-primary)]">
@@ -737,7 +737,7 @@ export function AdminAnalyticsClient({
                     <span className="font-semibold text-[var(--text-primary)]">{m.label}</span>
                     <div className="flex items-center gap-3">
                       <span className="text-[var(--text-secondary)]">Sold: {m.soldCount}</span>
-                      <span className="text-emerald-400 font-semibold">{formatLKR(m.profit)} Profit</span>
+                      <span className="text-status-success font-semibold">{formatLKR(m.profit)} Profit</span>
                     </div>
                   </div>
 
@@ -747,7 +747,7 @@ export function AdminAnalyticsClient({
                       <span>Gross Sales: {formatLKR(m.revenue)}</span>
                       <span>Margin: {m.margin}%</span>
                     </div>
-                    <div className="w-full h-2 bg-neutral-800 rounded-[1px] overflow-hidden">
+                    <div className="w-full h-2 bg-[var(--border-subtle)] rounded-[1px] overflow-hidden">
                       <div
                         className="h-full bg-[var(--accent)] transition-all duration-500 rounded-[1px]"
                         style={{ width: `${revPercent}%` }}
@@ -757,9 +757,9 @@ export function AdminAnalyticsClient({
 
                   {/* Profit Sub-bar */}
                   <div className="space-y-1 pt-0.5">
-                    <div className="w-full h-1.5 bg-neutral-800 rounded-[1px] overflow-hidden">
+                    <div className="w-full h-1.5 bg-[var(--border-subtle)] rounded-[1px] overflow-hidden">
                       <div
-                        className="h-full bg-emerald-500 transition-all duration-500 rounded-[1px]"
+                        className="h-full bg-emerald-600 dark:bg-emerald-500 transition-all duration-500 rounded-[1px]"
                         style={{ width: `${profitPercent}%` }}
                       />
                     </div>
@@ -798,7 +798,7 @@ export function AdminAnalyticsClient({
                       {b.location}
                     </span>
                   </div>
-                  <span className="px-2 py-0.5 text-[10px] font-mono uppercase bg-emerald-950/40 text-emerald-400 border border-emerald-800/60 rounded-[1px] font-semibold">
+                  <span className="px-2 py-0.5 text-[10px] font-mono uppercase badge-status-success rounded-[1px] font-semibold">
                     {b.margin}% Margin
                   </span>
                 </div>
@@ -810,7 +810,7 @@ export function AdminAnalyticsClient({
                   </div>
                   <div>
                     <span className="text-[10px] text-[var(--text-secondary)] uppercase block">Net Profit</span>
-                    <span className="font-semibold text-emerald-400">{formatLKR(b.profit)}</span>
+                    <span className="font-semibold text-status-success">{formatLKR(b.profit)}</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-[var(--text-secondary)] uppercase block">Units Sold</span>
@@ -818,7 +818,7 @@ export function AdminAnalyticsClient({
                   </div>
                   <div>
                     <span className="text-[10px] text-[var(--text-secondary)] uppercase block">Current Stock</span>
-                    <span className="font-semibold text-blue-400">{formatLKR(b.stockValue)} ({b.availableCount} cars)</span>
+                    <span className="font-semibold text-status-info">{formatLKR(b.stockValue)} ({b.availableCount} cars)</span>
                   </div>
                 </div>
               </div>
@@ -883,16 +883,16 @@ export function AdminAnalyticsClient({
                       <td className="py-3 px-3 text-right text-[var(--text-secondary)]">
                         {formatLKR(b.cost)}
                       </td>
-                      <td className="py-3 px-3 text-right font-semibold text-emerald-400">
+                      <td className="py-3 px-3 text-right font-semibold text-status-success">
                         {formatLKR(b.profit)}
                       </td>
                       <td className="py-3 px-3 text-right">
                         <span className={`px-1.5 py-0.5 rounded-[1px] font-semibold text-[10px] ${
                           b.margin >= 15
-                            ? "bg-emerald-950/40 text-emerald-300 border border-emerald-800"
+                            ? "badge-status-success"
                             : b.margin >= 10
-                            ? "bg-amber-950/40 text-amber-300 border border-amber-800"
-                            : "bg-neutral-800 text-neutral-300"
+                            ? "badge-status-warning"
+                            : "badge-status-neutral"
                         }`}>
                           {b.margin}%
                         </span>
@@ -936,13 +936,13 @@ export function AdminAnalyticsClient({
             </div>
 
             <div className="p-3.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px]">
-              <span className="text-[10px] font-mono uppercase text-emerald-400 block">
+              <span className="text-[10px] font-mono uppercase text-status-success font-semibold block">
                 Won / Closed Deals
               </span>
-              <span className="font-serif text-2xl text-emerald-400 mt-1 block">
+              <span className="font-serif text-2xl text-status-success mt-1 block">
                 {metrics.wonLeadsCount}
               </span>
-              <span className="text-[10px] font-mono text-emerald-400/80">
+              <span className="text-[10px] font-mono text-status-success opacity-85">
                 {metrics.winRate}% Win Rate
               </span>
             </div>
@@ -957,13 +957,13 @@ export function AdminAnalyticsClient({
             </div>
             <div className="flex items-center justify-between text-xs font-mono">
               <span className="text-[var(--text-secondary)]">Gross Profit per Won Customer:</span>
-              <span className="font-semibold text-emerald-400">
+              <span className="font-semibold text-status-success">
                 {metrics.wonLeadsCount > 0 ? formatLKR(metrics.totalGrossProfit / metrics.wonLeadsCount) : "—"}
               </span>
             </div>
             <div className="flex items-center justify-between text-xs font-mono">
               <span className="text-[var(--text-secondary)]">Active Pipeline Enquiries:</span>
-              <span className="font-semibold text-amber-300">
+              <span className="font-semibold text-status-warning">
                 {metrics.totalLeads - metrics.wonLeadsCount}
               </span>
             </div>
@@ -1128,12 +1128,12 @@ export function AdminAnalyticsClient({
                             <span
                               className={`px-1.5 py-0.5 text-[9px] uppercase rounded-[1px] font-semibold ${
                                 v.status === "sold"
-                                  ? "bg-green-950/40 text-green-400 border border-green-800"
+                                  ? "badge-status-success"
                                   : v.status === "available"
-                                  ? "bg-blue-950/40 text-blue-300 border border-blue-800"
+                                  ? "badge-status-info"
                                   : v.status === "reserved"
-                                  ? "bg-amber-950/40 text-amber-300 border border-amber-800"
-                                  : "bg-purple-950/40 text-purple-300 border border-purple-800"
+                                  ? "badge-status-warning"
+                                  : "badge-status-purple"
                               }`}
                             >
                               {v.status === "sold"
@@ -1165,7 +1165,7 @@ export function AdminAnalyticsClient({
 
                         {/* Gross Profit */}
                         <td className="py-3.5 px-4 text-right font-mono font-semibold">
-                          <span className={isSold ? "text-emerald-400" : "text-[var(--text-primary)]"}>
+                          <span className={isSold ? "text-status-success" : "text-[var(--text-primary)]"}>
                             {formatFullLKR(f.grossProfit)}
                           </span>
                           <span className="text-[9px] text-[var(--text-secondary)] block font-normal">
@@ -1178,10 +1178,10 @@ export function AdminAnalyticsClient({
                           <span
                             className={`px-1.5 py-0.5 text-[10px] rounded-[1px] font-semibold ${
                               f.marginPercent >= 15
-                                ? "bg-emerald-950/40 text-emerald-300 border border-emerald-800"
+                                ? "badge-status-success"
                                 : f.marginPercent >= 10
-                                ? "bg-amber-950/40 text-amber-300 border border-amber-800"
-                                : "bg-neutral-800 text-neutral-300"
+                                ? "badge-status-warning"
+                                : "badge-status-neutral"
                             }`}
                           >
                             {f.marginPercent.toFixed(1)}%
@@ -1277,13 +1277,13 @@ export function AdminAnalyticsClient({
               <div className="p-3 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] text-xs font-mono space-y-1">
                 <div className="flex justify-between">
                   <span className="text-[var(--text-secondary)]">Calculated Profit:</span>
-                  <span className="font-semibold text-emerald-400">
+                  <span className="font-semibold text-status-success">
                     {formatFullLKR(editingVehicle.price - Number(newCostInput))}
                   </span>
                 </div>
                 <div className="flex justify-between text-[11px]">
                   <span className="text-[var(--text-secondary)]">Net Margin:</span>
-                  <span className="text-emerald-400 font-semibold">
+                  <span className="text-status-success font-semibold">
                     {(((editingVehicle.price - Number(newCostInput)) / editingVehicle.price) * 100).toFixed(1)}%
                   </span>
                 </div>

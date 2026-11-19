@@ -229,7 +229,7 @@ function ReserveVehicleModalInner({
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-950/40 border border-red-800 text-red-200 text-xs">
+          <div className="mb-4 p-3 badge-status-danger text-xs font-medium">
             {error}
           </div>
         )}
@@ -342,10 +342,10 @@ function ReserveVehicleModalInner({
             />
 
             {expiryPreviewText && (
-              <div className={`p-2 text-[11px] rounded-[1px] flex items-center gap-2 ${
+              <div className={`p-2 text-[11px] rounded-[1px] flex items-center gap-2 font-medium ${
                 isExpiryPast
-                  ? "bg-red-950/30 text-red-300 border border-red-800"
-                  : "bg-amber-950/20 text-amber-300 border border-amber-800/50"
+                  ? "badge-status-danger"
+                  : "badge-status-warning"
               }`}>
                 <span>{isExpiryPast ? "⚠️" : "🔔"}</span>
                 <span>{expiryPreviewText}</span>
