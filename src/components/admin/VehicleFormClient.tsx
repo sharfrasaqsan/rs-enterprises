@@ -487,12 +487,14 @@ export function VehicleFormClient({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label
-                htmlFor="veh-make"
-                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
-              >
-                Make (Manufacturer) *
-              </label>
+              <div className="flex items-center justify-between min-h-[20px] mb-1.5">
+                <label
+                  htmlFor="veh-make"
+                  className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
+                >
+                  Make (Manufacturer) *
+                </label>
+              </div>
               <input
                 id="veh-make"
                 type="text"
@@ -505,12 +507,14 @@ export function VehicleFormClient({
             </div>
 
             <div>
-              <label
-                htmlFor="veh-model"
-                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
-              >
-                Model Name *
-              </label>
+              <div className="flex items-center justify-between min-h-[20px] mb-1.5">
+                <label
+                  htmlFor="veh-model"
+                  className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
+                >
+                  Model Name *
+                </label>
+              </div>
               <input
                 id="veh-model"
                 type="text"
@@ -523,12 +527,14 @@ export function VehicleFormClient({
             </div>
 
             <div>
-              <label
-                htmlFor="veh-grade"
-                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
-              >
-                Grade / Trim Package
-              </label>
+              <div className="flex items-center justify-between min-h-[20px] mb-1.5">
+                <label
+                  htmlFor="veh-grade"
+                  className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
+                >
+                  Grade / Trim Package
+                </label>
+              </div>
               <input
                 id="veh-grade"
                 type="text"
@@ -540,14 +546,16 @@ export function VehicleFormClient({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label
-                htmlFor="veh-year"
-                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
-              >
-                Manufacturing Year *
-              </label>
+              <div className="flex items-center justify-between min-h-[20px] mb-1.5">
+                <label
+                  htmlFor="veh-year"
+                  className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
+                >
+                  Manufacturing Year *
+                </label>
+              </div>
               <input
                 id="veh-year"
                 type="number"
@@ -560,8 +568,8 @@ export function VehicleFormClient({
               />
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-1">
+            <div className="sm:col-span-2">
+              <div className="flex items-center justify-between min-h-[20px] mb-1.5">
                 <label
                   htmlFor="veh-slug"
                   className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
@@ -571,7 +579,7 @@ export function VehicleFormClient({
                 <button
                   type="button"
                   onClick={() => setIsSlugManual(!isSlugManual)}
-                  className="text-[9px] font-mono text-[var(--accent)] hover:underline uppercase"
+                  className="text-[9px] font-mono text-[var(--accent)] hover:underline uppercase cursor-pointer"
                 >
                   {isSlugManual ? "Reset to Auto" : "Customize Slug"}
                 </button>
@@ -603,12 +611,14 @@ export function VehicleFormClient({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label
-                htmlFor="veh-price"
-                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
-              >
-                Retail Price (LKR)
-              </label>
+              <div className="flex items-center justify-between min-h-[22px] mb-1.5">
+                <label
+                  htmlFor="veh-price"
+                  className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
+                >
+                  Retail Price (LKR)
+                </label>
+              </div>
               <input
                 id="veh-price"
                 type="number"
@@ -620,14 +630,16 @@ export function VehicleFormClient({
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center justify-between min-h-[22px] mb-1.5">
                 <label
                   htmlFor="veh-cost"
                   className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
                 >
                   Purchase / Landed Cost (LKR)
                 </label>
-                <span className="text-[9px] font-mono text-[var(--accent)]">Admin Only</span>
+                <span className="px-1.5 py-0.5 text-[9px] font-mono uppercase font-bold badge-status-warning rounded">
+                  Admin Only
+                </span>
               </div>
               <input
                 id="veh-cost"
@@ -640,12 +652,14 @@ export function VehicleFormClient({
             </div>
 
             <div>
-              <label
-                htmlFor="veh-mileage"
-                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
-              >
-                Mileage (KM) *
-              </label>
+              <div className="flex items-center justify-between min-h-[22px] mb-1.5">
+                <label
+                  htmlFor="veh-mileage"
+                  className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
+                >
+                  Mileage (KM) *
+                </label>
+              </div>
               <input
                 id="veh-mileage"
                 type="number"
@@ -658,12 +672,14 @@ export function VehicleFormClient({
             </div>
 
             <div>
-              <label
-                htmlFor="veh-engine"
-                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
-              >
-                Engine Displacement (CC) *
-              </label>
+              <div className="flex items-center justify-between min-h-[22px] mb-1.5">
+                <label
+                  htmlFor="veh-engine"
+                  className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
+                >
+                  Engine Displacement (CC) *
+                </label>
+              </div>
               <input
                 id="veh-engine"
                 type="number"
@@ -676,14 +692,16 @@ export function VehicleFormClient({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label
-                htmlFor="veh-fuel"
-                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
-              >
-                Fuel Powertrain *
-              </label>
+              <div className="flex items-center justify-between min-h-[22px] mb-1.5">
+                <label
+                  htmlFor="veh-fuel"
+                  className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
+                >
+                  Fuel Powertrain *
+                </label>
+              </div>
               <select
                 id="veh-fuel"
                 value={fuel}
@@ -698,12 +716,14 @@ export function VehicleFormClient({
             </div>
 
             <div>
-              <label
-                htmlFor="veh-transmission"
-                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
-              >
-                Transmission *
-              </label>
+              <div className="flex items-center justify-between min-h-[22px] mb-1.5">
+                <label
+                  htmlFor="veh-transmission"
+                  className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
+                >
+                  Transmission *
+                </label>
+              </div>
               <select
                 id="veh-transmission"
                 value={transmission}
@@ -716,13 +736,15 @@ export function VehicleFormClient({
               </select>
             </div>
 
-            <div>
-              <label
-                htmlFor="veh-color"
-                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
-              >
-                Exterior Color *
-              </label>
+            <div className="lg:col-span-2">
+              <div className="flex items-center justify-between min-h-[22px] mb-1.5">
+                <label
+                  htmlFor="veh-color"
+                  className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
+                >
+                  Exterior Color *
+                </label>
+              </div>
               <input
                 id="veh-color"
                 type="text"
@@ -750,7 +772,7 @@ export function VehicleFormClient({
           {/* Row 1: Chassis Number (Admin Only) & Branch Location */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px]">
             <div>
-              <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center justify-between min-h-[22px] mb-1.5">
                 <label
                   htmlFor="veh-chassis"
                   className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
@@ -769,18 +791,20 @@ export function VehicleFormClient({
                 placeholder="e.g. FJA300-0018472 / GDJ150-0092814"
                 className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] font-mono"
               />
-              <span className="text-[10px] text-[var(--text-secondary)] font-mono block mt-1">
+              <span className="text-[10px] text-[var(--text-secondary)] font-mono block mt-1.5 min-h-[28px] leading-snug">
                 Used for internal customs assessment, inspection clearance, and title transfer.
               </span>
             </div>
 
             <div>
-              <label
-                htmlFor="veh-branch"
-                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
-              >
-                Holding Showroom Branch *
-              </label>
+              <div className="flex items-center justify-between min-h-[22px] mb-1.5">
+                <label
+                  htmlFor="veh-branch"
+                  className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
+                >
+                  Holding Showroom Branch *
+                </label>
+              </div>
               <select
                 id="veh-branch"
                 value={branch}
@@ -794,7 +818,7 @@ export function VehicleFormClient({
                   {settings?.coastalBranch.name || "Trincomalee Branch Showroom"}
                 </option>
               </select>
-              <span className="text-[10px] text-[var(--text-secondary)] font-mono block mt-1">
+              <span className="text-[10px] text-[var(--text-secondary)] font-mono block mt-1.5 min-h-[28px] leading-snug">
                 Determines branch inquiry routing and customer viewing location.
               </span>
             </div>
@@ -803,12 +827,14 @@ export function VehicleFormClient({
           {/* Row 2: Body Type, Drive Type, Seating Capacity */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label
-                htmlFor="veh-body"
-                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
-              >
-                Body Type *
-              </label>
+              <div className="flex items-center justify-between min-h-[22px] mb-1.5">
+                <label
+                  htmlFor="veh-body"
+                  className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
+                >
+                  Body Type *
+                </label>
+              </div>
               <select
                 id="veh-body"
                 value={bodyType}
@@ -828,12 +854,14 @@ export function VehicleFormClient({
             </div>
 
             <div>
-              <label
-                htmlFor="veh-drive"
-                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
-              >
-                Drive Type (Drivetrain) *
-              </label>
+              <div className="flex items-center justify-between min-h-[22px] mb-1.5">
+                <label
+                  htmlFor="veh-drive"
+                  className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
+                >
+                  Drive Type (Drivetrain) *
+                </label>
+              </div>
               <select
                 id="veh-drive"
                 value={driveType}
@@ -849,12 +877,14 @@ export function VehicleFormClient({
             </div>
 
             <div>
-              <label
-                htmlFor="veh-seats"
-                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
-              >
-                Seating Capacity *
-              </label>
+              <div className="flex items-center justify-between min-h-[22px] mb-1.5">
+                <label
+                  htmlFor="veh-seats"
+                  className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
+                >
+                  Seating Capacity *
+                </label>
+              </div>
               <input
                 id="veh-seats"
                 type="number"
@@ -869,15 +899,17 @@ export function VehicleFormClient({
             </div>
           </div>
 
-          {/* Row 3: Registration Status, Owners, Auction Grade & Score */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          {/* Row 3: Registration Status, Owners, Japanese Auction Grade & Score */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label
-                htmlFor="veh-reg"
-                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
-              >
-                Registration Status *
-              </label>
+              <div className="flex items-center justify-between min-h-[22px] mb-1.5">
+                <label
+                  htmlFor="veh-reg"
+                  className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
+                >
+                  Registration Status *
+                </label>
+              </div>
               <select
                 id="veh-reg"
                 value={registrationStatus}
@@ -892,15 +924,20 @@ export function VehicleFormClient({
                 <option value="unregistered">Unregistered (Direct Import)</option>
                 <option value="registered">Registered (Pre-Owned in SL)</option>
               </select>
+              <span className="text-[9px] text-[var(--text-secondary)] font-mono block mt-1 min-h-[16px]">
+                Imported directly from Japan / SL registered
+              </span>
             </div>
 
             <div>
-              <label
-                htmlFor="veh-owners"
-                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
-              >
-                Previous Owners
-              </label>
+              <div className="flex items-center justify-between min-h-[22px] mb-1.5">
+                <label
+                  htmlFor="veh-owners"
+                  className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]"
+                >
+                  Previous Owners in SL
+                </label>
+              </div>
               <input
                 id="veh-owners"
                 type="number"
@@ -910,43 +947,46 @@ export function VehicleFormClient({
                 onChange={(e) => setOwners(Number(e.target.value))}
                 className="w-full h-11 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] font-mono"
               />
-              <span className="text-[9px] text-[var(--text-secondary)] font-mono block mt-0.5">
+              <span className="text-[9px] text-[var(--text-secondary)] font-mono block mt-1 min-h-[16px]">
                 {registrationStatus === "unregistered" ? "0 for brand new/unregistered in SL" : "Registered owner count"}
               </span>
             </div>
 
             <div>
-              <label
-                htmlFor="veh-auction-grade"
-                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
-              >
-                Japanese Auction Grade *
-              </label>
-              <input
-                id="veh-auction-grade"
-                type="text"
-                value={auctionGrade}
-                onChange={(e) => setAuctionGrade(e.target.value)}
-                placeholder="e.g. 5.0 / 4.5 / 6.0 / S"
-                className="w-full h-11 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] font-mono"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="veh-auction-score"
-                className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] mb-1"
-              >
-                Auction Score (Interior/Exterior)
-              </label>
-              <input
-                id="veh-auction-score"
-                type="text"
-                value={auctionScore}
-                onChange={(e) => setAuctionScore(e.target.value)}
-                placeholder="e.g. A/A or A or B"
-                className="w-full h-11 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] font-mono"
-              />
+              <div className="flex items-center justify-between min-h-[22px] mb-1.5">
+                <label className="block text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+                  Japanese Auction Grade &amp; Score *
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <input
+                    id="veh-auction-grade"
+                    type="text"
+                    value={auctionGrade}
+                    onChange={(e) => setAuctionGrade(e.target.value)}
+                    placeholder="Grade (5.0)"
+                    title="Japanese Auction Grade"
+                    aria-label="Japanese Auction Grade"
+                    className="w-full h-11 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] font-mono"
+                  />
+                </div>
+                <div>
+                  <input
+                    id="veh-auction-score"
+                    type="text"
+                    value={auctionScore}
+                    onChange={(e) => setAuctionScore(e.target.value)}
+                    placeholder="Score (A/A)"
+                    title="Auction Score (Interior/Exterior)"
+                    aria-label="Auction Score (Interior/Exterior)"
+                    className="w-full h-11 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] font-mono"
+                  />
+                </div>
+              </div>
+              <span className="text-[9px] text-[var(--text-secondary)] font-mono block mt-1 min-h-[16px]">
+                Official auction inspection grade &amp; condition
+              </span>
             </div>
           </div>
         </div>
