@@ -201,10 +201,10 @@ export default async function VehicleDetailPage(props: {
                 <span className="px-2.5 py-1 bg-[var(--bg-surface)] border border-[var(--border-hairline)] text-[11px] font-mono uppercase tracking-wider text-[var(--text-primary)] rounded-[2px]">
                   {formatBodyType(vehicle.bodyType)} &bull; {vehicle.driveType} &bull; {vehicle.seats} Seats
                 </span>
-                <span className={`px-2.5 py-1 text-[11px] font-mono uppercase tracking-wider rounded-[2px] border ${
+                <span className={`px-2.5 py-1 text-[11px] font-mono uppercase tracking-wider rounded-[2px] ${
                   vehicle.registrationStatus === "unregistered"
-                    ? "bg-emerald-950/20 text-emerald-400 border-emerald-800/40"
-                    : "bg-[var(--bg-surface)] text-[var(--text-secondary)] border-[var(--border-hairline)]"
+                    ? "badge-status-success font-semibold"
+                    : "bg-[var(--bg-surface)] text-[var(--text-secondary)] border border-[var(--border-hairline)]"
                 }`}>
                   {vehicle.registrationStatus === "unregistered" ? "Unregistered • Direct Import" : "Registered Pre-Owned"}
                 </span>
@@ -332,7 +332,7 @@ export default async function VehicleDetailPage(props: {
                     </div>
                     <div className="py-3.5 grid grid-cols-2">
                       <span className="text-[var(--text-muted)] uppercase tracking-wider">Registration Status</span>
-                      <span className={`font-medium ${vehicle.registrationStatus === "unregistered" ? "text-emerald-400" : "text-[var(--text-primary)]"}`}>
+                      <span className={`font-medium ${vehicle.registrationStatus === "unregistered" ? "text-status-success font-semibold" : "text-[var(--text-primary)]"}`}>
                         {vehicle.registrationStatus === "unregistered" ? "Unregistered (Direct Japanese Import)" : "Registered (Pre-Owned)"}
                       </span>
                     </div>

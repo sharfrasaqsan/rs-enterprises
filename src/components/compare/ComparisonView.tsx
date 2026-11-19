@@ -348,7 +348,7 @@ export function ComparisonView({
               </div>
               {vehicles.map((v) => (
                 <div key={v.id} className="p-4 border-b border-[var(--border-hairline)] text-xs font-sans">
-                  <span className={v.registrationStatus === "unregistered" ? "text-emerald-400 font-medium" : "text-[var(--text-primary)]"}>
+                  <span className={v.registrationStatus === "unregistered" ? "text-status-success font-semibold" : "text-[var(--text-primary)]"}>
                     {v.registrationStatus === "unregistered" ? "Unregistered (Direct Import)" : `Registered (${v.owners} Owner)`}
                   </span>
                 </div>

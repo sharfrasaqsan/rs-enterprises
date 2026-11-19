@@ -22,7 +22,7 @@ export function AdminAnalyticsClient({
 
   // Filters
   const [periodFilter, setPeriodFilter] = useState<string>("all");
-  const [branchFilter, setBranchFilter] = useState<string>("all");
+  const [branchFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -236,133 +236,6 @@ export function AdminAnalyticsClient({
     };
   }, [filteredVehicles, filteredLeads, defaultMarginPercent, getVehicleFinancials]);
 
-  // Branch Breakdown Analytics
-  const branchAnalytics = useMemo(() => {
-    const branches = [
-      { key: "polonnaruwa", label: "Kaduruwela Main Showroom", location: "Polonnaruwa" },
-      { key: "trincomalee", label: "Trincomalee Branch", location: "Eastern Coast" },
-    ];
-
-    return branches.map((b) => {
-      const bVehicles = filteredVehicles.filter((v) => v.branch === b.key);
-      const bSold = bVehicles.filter((v) => v.status === "sold");
-      const bAvailable = bVehicles.filter((v) => v.status === "available");
-
-      let revenue = 0;
-      let cost = 0;
-      let profit = 0;
-
-      bSold.forEach((v) => {
-        const f = getVehicleFinancials(v);
-        revenue += f.retailPrice;
-        cost += f.costPrice;
-        profit += f.grossProfit;
-      });
-
-      let stockValue = 0;
-      bAvailable.forEach((v) => {
-        const f = getVehicleFinancials(v);
-        stockValue += f.retailPrice;
-      });
-
-      const margin = revenue > 0 ? Math.round((profit / revenue) * 1000) / 10 : 0;
-      const bLeads = filteredLeads.filter((l) => l.branch === b.key);
-      const bWonLeads = bLeads.filter((l) => l.stage === "won");
-
-      return {
-        ...b,
-        soldCount: bSold.length,
-        availableCount: bAvailable.length,
-        revenue,
-        cost,
-        profit,
-        margin,
-        stockValue,
-        leadsCount: bLeads.length,
-        wonLeadsCount: bWonLeads.length,
-      };
-    });
-  }, [filteredVehicles, filteredLeads, getVehicleFinancials]);
-
-  // Make / Brand Breakdown Analytics
-  const brandAnalytics = useMemo(() => {
-    const brandMap = new Map<string, {
-      make: string;
-      unitsSold: number;
-      revenue: number;
-      cost: number;
-      profit: number;
-      availableUnits: number;
-    }>();
-
-    filteredVehicles.forEach((v) => {
-      const make = v.make;
-      const f = getVehicleFinancials(v);
-      const entry = brandMap.get(make) || {
-        make,
-        unitsSold: 0,
-        revenue: 0,
-        cost: 0,
-        profit: 0,
-        availableUnits: 0,
-      };
-
-      if (v.status === "sold") {
-        entry.unitsSold += 1;
-        entry.revenue += f.retailPrice;
-        entry.cost += f.costPrice;
-        entry.profit += f.grossProfit;
-      } else if (v.status === "available") {
-        entry.availableUnits += 1;
-      }
-
-      brandMap.set(make, entry);
-    });
-
-    return Array.from(brandMap.values())
-      .map((entry) => ({
-        ...entry,
-        margin: entry.revenue > 0 ? Math.round((entry.profit / entry.revenue) * 1000) / 10 : 0,
-      }))
-      .sort((a, b) => b.profit - a.profit);
-  }, [filteredVehicles, getVehicleFinancials]);
-
-  // Monthly Sales Trend (Last 5 Months)
-  const monthlyTrend = useMemo(() => {
-    const months = availableMonths.slice(0, 5).reverse();
-    return months.map((m) => {
-      const monthVehicles = vehicles.filter((v) => {
-        const dStr = v.status === "sold" ? (v.updatedAt || v.createdAt) : v.createdAt;
-        const d = new Date(dStr);
-        if (isNaN(d.getTime())) return false;
-        const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-        return ym === m.key;
-      });
-
-      const sold = monthVehicles.filter((v) => v.status === "sold");
-      let revenue = 0;
-      let cost = 0;
-      let profit = 0;
-
-      sold.forEach((v) => {
-        const f = getVehicleFinancials(v);
-        revenue += f.retailPrice;
-        cost += f.costPrice;
-        profit += f.grossProfit;
-      });
-
-      return {
-        key: m.key,
-        label: m.label,
-        soldCount: sold.length,
-        revenue,
-        cost,
-        profit,
-        margin: revenue > 0 ? Math.round((profit / revenue) * 10) / 10 : 0,
-      };
-    });
-  }, [vehicles, availableMonths, getVehicleFinancials]);
-
   // Detailed Ledger List for the Data Table
   const tableLedger = useMemo(() => {
     let list = filteredVehicles;
@@ -463,14 +336,16 @@ export function AdminAnalyticsClient({
       {/* ========================================================= */}
       {/* 1. EDITORIAL HEADER & QUICK ACTIONS                       */}
       {/* ========================================================= */}
+      {/* 1. TOP HEADER & EXPORT ACTIONS                            */}
+      {/* ========================================================= */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[var(--border-hairline)]">
         <div>
-          <Eyebrow>Executive Financial &amp; Profit Analytics</Eyebrow>
+          <Eyebrow>Showroom Financials</Eyebrow>
           <Heading level={1} className="text-3xl sm:text-4xl mt-1">
-            Profitability &amp; Financial Performance
+            Sales &amp; Profit
           </Heading>
           <p className="text-xs text-[var(--text-secondary)] font-light mt-1">
-            Calculate gross vehicle sales, landed import costs, realized net profit, and stock valuation
+            Kaduruwela Showroom &bull; Simple tracking of showroom stock, vehicles sold, and net profit earned
           </p>
         </div>
 
@@ -483,14 +358,14 @@ export function AdminAnalyticsClient({
             <svg className="w-4 h-4 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
             </svg>
-            <span>Print Financial Statement</span>
+            <span>Print Report</span>
           </button>
 
           <Link
             href="/admin/vehicles/new"
             className="min-h-[44px] px-5 inline-flex items-center text-xs font-sans uppercase font-medium tracking-wider bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors rounded-[2px] shadow-sm"
           >
-            + Register Vehicle
+            + Add Car
           </Link>
         </div>
       </div>
@@ -569,20 +444,14 @@ export function AdminAnalyticsClient({
             </div>
           </div>
 
-          {/* Showroom Branch Filter */}
+          {/* Showroom Branch Tag */}
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)]">
-              Branch:
+              Showroom:
             </span>
-            <select
-              value={branchFilter}
-              onChange={(e) => setBranchFilter(e.target.value)}
-              className="h-8 px-3 bg-[var(--bg-base)] border border-[var(--border-hairline)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] font-sans"
-            >
-              <option value="all">All Showrooms (Island-wide)</option>
-              <option value="polonnaruwa">Kaduruwela Main Showroom</option>
-              <option value="trincomalee">Trincomalee Coastal Branch</option>
-            </select>
+            <span className="text-xs font-mono text-[var(--accent)] font-semibold">
+              📍 Kaduruwela Main Showroom
+            </span>
           </div>
         </div>
 
@@ -591,13 +460,12 @@ export function AdminAnalyticsClient({
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-[var(--accent)]" />
             <span>
-              Active Filter: <strong className="text-[var(--text-primary)] font-medium">{periodTitle}</strong> &bull;{" "}
-              {branchFilter === "all" ? "Both Branches" : branchFilter === "polonnaruwa" ? "Kaduruwela" : "Trincomalee"}
+              Active Filter: <strong className="text-[var(--text-primary)] font-medium">{periodTitle}</strong> &bull; Kaduruwela Main Showroom
             </span>
           </div>
 
           <div className="flex items-center gap-2 font-mono text-[11px]">
-            <span>Estimated Margin for Unspecified Costs:</span>
+            <span>Dealer Margin on Unspecified Costs:</span>
             <div className="inline-flex items-center gap-1 bg-[var(--bg-base)] px-2 py-0.5 border border-[var(--border-hairline)] rounded-[2px]">
               {[10, 12, 15, 18].map((pct) => (
                 <button
@@ -619,393 +487,124 @@ export function AdminAnalyticsClient({
       </div>
 
       {/* ========================================================= */}
-      {/* 3. CORE FINANCIAL KPI STATS (6 CARDS)                     */}
+      {/* 3. SHOWROOM EXECUTIVE FINANCIAL SUMMARY (4 TILES)         */}
       {/* ========================================================= */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {/* Realized Gross Profit */}
-        <div className="p-5 bg-[var(--bg-surface)] border border-emerald-500/30 rounded-[2px] shadow-sm relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Profit Earned */}
+        <div className="p-5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] shadow-sm relative overflow-hidden">
           <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-status-success font-semibold block">
-            Realized Gross Profit
+            Total Profit Earned
           </span>
-          <div className="mt-2 font-serif text-2xl text-[var(--text-primary)]">
+          <div className="mt-2 font-serif text-3xl font-semibold text-[var(--text-primary)]">
             {formatLKR(metrics.totalGrossProfit)}
           </div>
-          <div className="mt-1 flex items-center gap-2 text-[10px] font-mono">
-            <span className="px-1.5 py-0.2 badge-status-success rounded-[1px] font-semibold">
+          <div className="mt-2 flex items-center gap-2 text-[10px] font-mono">
+            <span className="px-2 py-0.5 badge-status-success rounded-[1px] font-semibold">
               {metrics.overallMargin}% Margin
             </span>
-            <span className="text-[var(--text-secondary)]">from {metrics.soldCount} sold</span>
+            <span className="text-[var(--text-secondary)]">from {metrics.soldCount} cars sold</span>
           </div>
         </div>
 
-        {/* Gross Sales Revenue */}
+        {/* Vehicles Sold */}
         <div className="p-5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] shadow-sm">
           <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--accent)] font-semibold block">
-            Gross Sales Revenue
+            Vehicles Sold
           </span>
-          <div className="mt-2 font-serif text-2xl text-[var(--text-primary)]">
-            {formatLKR(metrics.totalRevenue)}
+          <div className="mt-2 font-serif text-3xl font-semibold text-[var(--text-primary)]">
+            {metrics.soldCount} <span className="text-lg font-sans font-normal text-[var(--text-secondary)]">Delivered</span>
           </div>
-          <div className="mt-1 text-[10px] font-mono text-[var(--text-secondary)]">
-            {metrics.soldCount} vehicle{metrics.soldCount === 1 ? "" : "s"} delivered
+          <div className="mt-2 text-xs font-mono text-[var(--text-secondary)]">
+            Gross Sales: <span className="font-semibold text-[var(--text-primary)]">{formatLKR(metrics.totalRevenue)}</span>
           </div>
         </div>
 
-        {/* Cost of Goods Sold (COGS) */}
-        <div className="p-5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] shadow-sm">
-          <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--text-secondary)] font-semibold block">
-            Cost of Goods (COGS)
-          </span>
-          <div className="mt-2 font-serif text-2xl text-[var(--text-primary)]">
-            {formatLKR(metrics.totalLandedCost)}
-          </div>
-          <div className="mt-1 text-[10px] font-mono text-[var(--text-muted)]">
-            Landed import cost basis
-          </div>
-        </div>
-
-        {/* Average Profit Per Unit */}
-        <div className="p-5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] shadow-sm">
-          <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--text-secondary)] font-semibold block">
-            Avg Profit / Vehicle
-          </span>
-          <div className="mt-2 font-serif text-2xl text-[var(--text-primary)]">
-            {metrics.soldCount > 0 ? formatLKR(metrics.averageProfitPerUnit) : "—"}
-          </div>
-          <div className="mt-1 text-[10px] font-mono text-status-success">
-            {metrics.soldCount > 0 ? "Per vehicle delivered" : "No sold units in period"}
-          </div>
-        </div>
-
-        {/* Active Lot Inventory Value */}
+        {/* Showroom Stock Value */}
         <div className="p-5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] shadow-sm">
           <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-status-info font-semibold block">
-            Lot Stock Value
+            Showroom Stock Value
           </span>
-          <div className="mt-2 font-serif text-2xl text-[var(--text-primary)]">
+          <div className="mt-2 font-serif text-3xl font-semibold text-[var(--text-primary)]">
             {formatLKR(metrics.availableStockValue)}
           </div>
-          <div className="mt-1 text-[10px] font-mono text-[var(--text-secondary)]">
-            {metrics.availableCount} available showroom units
+          <div className="mt-2 text-xs font-mono text-[var(--text-secondary)]">
+            {metrics.availableCount} available cars in showroom
           </div>
         </div>
 
-        {/* Incoming In-Transit Value */}
+        {/* Incoming Fleet */}
         <div className="p-5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] shadow-sm">
           <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-status-warning font-semibold block">
-            In-Transit Fleet
+            Incoming Shipments
           </span>
-          <div className="mt-2 font-serif text-2xl text-[var(--text-primary)]">
-            {formatLKR(metrics.incomingStockValue)}
+          <div className="mt-2 font-serif text-3xl font-semibold text-[var(--text-primary)]">
+            {metrics.incomingCount} <span className="text-lg font-sans font-normal text-[var(--text-secondary)]">Units</span>
           </div>
-          <div className="mt-1 text-[10px] font-mono text-[var(--text-secondary)]">
-            {metrics.incomingCount} units on water / port
-          </div>
-        </div>
-      </div>
-
-      {/* ========================================================= */}
-      {/* 4. VISUAL BREAKDOWNS: TRENDS & BRANCH COMPARISON          */}
-      {/* ========================================================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Monthly Revenue & Profit Trend Bar Chart (7 Cols) */}
-        <div className="lg:col-span-7 p-6 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] space-y-5">
-          <div className="flex items-center justify-between pb-3 border-b border-[var(--border-hairline)]">
-            <div>
-              <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[var(--accent)] font-semibold block">
-                Monthly Performance Trend
-              </span>
-              <h3 className="font-serif text-lg text-[var(--text-primary)] mt-0.5">
-                Revenue vs Cost vs Profit Progression
-              </h3>
-            </div>
-            <span className="text-[10px] font-mono text-[var(--text-muted)]">
-              Last {monthlyTrend.length} Months
-            </span>
-          </div>
-
-          <div className="space-y-4 pt-2">
-            {monthlyTrend.map((m) => {
-              const maxVal = Math.max(...monthlyTrend.map((item) => item.revenue || item.profit || 1), 50000000);
-              const revPercent = Math.min(100, Math.max(8, (m.revenue / maxVal) * 100));
-              const profitPercent = Math.min(100, Math.max(5, (m.profit / maxVal) * 100));
-
-              return (
-                <div key={m.key} className="space-y-1.5 p-3 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px]">
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="font-semibold text-[var(--text-primary)]">{m.label}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-[var(--text-secondary)]">Sold: {m.soldCount}</span>
-                      <span className="text-status-success font-semibold">{formatLKR(m.profit)} Profit</span>
-                    </div>
-                  </div>
-
-                  {/* Revenue Bar */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[10px] font-mono text-[var(--text-secondary)]">
-                      <span>Gross Sales: {formatLKR(m.revenue)}</span>
-                      <span>Margin: {m.margin}%</span>
-                    </div>
-                    <div className="w-full h-2 bg-[var(--border-subtle)] rounded-[1px] overflow-hidden">
-                      <div
-                        className="h-full bg-[var(--accent)] transition-all duration-500 rounded-[1px]"
-                        style={{ width: `${revPercent}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Profit Sub-bar */}
-                  <div className="space-y-1 pt-0.5">
-                    <div className="w-full h-1.5 bg-[var(--border-subtle)] rounded-[1px] overflow-hidden">
-                      <div
-                        className="h-full bg-emerald-600 dark:bg-emerald-500 transition-all duration-500 rounded-[1px]"
-                        style={{ width: `${profitPercent}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Branch Profitability Comparison (5 Cols) */}
-        <div className="lg:col-span-5 p-6 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] space-y-5">
-          <div className="flex items-center justify-between pb-3 border-b border-[var(--border-hairline)]">
-            <div>
-              <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[var(--accent)] font-semibold block">
-                Showroom Comparison
-              </span>
-              <h3 className="font-serif text-lg text-[var(--text-primary)] mt-0.5">
-                Branch Profit &amp; Inventory
-              </h3>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {branchAnalytics.map((b) => (
-              <div
-                key={b.key}
-                className="p-4 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] space-y-3"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h4 className="font-serif text-base font-medium text-[var(--text-primary)]">
-                      {b.label}
-                    </h4>
-                    <span className="text-[10px] font-mono text-[var(--text-secondary)] uppercase">
-                      {b.location}
-                    </span>
-                  </div>
-                  <span className="px-2 py-0.5 text-[10px] font-mono uppercase badge-status-success rounded-[1px] font-semibold">
-                    {b.margin}% Margin
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[var(--border-hairline)] text-xs font-mono">
-                  <div>
-                    <span className="text-[10px] text-[var(--text-secondary)] uppercase block">Revenue</span>
-                    <span className="font-semibold text-[var(--text-primary)]">{formatLKR(b.revenue)}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-[var(--text-secondary)] uppercase block">Net Profit</span>
-                    <span className="font-semibold text-status-success">{formatLKR(b.profit)}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-[var(--text-secondary)] uppercase block">Units Sold</span>
-                    <span className="font-semibold text-[var(--text-primary)]">{b.soldCount} units</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-[var(--text-secondary)] uppercase block">Current Stock</span>
-                    <span className="font-semibold text-status-info">{formatLKR(b.stockValue)} ({b.availableCount} cars)</span>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="mt-2 text-xs font-mono text-[var(--text-secondary)]">
+            Est. Value: <span className="font-semibold text-[var(--text-primary)]">{formatLKR(metrics.incomingStockValue)}</span>
           </div>
         </div>
       </div>
 
       {/* ========================================================= */}
-      {/* 5. MAKE/BRAND PROFITABILITY & PIPELINE ECONOMICS          */}
-      {/* ========================================================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Brand Breakdown (7 Cols) */}
-        <div className="lg:col-span-7 p-6 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[var(--border-hairline)]">
-            <div>
-              <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[var(--accent)] font-semibold block">
-                Brand Profitability Ranking
-              </span>
-              <h3 className="font-serif text-lg text-[var(--text-primary)] mt-0.5">
-                Manufacturer Contribution (LKR)
-              </h3>
-            </div>
-            <span className="text-[10px] font-mono text-[var(--text-muted)]">
-              {brandAnalytics.length} Brands
-            </span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-[var(--border-hairline)] text-[10px] font-mono uppercase text-[var(--text-secondary)]">
-                  <th className="py-2.5 px-3">Manufacturer</th>
-                  <th className="py-2.5 px-3 text-center">Units Sold</th>
-                  <th className="py-2.5 px-3 text-right">Gross Sales</th>
-                  <th className="py-2.5 px-3 text-right">Landed Cost</th>
-                  <th className="py-2.5 px-3 text-right">Gross Profit</th>
-                  <th className="py-2.5 px-3 text-right">Margin %</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border-hairline)] font-mono">
-                {brandAnalytics.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="py-8 text-center text-[var(--text-secondary)] italic">
-                      No brand data matching current filters.
-                    </td>
-                  </tr>
-                ) : (
-                  brandAnalytics.map((b) => (
-                    <tr key={b.make} className="hover:bg-[var(--bg-base)] transition-colors">
-                      <td className="py-3 px-3 font-medium text-[var(--text-primary)]">
-                        {b.make}
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <span className="px-1.5 py-0.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[1px]">
-                          {b.unitsSold}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-right text-[var(--text-secondary)]">
-                        {formatLKR(b.revenue)}
-                      </td>
-                      <td className="py-3 px-3 text-right text-[var(--text-secondary)]">
-                        {formatLKR(b.cost)}
-                      </td>
-                      <td className="py-3 px-3 text-right font-semibold text-status-success">
-                        {formatLKR(b.profit)}
-                      </td>
-                      <td className="py-3 px-3 text-right">
-                        <span className={`px-1.5 py-0.5 rounded-[1px] font-semibold text-[10px] ${
-                          b.margin >= 15
-                            ? "badge-status-success"
-                            : b.margin >= 10
-                            ? "badge-status-warning"
-                            : "badge-status-neutral"
-                        }`}>
-                          {b.margin}%
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Pipeline & Lead Conversion Economics (5 Cols) */}
-        <div className="lg:col-span-5 p-6 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[var(--border-hairline)]">
-            <div>
-              <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[var(--accent)] font-semibold block">
-                Enquiry Conversion Economics
-              </span>
-              <h3 className="font-serif text-lg text-[var(--text-primary)] mt-0.5">
-                Lead-to-Sale Conversion
-              </h3>
-            </div>
-            <Link
-              href="/admin/leads?view=table"
-              className="text-[10px] font-mono uppercase tracking-wider text-[var(--accent)] hover:underline"
-            >
-              View Leads &rarr;
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <div className="p-3.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px]">
-              <span className="text-[10px] font-mono uppercase text-[var(--text-secondary)] block">
-                Total Inquiries
-              </span>
-              <span className="font-serif text-2xl text-[var(--text-primary)] mt-1 block">
-                {metrics.totalLeads}
-              </span>
-              <span className="text-[10px] font-mono text-[var(--text-muted)]">In selected period</span>
-            </div>
-
-            <div className="p-3.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px]">
-              <span className="text-[10px] font-mono uppercase text-status-success font-semibold block">
-                Won / Closed Deals
-              </span>
-              <span className="font-serif text-2xl text-status-success mt-1 block">
-                {metrics.wonLeadsCount}
-              </span>
-              <span className="text-[10px] font-mono text-status-success opacity-85">
-                {metrics.winRate}% Win Rate
-              </span>
-            </div>
-          </div>
-
-          <div className="p-4 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] space-y-2">
-            <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-[var(--text-secondary)]">Revenue per Won Customer:</span>
-              <span className="font-semibold text-[var(--text-primary)]">
-                {metrics.wonLeadsCount > 0 ? formatLKR(metrics.totalRevenue / metrics.wonLeadsCount) : "—"}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-[var(--text-secondary)]">Gross Profit per Won Customer:</span>
-              <span className="font-semibold text-status-success">
-                {metrics.wonLeadsCount > 0 ? formatLKR(metrics.totalGrossProfit / metrics.wonLeadsCount) : "—"}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-[var(--text-secondary)]">Active Pipeline Enquiries:</span>
-              <span className="font-semibold text-status-warning">
-                {metrics.totalLeads - metrics.wonLeadsCount}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ========================================================= */}
-      {/* 6. VEHICLE PROFIT & LOSS LEDGER (DATA TABLE)              */}
+      {/* 4. VEHICLE SALES & PROFIT LEDGER                          */}
       {/* ========================================================= */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <Eyebrow>Financial Ledger</Eyebrow>
+            <Eyebrow>Showroom Profit Ledger</Eyebrow>
             <h3 className="font-serif text-xl sm:text-2xl text-[var(--text-primary)] mt-0.5">
-              Vehicle Inventory &amp; Sales Profit Ledger
+              Sold Cars &amp; Stock Profit Ledger
             </h3>
             <p className="text-xs text-[var(--text-secondary)] font-light mt-0.5">
-              Itemized selling prices, landed import costs, realized profit, and margins across each stock unit
+              Selling price, purchase cost, and net profit earned per vehicle
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* Status Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-9 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] font-mono"
-            >
-              <option value="all">All Statuses ({filteredVehicles.length})</option>
-              <option value="sold">Sold Units ({metrics.soldCount})</option>
-              <option value="available">Available Stock ({metrics.availableCount})</option>
-              <option value="reserved">Reserved Units ({metrics.reservedCount})</option>
-              <option value="incoming">Incoming Fleet ({metrics.incomingCount})</option>
-            </select>
+            {/* Quick Status Filter Pills */}
+            <div className="inline-flex p-0.5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px]">
+              <button
+                type="button"
+                onClick={() => setStatusFilter("all")}
+                className={`h-8 px-3 text-xs font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer ${
+                  statusFilter === "all"
+                    ? "bg-[var(--accent)] text-white font-medium shadow-sm"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                }`}
+              >
+                All ({filteredVehicles.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter("sold")}
+                className={`h-8 px-3 text-xs font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer ${
+                  statusFilter === "sold"
+                    ? "bg-[var(--accent)] text-white font-medium shadow-sm"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                }`}
+              >
+                Sold Cars ({metrics.soldCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter("available")}
+                className={`h-8 px-3 text-xs font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer ${
+                  statusFilter === "available"
+                    ? "bg-[var(--accent)] text-white font-medium shadow-sm"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                }`}
+              >
+                Available ({metrics.availableCount})
+              </button>
+            </div>
 
             {/* Keyword Search */}
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Filter by make, model, chassis..."
+              placeholder="Search make, model, VIN..."
               className="h-9 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
             />
           </div>

@@ -236,7 +236,7 @@ export function VehiclesManagerClient({
               setViewTab("active");
               setStatusFilter("reserved");
             }}
-            className="min-h-[40px] px-4 text-xs font-sans uppercase font-medium tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-colors self-start sm:self-auto cursor-pointer"
+            className="min-h-[40px] px-4 text-xs font-sans uppercase font-medium tracking-wider badge-status-warning hover:opacity-90 transition-opacity self-start sm:self-auto cursor-pointer"
           >
             Filter Reserved Units ({reservedWithHolds.length})
           </button>
@@ -380,7 +380,7 @@ export function VehiclesManagerClient({
                         </span>
                       )}
                       {vehicle.chassisNumber && (
-                        <span className="text-[10px] font-mono px-2 py-0.5 uppercase rounded-[2px] badge-status-warning font-semibold" title="Chassis / VIN (Admin Only)">
+                        <span className="text-[10px] font-mono px-2 py-0.5 uppercase rounded-[2px] bg-[var(--bg-base)] text-[var(--text-secondary)] border border-[var(--border-subtle)] font-medium" title="Chassis / VIN (Admin Only)">
                           VIN: {vehicle.chassisNumber}
                         </span>
                       )}
@@ -666,7 +666,7 @@ export function VehiclesManagerClient({
                           <button
                             type="button"
                             onClick={() => setArchiveConfirmId(vehicle.id)}
-                            className="min-h-[40px] px-2.5 text-xs uppercase tracking-wider text-[var(--text-secondary)] hover:text-amber-400 transition-colors cursor-pointer"
+                            className="min-h-[40px] px-2.5 text-xs uppercase tracking-wider text-[var(--text-secondary)] hover:text-status-warning transition-colors cursor-pointer"
                             title="Archive vehicle (unlists from website, preserves CRM records)"
                           >
                             Archive

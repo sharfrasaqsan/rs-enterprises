@@ -83,10 +83,10 @@ export function VehicleEntry({ vehicle }: { vehicle: Vehicle }) {
               <span className="px-2 py-0.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] rounded-[1px]">
                 {vehicle.seats} Seats
               </span>
-              <span className={`px-2 py-0.5 border text-[10px] font-sans uppercase font-medium tracking-wider rounded-[1px] ${
+              <span className={`px-2 py-0.5 text-[10px] font-sans uppercase font-medium tracking-wider rounded-[1px] ${
                 vehicle.registrationStatus === "unregistered"
-                  ? "bg-emerald-950/20 text-emerald-400 border-emerald-800/40"
-                  : "bg-[var(--bg-base)] text-[var(--text-secondary)] border-[var(--border-hairline)]"
+                  ? "badge-status-success font-semibold"
+                  : "bg-[var(--bg-base)] text-[var(--text-secondary)] border border-[var(--border-hairline)]"
               }`}>
                 {vehicle.registrationStatus === "unregistered" ? "Unregistered" : "Registered"}
               </span>

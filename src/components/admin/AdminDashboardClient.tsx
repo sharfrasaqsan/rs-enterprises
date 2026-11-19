@@ -210,12 +210,12 @@ export function AdminDashboardClient({
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[var(--border-hairline)]">
         <div>
-          <Eyebrow>Showroom Daily Dashboard</Eyebrow>
+          <Eyebrow>Showroom Management</Eyebrow>
           <Heading level={1} className="text-3xl sm:text-4xl mt-1">
-            Today
+            Overview
           </Heading>
           <p className="text-xs text-[var(--text-secondary)] font-light mt-1">
-            Kaduruwela &bull; One obvious next action for every customer enquiry
+            Kaduruwela Main Showroom &bull; Real-time customer inquiries and showroom inventory
           </p>
         </div>
 
@@ -224,23 +224,29 @@ export function AdminDashboardClient({
             href="/admin/leads?action=new"
             className="min-h-[44px] px-5 inline-flex items-center justify-center text-xs font-sans uppercase font-medium tracking-wider bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors shadow-sm rounded-[2px]"
           >
-            + Add Enquiry
+            + Add Inquiry
+          </Link>
+          <Link
+            href="/admin/vehicles/new"
+            className="min-h-[44px] px-5 inline-flex items-center justify-center text-xs font-sans uppercase font-medium tracking-wider bg-[var(--bg-surface)] border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white transition-colors rounded-[2px]"
+          >
+            + Add Car
           </Link>
           <Link
             href="/admin/leads"
             className="min-h-[44px] px-5 inline-flex items-center justify-center text-xs font-sans uppercase font-medium tracking-wider border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--text-primary)] transition-colors rounded-[2px]"
           >
-            All Leads Board
+            View Inquiries
           </Link>
         </div>
       </div>
 
       {/* Small Summary Strip (Pure utilitarian count blocks) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[var(--border-hairline)] border border-[var(--border-hairline)] bg-[var(--bg-surface)]">
-        <div className="p-4 sm:p-5 flex items-center justify-between">
+        <Link href="/admin/leads" className="p-4 sm:p-5 flex items-center justify-between hover:bg-[var(--bg-base)] transition-colors group">
           <div>
-            <span className="text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] block">
-              Enquiries This Week
+            <span className="text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] group-hover:text-[var(--accent)] transition-colors block">
+              Inquiries This Week
             </span>
             <span className="text-xs text-[var(--text-secondary)] font-light mt-0.5 block">
               Inbound customer interest
@@ -249,53 +255,53 @@ export function AdminDashboardClient({
           <span className="font-mono text-3xl font-semibold text-[var(--accent)]">
             {leadsThisWeek}
           </span>
-        </div>
+        </Link>
 
-        <div className="p-4 sm:p-5 flex items-center justify-between">
+        <Link href="/admin/vehicles" className="p-4 sm:p-5 flex items-center justify-between hover:bg-[var(--bg-base)] transition-colors group">
           <div>
-            <span className="text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] block">
-              Available Fleet
+            <span className="text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors block">
+              Available in Showroom
             </span>
             <span className="text-xs text-[var(--text-secondary)] font-light mt-0.5 block">
-              In showroom stock
+              Kaduruwela stock ready
             </span>
           </div>
           <span className="font-mono text-3xl font-semibold text-[var(--text-primary)]">
             {vehiclesAvailable}
           </span>
-        </div>
+        </Link>
 
-        <div className="p-4 sm:p-5 flex items-center justify-between">
+        <Link href="/admin/vehicles?status=reserved" className="p-4 sm:p-5 flex items-center justify-between hover:bg-[var(--bg-base)] transition-colors group">
           <div>
-            <span className="text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] block">
+            <span className="text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors block">
               Reserved &amp; On Hold
             </span>
             <span className="text-xs text-[var(--text-secondary)] font-light mt-0.5 block">
               {urgentHolds.length > 0 ? (
-                <span className="text-amber-400 font-medium">⚠️ {urgentHolds.length} hold alert{urgentHolds.length === 1 ? "" : "s"}</span>
+                <span className="text-status-warning font-medium">⚠️ {urgentHolds.length} hold alert{urgentHolds.length === 1 ? "" : "s"}</span>
               ) : (
                 "With customer deposit"
               )}
             </span>
           </div>
-          <span className={`font-mono text-3xl font-semibold ${urgentHolds.length > 0 ? "text-amber-400" : "text-[var(--text-primary)]"}`}>
+          <span className={`font-mono text-3xl font-semibold ${urgentHolds.length > 0 ? "text-status-warning" : "text-[var(--text-primary)]"}`}>
             {vehiclesReserved}
           </span>
-        </div>
+        </Link>
 
-        <div className="p-4 sm:p-5 flex items-center justify-between">
+        <Link href="/admin/incoming" className="p-4 sm:p-5 flex items-center justify-between hover:bg-[var(--bg-base)] transition-colors group">
           <div>
-            <span className="text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] block">
+            <span className="text-[10px] font-sans uppercase tracking-[0.18em] text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors block">
               Incoming From Japan
             </span>
             <span className="text-xs text-[var(--text-secondary)] font-light mt-0.5 block">
-              Auction &amp; sea transit
+              Shipments &amp; port transit
             </span>
           </div>
           <span className="font-mono text-3xl font-semibold text-[var(--text-primary)]">
             {vehiclesIncoming}
           </span>
-        </div>
+        </Link>
       </div>
 
       {/* Urgent Attention: Vehicle Hold Expiry Alerts */}
@@ -504,7 +510,7 @@ export function AdminDashboardClient({
           <div className="flex items-baseline gap-3">
             <span
               className={`font-mono text-2xl sm:text-3xl font-bold ${
-                followUpsDue.length > 0 ? "text-amber-400" : "text-[var(--text-secondary)]"
+                followUpsDue.length > 0 ? "text-status-warning" : "text-[var(--text-secondary)]"
               }`}
             >
               {followUpsDue.length}

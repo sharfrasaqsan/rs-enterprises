@@ -52,7 +52,7 @@ export function Header({ settings }: { settings: CompanySettings }) {
                 RS ENTERPRISES
               </span>
               <span className="text-[8px] sm:text-[9px] font-sans font-medium uppercase tracking-[0.24em] text-[var(--accent)]">
-                Kaduruwela &bull; Trincomalee
+                Kaduruwela &bull; Polonnaruwa
               </span>
             </div>
           </Link>

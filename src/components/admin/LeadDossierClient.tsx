@@ -195,8 +195,8 @@ export function LeadDossierClient({
               Source: {lead.source.replace("_", " ")}
             </span>
             {(lead.isReturningBuyer || (lead.inquiryCount && lead.inquiryCount > 1)) && (
-              <span className="px-2 py-0.5 bg-amber-500/15 border border-amber-500/30 text-amber-400 font-semibold uppercase rounded-[1px] flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              <span className="px-2 py-0.5 badge-status-warning font-semibold uppercase rounded-[1px] flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                 <span>{lead.inquiryCount || 2}x Inquiries (Merged Record)</span>
               </span>
             )}
@@ -260,20 +260,20 @@ export function LeadDossierClient({
 
       {/* Returning Buyer & Deduplication Banner */}
       {(lead.isReturningBuyer || (lead.inquiryCount && lead.inquiryCount > 1)) && (
-        <div className="p-4 sm:p-5 bg-amber-500/10 border border-amber-500/30 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+        <div className="p-4 sm:p-5 badge-status-warning rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
           <div className="flex items-start sm:items-center gap-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse mt-1 sm:mt-0 shrink-0" />
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse mt-1 sm:mt-0 shrink-0" />
             <div className="space-y-0.5">
-              <div className="font-serif text-base font-medium text-amber-300">
+              <div className="font-serif text-base font-semibold text-status-warning">
                 Unified Client Record — {lead.inquiryCount} Inquiries Automatically Merged by Phone Line
               </div>
-              <p className="text-xs text-amber-200/80 font-sans font-light">
+              <p className="text-xs opacity-90 font-sans font-light">
                 All submissions from <span className="font-mono font-medium">{formatPhoneDisplay(lead.phone)}</span> are aggregated into this single profile. Individual inquiries and vehicle interests are detailed in the inquiry ledger below.
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-mono uppercase tracking-wider rounded-[1px] font-semibold">
+            <span className="px-3 py-1 badge-status-warning text-[10px] font-mono uppercase tracking-wider rounded-[1px] font-semibold">
               {lead.inquiryCount}x Merged Inquiries
             </span>
           </div>
@@ -341,7 +341,7 @@ export function LeadDossierClient({
                 <button
                   type="button"
                   onClick={() => handleSetQuickFollowUp(null)}
-                  className="text-[10px] font-mono text-red-400 hover:underline uppercase"
+                  className="text-[10px] font-mono text-status-danger hover:underline uppercase"
                 >
                   Clear Date
                 </button>
@@ -497,7 +497,7 @@ export function LeadDossierClient({
               <button
                 type="button"
                 onClick={() => setShowDeleteModal(true)}
-                className="text-xs font-sans uppercase tracking-wider text-red-400 hover:text-red-300 min-h-[44px] inline-flex items-center cursor-pointer"
+                className="text-xs font-sans uppercase tracking-wider text-status-danger hover:opacity-80 min-h-[44px] inline-flex items-center cursor-pointer font-medium"
               >
                 Delete Lead Record (Director Only)
               </button>
@@ -517,7 +517,7 @@ export function LeadDossierClient({
                     Unified Inquiry History
                   </h3>
                 </div>
-                <span className="text-xs font-mono px-2 py-0.5 bg-amber-500/15 text-amber-400 border border-amber-500/30 font-semibold rounded-[1px]">
+                <span className="text-xs font-mono px-2 py-0.5 badge-status-warning font-semibold rounded-[1px]">
                   {lead.inquiries.length} Inquiries Logged
                 </span>
               </div>
@@ -636,7 +636,7 @@ export function LeadDossierClient({
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="max-w-md w-full p-6 sm:p-8 bg-[var(--bg-surface)] border border-[var(--border-hairline)] space-y-5 rounded-[2px]">
             <div>
-              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-green-400 font-semibold block">
+              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-status-success font-semibold block">
                 Sale Closed
               </span>
               <h3 className="font-serif text-2xl text-[var(--text-primary)] mt-1">
@@ -760,7 +760,7 @@ export function LeadDossierClient({
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="max-w-md w-full p-6 sm:p-8 bg-[var(--bg-surface)] border border-red-900/50 space-y-4 rounded-[2px]">
             <div>
-              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-red-400 font-semibold block">
+              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-status-danger font-semibold block">
                 Director Confirmation
               </span>
               <h3 className="font-serif text-2xl text-[var(--text-primary)] mt-1">

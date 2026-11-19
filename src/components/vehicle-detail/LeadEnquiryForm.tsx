@@ -77,7 +77,7 @@ export function LeadEnquiryForm({
       </div>
 
       {result?.error && (
-        <div className="p-3 bg-red-950/20 border border-red-800/40 text-red-300 text-xs rounded-[1px]">
+        <div className="p-3 badge-status-danger text-xs rounded-[1px] font-medium">
           {result.error}
         </div>
       )}

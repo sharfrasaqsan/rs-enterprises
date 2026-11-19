@@ -233,7 +233,7 @@ function SaveSearchModalInner({
             </div>
 
             {error && (
-              <div className="p-3 bg-red-950/40 border border-red-800 text-red-200 text-xs">
+              <div className="p-3 badge-status-danger text-xs rounded-[2px] font-medium">
                 {error}
               </div>
             )}

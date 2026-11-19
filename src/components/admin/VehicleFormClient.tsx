@@ -757,7 +757,7 @@ export function VehicleFormClient({
                 >
                   Chassis / VIN Number *
                 </label>
-                <span className="px-1.5 py-0.5 text-[9px] font-mono uppercase font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded">
+                <span className="px-1.5 py-0.5 text-[9px] font-mono uppercase font-bold badge-status-warning rounded">
                   Admin Only &bull; Hidden From Public
                 </span>
               </div>
@@ -1066,7 +1066,7 @@ export function VehicleFormClient({
                     <button
                       type="button"
                       onClick={() => removeImage(idx)}
-                      className="min-h-[32px] px-1.5 text-red-400 hover:text-red-300"
+                      className="min-h-[32px] px-1.5 text-status-danger hover:opacity-80 font-bold"
                       title="Remove image"
                     >
                       &times;
@@ -1277,7 +1277,7 @@ export function VehicleFormClient({
                       setCustomerPhone("");
                       setReservationNotes("");
                     }}
-                    className="text-xs text-red-400 hover:text-red-300 font-sans uppercase tracking-wider transition-colors cursor-pointer"
+                    className="text-xs text-status-danger hover:opacity-80 font-sans uppercase font-medium tracking-wider transition-colors cursor-pointer"
                   >
                     Release Hold (Return to Available)
                   </button>
@@ -1495,7 +1495,7 @@ export function VehicleFormClient({
                         {search.customerPhone}
                       </p>
                     </div>
-                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 badge-status-warning font-semibold">
                       &ldquo;{search.queryTitle}&rdquo;
                     </span>
                   </div>

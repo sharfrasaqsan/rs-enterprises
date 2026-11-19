@@ -62,14 +62,17 @@ export function LeadsPipelineClient({
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>(initialSavedSearches);
   const [activeTab, setActiveTab] = useState<"pipeline" | "saved_searches">("pipeline");
 
-  // View Mode: Kanban Drag & Drop Board vs High-Density Table View (for long-term scale)
-  const [viewMode, setViewMode] = useState<"board" | "table">("board");
+  // View Mode: Default to Table View for clean non-technical showroom operation
+  const [viewMode, setViewMode] = useState<"board" | "table">("table");
+
+  // Stage Filter: "all" | "new" | "contacted" | "viewing" | "negotiating" | "won" | "lost"
+  const [stageFilter, setStageFilter] = useState<string>("all");
 
   // Lifecycle Scope: "active" (open leads + closed within 30 days) vs "all" (complete historical archive)
   const [pipelineScope, setPipelineScope] = useState<"active" | "all">("active");
 
-  // Urgency filter pills
-  const [urgencyFilter, setUrgencyFilter] = useState<"all" | "followup_due" | "unassigned" | "multi_inquiry">("all");
+  // Urgency filter
+  const [urgencyFilter] = useState<"all" | "followup_due" | "unassigned" | "multi_inquiry">("all");
 
   // Table view sorting
   const [tableSortField, setTableSortField] = useState<"date" | "name" | "followup" | "stage">("date");
@@ -80,9 +83,9 @@ export function LeadsPipelineClient({
 
   const [selectedMobileStage, setSelectedMobileStage] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterBranch, setFilterBranch] = useState<string>("all");
-  const [filterSource, setFilterSource] = useState<string>("all");
-  const [filterStaff, setFilterStaff] = useState<string>("all");
+  const [filterBranch] = useState<string>("all");
+  const [filterSource] = useState<string>("all");
+  const [filterStaff] = useState<string>("all");
 
   // Selected Lead for Slide-over
   const [activeLeadId, setActiveLeadId] = useState<string | null>(null);
@@ -193,16 +196,6 @@ export function LeadsPipelineClient({
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   }, []);
 
-  const currentMonthName = useMemo(() => {
-    return new Date().toLocaleDateString("en-GB", { month: "short" });
-  }, []);
-
-  const lastMonthName = useMemo(() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - 1);
-    return d.toLocaleDateString("en-GB", { month: "short" });
-  }, []);
-
   const availableMonths = useMemo(() => {
     const monthMap = new Map<string, { label: string; count: number }>();
     for (const l of leads) {
@@ -219,26 +212,6 @@ export function LeadsPipelineClient({
       .sort((a, b) => b[0].localeCompare(a[0]))
       .map(([key, val]) => ({ key, label: val.label, count: val.count }));
   }, [leads]);
-
-  const thisMonthCount = useMemo(() => {
-    return leads.filter((l) => {
-      if (!l.createdAt) return false;
-      const d = new Date(l.createdAt);
-      if (isNaN(d.getTime())) return false;
-      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      return ym === currentYearMonth;
-    }).length;
-  }, [leads, currentYearMonth]);
-
-  const lastMonthCount = useMemo(() => {
-    return leads.filter((l) => {
-      if (!l.createdAt) return false;
-      const d = new Date(l.createdAt);
-      if (isNaN(d.getTime())) return false;
-      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      return ym === lastYearMonth;
-    }).length;
-  }, [leads, lastYearMonth]);
 
   const activeMonthLabel = useMemo(() => {
     if (filterMonth === "all") return "All Time";
@@ -274,6 +247,9 @@ export function LeadsPipelineClient({
       const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       if (ym !== targetYM) return false;
     }
+
+    // 0.5. Stage Tab Filter
+    if (stageFilter !== "all" && l.stage !== stageFilter) return false;
 
     // 1. Pipeline Scope: In "active" mode, exclude closed won/lost leads that are older than 30 days
     // Note: If user selected a specific past month, do not hide that month's closed deals
@@ -358,33 +334,12 @@ export function LeadsPipelineClient({
     }
   };
 
-  // Urgency Counts
-  const followUpDueCount = leads.filter((l) => {
-    if (!l.followUpDate) return false;
-    const todayStr = new Date().toISOString().split("T")[0];
-    const dueDateStr = l.followUpDate.split("T")[0];
-    return dueDateStr <= todayStr && l.stage !== "won" && l.stage !== "lost";
-  }).length;
-
-  const unassignedCount = leads.filter(
-    (l) => (!l.assignedTo || l.assignedTo.trim() === "") && l.stage !== "won" && l.stage !== "lost"
-  ).length;
-
-  const multiInquiryCount = leads.filter(
-    (l) => l.isReturningBuyer || (l.inquiryCount && l.inquiryCount > 1)
-  ).length;
-
   const totalArchivedClosedCount = leads.filter((l) => {
     if (l.stage !== "won" && l.stage !== "lost") return false;
     const updatedTime = new Date(l.updatedAt || l.createdAt).getTime();
     const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
     return currentTimeMs && currentTimeMs - updatedTime > thirtyDaysMs;
   }).length;
-
-  // Unique staff list for filter
-  const staffList = Array.from(
-    new Set(leads.map((l) => l.assignedTo).filter(Boolean) as string[])
-  );
 
   // Helpers for formatting
   function formatSourceLabel(source: LeadSource): string {
@@ -937,22 +892,22 @@ export function LeadsPipelineClient({
 
       {activeTab === "pipeline" ? (
         <>
-          {/* Filter & Search Bar */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
-            {/* Search Input */}
-            <div className="sm:col-span-2 lg:col-span-3">
+          {/* Search, Month Calendar, & Quick Controls */}
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+            {/* Search Input (7 Cols) */}
+            <div className="sm:col-span-7">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search customer, phone, vehicle..."
-                className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
+                placeholder="Search customer name, phone number, or car requested..."
+                className="w-full h-11 px-3.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
               />
             </div>
 
-            {/* Monthly Customer Filter: Calendar Month Input */}
-            <div className="sm:col-span-1 lg:col-span-3">
-              <div className="relative flex items-center">
+            {/* Monthly Calendar Input (5 Cols) */}
+            <div className="sm:col-span-5 flex items-center gap-2">
+              <div className="relative flex-1">
                 <input
                   type="month"
                   value={
@@ -995,7 +950,7 @@ export function LeadsPipelineClient({
                   <button
                     type="button"
                     onClick={() => setFilterMonth("all")}
-                    className="absolute right-2.5 h-6 w-6 flex items-center justify-center text-xs text-[var(--text-secondary)] hover:text-red-400 hover:bg-[var(--bg-base)] rounded-[1px] transition-colors cursor-pointer"
+                    className="absolute right-2.5 h-6 w-6 flex items-center justify-center text-xs text-[var(--text-secondary)] hover:text-status-danger hover:bg-[var(--bg-base)] rounded-[1px] transition-colors cursor-pointer"
                     title="Clear month filter (Show all time)"
                   >
                     ✕
@@ -1006,199 +961,71 @@ export function LeadsPipelineClient({
                   </span>
                 )}
               </div>
-            </div>
 
-            {/* Branch Filter */}
-            <div className="sm:col-span-1 lg:col-span-2">
-              <select
-                value={filterBranch}
-                onChange={(e) => setFilterBranch(e.target.value)}
-                className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
-              >
-                <option value="all">All Branches</option>
-                <option value="polonnaruwa">Kaduruwela</option>
-                <option value="trincomalee">Trincomalee</option>
-              </select>
-            </div>
-
-            {/* Source / Channel Filter */}
-            <div className="sm:col-span-1 lg:col-span-2">
-              <select
-                value={filterSource}
-                onChange={(e) => setFilterSource(e.target.value)}
-                className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
-              >
-                <option value="all">All Channels</option>
-                <option value="website_form">Web Form</option>
-                <option value="vehicle_request">Vehicle Request</option>
-                <option value="trade_in">Trade-In</option>
-                <option value="whatsapp">WhatsApp</option>
-                <option value="phone">Direct Call</option>
-                <option value="walk_in">Showroom Walk-in</option>
-              </select>
-            </div>
-
-            {/* Staff Filter */}
-            <div className="sm:col-span-1 lg:col-span-2">
-              <select
-                value={filterStaff}
-                onChange={(e) => setFilterStaff(e.target.value)}
-                className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
-              >
-                <option value="all">All Staff</option>
-                {staffList.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-                <option value="unassigned">Unassigned</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Scope, Urgency, & Filter Control Pills */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Quick Monthly Switcher Pills */}
-              <div className="inline-flex p-0.5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px]">
+              {/* Quick This Month / All Months Switcher */}
+              <div className="inline-flex p-0.5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] shrink-0">
                 <button
                   type="button"
                   onClick={() => setFilterMonth("all")}
-                  className={`h-7 px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer ${
+                  className={`h-8 px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer ${
                     filterMonth === "all"
-                      ? "bg-[var(--accent)] text-white font-medium shadow-sm"
+                      ? "bg-[var(--accent)] text-white font-medium shadow-xs"
                       : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                   }`}
                   title="Show all customer inquiries across all dates"
                 >
-                  All Months
+                  All
                 </button>
                 <button
                   type="button"
                   onClick={() => setFilterMonth("this_month")}
-                  className={`h-7 px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  className={`h-8 px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer flex items-center gap-1 ${
                     filterMonth === "this_month"
-                      ? "bg-[var(--accent)] text-white font-medium shadow-sm"
+                      ? "bg-[var(--accent)] text-white font-medium shadow-xs"
                       : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                   }`}
                   title="Filter to current month customer inquiries"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  <span>This Month ({currentMonthName} &bull; {thisMonthCount})</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFilterMonth("last_month")}
-                  className={`h-7 px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer ${
-                    filterMonth === "last_month"
-                      ? "bg-[var(--accent)] text-white font-medium shadow-sm"
-                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                  }`}
-                  title="Filter to last month customer inquiries"
-                >
-                  Last Month ({lastMonthName} &bull; {lastMonthCount})
-                </button>
-                {filterMonth !== "all" && filterMonth !== "this_month" && filterMonth !== "last_month" && (
-                  <button
-                    type="button"
-                    onClick={() => setFilterMonth(filterMonth)}
-                    className="h-7 px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer bg-[var(--accent)] text-white font-medium shadow-sm flex items-center gap-1.5"
-                    title={`Calendar Selected Month: ${activeMonthLabel}`}
-                  >
-                    <span>📅 {activeMonthLabel}</span>
-                  </button>
-                )}
-              </div>
-
-              <span className="text-[var(--border-hairline)] hidden sm:inline">|</span>
-
-              {/* Urgency Pills */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => setUrgencyFilter("all")}
-                  className={`min-h-[30px] px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] border transition-colors cursor-pointer ${
-                    urgencyFilter === "all"
-                      ? "bg-[var(--accent)] text-white border-[var(--accent)] font-medium shadow-sm"
-                      : "bg-[var(--bg-surface)] text-[var(--text-secondary)] border-[var(--border-hairline)] hover:text-[var(--text-primary)]"
-                  }`}
-                >
-                  All Status ({filteredLeads.length})
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setUrgencyFilter("followup_due")}
-                  className={`min-h-[30px] px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] border transition-colors cursor-pointer flex items-center gap-1.5 ${
-                    urgencyFilter === "followup_due"
-                      ? "bg-amber-600 text-white border-amber-600 font-medium shadow-sm"
-                      : "bg-[var(--bg-surface)] text-amber-400 border-amber-500/30 hover:border-amber-500"
-                  }`}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                  <span>Follow-up Due ({followUpDueCount})</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setUrgencyFilter("unassigned")}
-                  className={`min-h-[30px] px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] border transition-colors cursor-pointer ${
-                    urgencyFilter === "unassigned"
-                      ? "bg-purple-700 text-white border-purple-700 font-medium shadow-sm"
-                      : "bg-[var(--bg-surface)] text-purple-300 border-purple-500/30 hover:border-purple-500"
-                  }`}
-                >
-                  Unassigned ({unassignedCount})
-                </button>
-
-                {multiInquiryCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setUrgencyFilter("multi_inquiry")}
-                    className={`min-h-[30px] px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] border transition-colors cursor-pointer ${
-                      urgencyFilter === "multi_inquiry"
-                        ? "bg-blue-600 text-white border-blue-600 font-medium shadow-sm"
-                        : "bg-[var(--bg-surface)] text-blue-300 border-blue-500/30 hover:border-blue-500"
-                    }`}
-                  >
-                    Merged / Returning ({multiInquiryCount})
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Pipeline Scope Selector (Active Deals vs Complete History) */}
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] hidden lg:inline">
-                Scope:
-              </span>
-              <div className="inline-flex p-0.5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px]">
-                <button
-                  type="button"
-                  onClick={() => setPipelineScope("active")}
-                  className={`h-7 px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer ${
-                    pipelineScope === "active"
-                      ? "bg-[var(--accent)] text-white font-medium shadow-sm"
-                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                  }`}
-                  title="Active open inquiries + deals closed within the last 30 days"
-                >
-                  Active Deals
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPipelineScope("all")}
-                  className={`h-7 px-2.5 text-[10px] font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer ${
-                    pipelineScope === "all"
-                      ? "bg-[var(--accent)] text-white font-medium shadow-sm"
-                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                  }`}
-                  title="Include all historical closed and lost leads"
-                >
-                  All Archive ({leads.length})
+                  <span>This Month</span>
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Clean Stage Navigation Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-[var(--border-hairline)]">
+            {[
+              { key: "all", label: "All Inquiries", count: leads.length },
+              { key: "new", label: "🟡 New", count: leads.filter((l) => l.stage === "new").length },
+              { key: "contacted", label: "🟣 Contacted", count: leads.filter((l) => l.stage === "contacted").length },
+              { key: "viewing", label: "🔵 Viewing / Test", count: leads.filter((l) => l.stage === "viewing").length },
+              { key: "negotiating", label: "🟠 Negotiating", count: leads.filter((l) => l.stage === "negotiating").length },
+              { key: "won", label: "🟢 Won (Sold)", count: leads.filter((l) => l.stage === "won").length },
+              { key: "lost", label: "⚪ Lost", count: leads.filter((l) => l.stage === "lost").length },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setStageFilter(tab.key)}
+                className={`h-9 px-3.5 text-xs font-sans uppercase font-medium tracking-wider rounded-[2px] transition-colors cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+                  stageFilter === tab.key
+                    ? "bg-[var(--accent)] text-white shadow-xs font-semibold"
+                    : "bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-base)] border border-[var(--border-hairline)]"
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span
+                  className={`px-1.5 py-0.2 text-[10px] font-mono rounded-[1px] ${
+                    stageFilter === tab.key
+                      ? "bg-black/20 text-white"
+                      : "bg-[var(--bg-base)] text-[var(--text-muted)]"
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            ))}
           </div>
 
           {/* Archived notice if older closed records are hidden */}
@@ -1389,14 +1216,14 @@ export function LeadsPipelineClient({
                               onChange={(e) =>
                                 handleStageChange(lead.id, e.target.value as LeadStage)
                               }
-                              className="h-8 px-1.5 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-[10px] text-[var(--text-secondary)] rounded-[1px] focus:outline-none"
+                              className="h-8 px-1.5 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[1px] focus:outline-none"
                             >
-                              <option value="new">New</option>
-                              <option value="contacted">Contacted</option>
-                              <option value="viewing">Viewing</option>
-                              <option value="negotiating">Negotiate</option>
-                              <option value="won">Won</option>
-                              <option value="lost">Lost</option>
+                              <option value="new">🟡 New</option>
+                              <option value="contacted">🟣 Contacted</option>
+                              <option value="viewing">🔵 Viewing</option>
+                              <option value="negotiating">🟠 Negotiate</option>
+                              <option value="won">🟢 Won</option>
+                              <option value="lost">⚪ Lost</option>
                             </select>
                           )}
                         </div>
@@ -1466,8 +1293,8 @@ export function LeadsPipelineClient({
                     {formatPhoneDisplay(lead.phone)}
                   </span>
                   {(lead.isReturningBuyer || (lead.inquiryCount && lead.inquiryCount > 1)) && (
-                    <span className="px-2 py-0.5 bg-amber-500/15 text-amber-400 border border-amber-500/30 font-semibold rounded-[1px] flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    <span className="px-2 py-0.5 badge-status-warning font-semibold rounded-[1px] flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                       <span>{lead.inquiryCount || 2}x Merged</span>
                     </span>
                   )}
@@ -1673,7 +1500,7 @@ export function LeadsPipelineClient({
                             {lead.name}
                           </span>
                           {(lead.isReturningBuyer || (lead.inquiryCount && lead.inquiryCount > 1)) && (
-                            <span className="px-1.5 py-0.2 text-[9px] font-mono bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded-[1px] font-semibold">
+                            <span className="px-1.5 py-0.2 text-[9px] font-mono badge-status-warning rounded-[1px] font-semibold">
                               {lead.inquiryCount || 2}x Merged
                             </span>
                           )}
@@ -1712,26 +1539,14 @@ export function LeadsPipelineClient({
                         <select
                           value={lead.stage}
                           onChange={(e) => handleStageChange(lead.id, e.target.value as LeadStage)}
-                          className={`h-8 px-2 text-[10px] font-mono uppercase tracking-wider rounded-[2px] font-semibold cursor-pointer focus:outline-none focus:border-[var(--accent)] ${
-                            lead.stage === "won"
-                              ? "badge-status-success"
-                              : lead.stage === "lost"
-                              ? "badge-status-neutral"
-                              : lead.stage === "negotiating"
-                              ? "badge-status-warning"
-                              : lead.stage === "viewing"
-                              ? "badge-status-info"
-                              : lead.stage === "contacted"
-                              ? "badge-status-purple"
-                              : "bg-[var(--bg-base)] text-[var(--accent)] border border-[var(--accent)]/50"
-                          }`}
+                          className="h-8 px-2.5 text-xs font-sans font-medium rounded-[2px] cursor-pointer bg-[var(--bg-surface)] text-[var(--text-primary)] border border-[var(--border-subtle)] focus:outline-none focus:border-[var(--accent)] hover:border-[var(--border-focus)] transition-colors shadow-xs"
                         >
-                          <option value="new" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">New</option>
-                          <option value="contacted" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Contacted</option>
-                          <option value="viewing" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Viewing / Test</option>
-                          <option value="negotiating" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Negotiating</option>
-                          <option value="won" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Won (Sold)</option>
-                          <option value="lost" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Lost</option>
+                          <option value="new">🟡 New</option>
+                          <option value="contacted">🟣 Contacted</option>
+                          <option value="viewing">🔵 Viewing / Test</option>
+                          <option value="negotiating">🟠 Negotiating</option>
+                          <option value="won">🟢 Won (Sold)</option>
+                          <option value="lost">⚪ Lost</option>
                         </select>
                       </td>
 
@@ -1867,7 +1682,7 @@ export function LeadsPipelineClient({
                         {lead.name}
                       </span>
                       {(lead.isReturningBuyer || (lead.inquiryCount && lead.inquiryCount > 1)) && (
-                        <span className="px-1.5 py-0.2 text-[9px] font-mono bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded-[1px]">
+                        <span className="px-1.5 py-0.2 text-[9px] font-mono badge-status-warning rounded-[1px] font-semibold">
                           {lead.inquiryCount || 2}x
                         </span>
                       )}
@@ -1898,14 +1713,14 @@ export function LeadsPipelineClient({
                     <select
                       value={lead.stage}
                       onChange={(e) => handleStageChange(lead.id, e.target.value as LeadStage)}
-                      className="h-8 px-2 text-[10px] font-mono uppercase bg-[var(--bg-base)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-[2px]"
+                      className="h-8 px-2 text-xs font-sans font-medium bg-[var(--bg-base)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-[2px]"
                     >
-                      <option value="new">New</option>
-                      <option value="contacted">Contacted</option>
-                      <option value="viewing">Viewing</option>
-                      <option value="negotiating">Negotiating</option>
-                      <option value="won">Won (Sold)</option>
-                      <option value="lost">Lost</option>
+                      <option value="new">🟡 New</option>
+                      <option value="contacted">🟣 Contacted</option>
+                      <option value="viewing">🔵 Viewing</option>
+                      <option value="negotiating">🟠 Negotiating</option>
+                      <option value="won">🟢 Won</option>
+                      <option value="lost">⚪ Lost</option>
                     </select>
                   </div>
 
@@ -2085,7 +1900,7 @@ export function LeadsPipelineClient({
                   <button
                     type="button"
                     onClick={() => handleSetQuickFollowUp(activeLead.id, null)}
-                    className="text-[10px] font-mono text-red-400 hover:underline uppercase"
+                    className="text-[10px] font-mono text-status-danger hover:underline uppercase"
                   >
                     Clear Date
                   </button>
@@ -2268,7 +2083,7 @@ export function LeadsPipelineClient({
                 <button
                   type="button"
                   onClick={() => setDeleteLeadTarget(activeLead)}
-                  className="text-xs font-sans uppercase tracking-wider text-red-400 hover:text-red-300 min-h-[44px] inline-flex items-center cursor-pointer"
+                  className="text-xs font-sans uppercase tracking-wider text-status-danger hover:opacity-80 min-h-[44px] inline-flex items-center cursor-pointer font-medium"
                 >
                   Delete Lead Record (Director Only)
                 </button>
@@ -2359,12 +2174,12 @@ export function LeadsPipelineClient({
                     );
                     if (matchedLead) {
                       return (
-                        <div className="mt-1.5 p-2 bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-300 rounded-[2px] space-y-0.5">
-                          <div className="font-semibold flex items-center gap-1 text-amber-400">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                        <div className="mt-1.5 p-2.5 badge-status-warning text-xs rounded-[2px] space-y-0.5">
+                          <div className="font-semibold flex items-center gap-1.5 text-status-warning">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                             <span>Recurring Customer Match</span>
                           </div>
-                          <p className="text-[10px] text-amber-200/80 font-light">
+                          <p className="text-[11px] opacity-90 font-light">
                             Existing record found for <strong>{matchedLead.name}</strong> ({formatPhoneDisplay(matchedLead.phone)}). Submitting will automatically merge and append this new inquiry to their customer history.
                           </p>
                         </div>
@@ -2626,7 +2441,7 @@ export function LeadsPipelineClient({
 
           <div className="relative w-full max-w-md bg-[var(--bg-surface)] border border-red-900/50 p-6 sm:p-8 space-y-4 shadow-2xl z-10 rounded-[2px]">
             <div>
-              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-red-400 font-semibold block">
+              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-status-danger font-semibold block">
                 Director Confirmation
               </span>
               <h3 className="font-serif text-2xl text-[var(--text-primary)] mt-1">

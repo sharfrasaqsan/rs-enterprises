@@ -70,7 +70,7 @@ export function PartsEnquiryForm() {
       ) : null}
 
       {result?.error ? (
-        <div className="p-3 bg-red-950/20 border border-red-800 text-xs text-red-300">
+        <div className="p-3 badge-status-danger text-xs rounded-[2px] font-medium">
           {result.error}
         </div>
       ) : null}

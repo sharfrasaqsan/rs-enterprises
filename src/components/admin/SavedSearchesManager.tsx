@@ -189,12 +189,12 @@ export function SavedSearchesManager({
 
                   <div className="flex items-center gap-2">
                     <span
-                      className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded-[1px] border ${
+                      className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded-[1px] font-semibold ${
                         search.status === "active"
-                          ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
+                          ? "badge-status-success"
                           : search.status === "notified"
-                          ? "bg-amber-500/10 text-amber-300 border-amber-500/30"
-                          : "bg-blue-500/10 text-blue-300 border-blue-500/30"
+                          ? "badge-status-warning"
+                          : "badge-status-info"
                       }`}
                     >
                       {search.status === "active"
@@ -358,7 +358,7 @@ export function SavedSearchesManager({
                       <button
                         type="button"
                         onClick={() => onFulfill(search.id)}
-                        className="px-3 py-1.5 text-[10px] font-mono uppercase bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--text-secondary)] hover:text-emerald-400 hover:border-emerald-800 transition-colors cursor-pointer"
+                        className="px-3 py-1.5 text-[10px] font-mono uppercase bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--text-secondary)] hover:text-status-success hover:border-[var(--status-success-border)] transition-colors cursor-pointer"
                       >
                         Mark as Fulfilled
                       </button>
@@ -376,7 +376,7 @@ export function SavedSearchesManager({
                   <button
                     type="button"
                     onClick={() => onDelete(search.id)}
-                    className="text-[10px] font-mono uppercase text-[var(--text-secondary)] hover:text-red-400 transition-colors cursor-pointer"
+                    className="text-[10px] font-mono uppercase text-[var(--text-secondary)] hover:text-status-danger transition-colors cursor-pointer"
                   >
                     Delete Alert
                   </button>

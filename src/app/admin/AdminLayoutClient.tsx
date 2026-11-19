@@ -15,12 +15,12 @@ interface AdminNavItem {
 }
 
 const NAV_ITEMS: AdminNavItem[] = [
-  { href: "/admin", label: "Today", icon: "today" },
-  { href: "/admin/leads", label: "Leads", icon: "leads" },
-  { href: "/admin/vehicles", label: "Vehicles", icon: "vehicles" },
-  { href: "/admin/incoming", label: "Incoming", icon: "incoming" },
-  { href: "/admin/analytics", label: "Analytics", icon: "analytics" },
-  { href: "/admin/settings", label: "Settings", icon: "settings", ownerOnly: true },
+  { href: "/admin", label: "Overview", icon: "today" },
+  { href: "/admin/leads", label: "Customer Inquiries", icon: "leads" },
+  { href: "/admin/vehicles", label: "Showroom Cars", icon: "vehicles" },
+  { href: "/admin/incoming", label: "Shipments", icon: "incoming" },
+  { href: "/admin/analytics", label: "Sales & Profit", icon: "analytics" },
+  { href: "/admin/settings", label: "Showroom Info", icon: "settings", ownerOnly: true },
 ];
 
 function NavIcon({ name, className }: { name: string; className?: string }) {
@@ -125,7 +125,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={signOut}
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-[var(--text-secondary)] hover:text-red-400 transition-colors"
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-[var(--text-secondary)] hover:text-status-danger transition-colors"
                 aria-label="Sign out"
                 title="Sign Out"
               >
@@ -219,7 +219,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={signOut}
-              className="w-full min-h-[44px] px-3 flex items-center justify-center text-xs font-sans uppercase font-medium tracking-[0.16em] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-red-400 hover:border-red-900 transition-colors cursor-pointer"
+              className="w-full min-h-[44px] px-3 flex items-center justify-center text-xs font-sans uppercase font-medium tracking-[0.16em] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-status-danger hover:border-[var(--status-danger-border)] transition-colors cursor-pointer"
             >
               Sign Out
             </button>
