@@ -26,7 +26,7 @@ export default async function HomePage() {
   // 3. New Arrivals: Recent showroom acquisitions (excluding featured if possible)
   const newArrivals = vehicles
     .filter((v) => v.id !== featuredVehicle.id && v.status !== "sold")
-    .slice(0, 3);
+    .slice(0, 9);
 
   // 4. Incoming in-transit pipeline units
   const incomingVehicles = vehicles

@@ -16,6 +16,7 @@ export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
 
   const leadVehicle = vehicles[0];
   const sideVehicles = vehicles.slice(1, 3);
+  const gridVehicles = vehicles.slice(3, 9);
 
   return (
     <section className="py-20 sm:py-28 bg-[var(--bg-base)]">
@@ -204,6 +205,157 @@ export function NewArrivals({ vehicles }: { vehicles: Vehicle[] }) {
               ))}
             </div>
           </div>
+
+          {/* Secondary Grid: Additional Available Showroom Cars (Quick 1-tap WhatsApp browsing for all customers) */}
+          {gridVehicles.length > 0 && (
+            <div className="pt-8 sm:pt-14 space-y-8 border-t border-[var(--border-hairline)]">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--accent)] font-semibold block">
+                    Showroom Highlights
+                  </span>
+                  <Heading level={3} className="text-xl sm:text-2xl mt-1">
+                    More Japanese Stock Available Now
+                  </Heading>
+                </div>
+                <p className="text-xs text-[var(--text-secondary)] font-light max-w-md leading-relaxed">
+                  Genuine auction-grade Japanese vehicles available at our Kaduruwela &amp; Trincomalee showrooms.
+                  Tap WhatsApp on any car for instant photos, pricing, and inspection certificates.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                {gridVehicles.map((vehicle, idx) => (
+                  <article
+                    key={vehicle.id}
+                    suppressHydrationWarning
+                    className={`reveal-on-scroll stagger-${(idx % 3) + 1} group bg-[var(--bg-surface)] border border-[var(--border-hairline)] hover:border-[var(--border-subtle)] rounded-[2px] overflow-hidden flex flex-col justify-between shadow-md hover:shadow-xl transition-all duration-300`}
+                  >
+                    <div>
+                      {/* Image Container with Badges */}
+                      <div className="relative overflow-hidden border-b border-[var(--border-hairline)]">
+                        <Link
+                          href={`/vehicles/${vehicle.slug}`}
+                          className="block group overflow-hidden"
+                          style={{ viewTransitionName: `vehicle-thumb-${vehicle.slug}` }}
+                        >
+                          <VehicleImage
+                            src={vehicle.images[0] || "/images/vehicles/placeholder-coming-soon.webp"}
+                            alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                            aspectRatio="16/10"
+                          />
+                        </Link>
+
+                        {/* Top Badges */}
+                        <div className="absolute top-3 left-3 flex items-center gap-1.5 pointer-events-none">
+                          <StatusLabel status={vehicle.status} />
+                          <span className="px-2 py-0.5 bg-[var(--bg-overlay)] backdrop-blur-md border border-[var(--border-subtle)] text-[10px] font-mono uppercase tracking-wider text-[var(--text-primary)] rounded-[1px]">
+                            {vehicle.grade}
+                          </span>
+                        </div>
+
+                        {/* Compare Button */}
+                        <div className="absolute top-3 right-3">
+                          <CompareButton slug={vehicle.slug} compact />
+                        </div>
+                      </div>
+
+                      {/* Content Area */}
+                      <div className="p-5 sm:p-6 space-y-4">
+                        {/* Branch Location & Engine */}
+                        <div className="flex items-center justify-between text-[10px] font-mono text-[var(--text-secondary)] uppercase">
+                          <span className="text-[var(--accent)] font-medium">
+                            📍 {vehicle.branch === "trincomalee" ? "Trincomalee Branch" : "Kaduruwela Main"}
+                          </span>
+                          <span>{vehicle.year} &bull; {vehicle.fuel}</span>
+                        </div>
+
+                        {/* Title */}
+                        <Link href={`/vehicles/${vehicle.slug}`} className="block group">
+                          <Heading level={4} className="text-lg group-hover:text-[var(--accent)] transition-colors line-clamp-1">
+                            {vehicle.year} {vehicle.make} {vehicle.model}
+                          </Heading>
+                        </Link>
+
+                        {/* Price */}
+                        <div>
+                          {vehicle.price ? (
+                            <Numeral
+                              value={vehicle.price.toLocaleString("en-US")}
+                              prefix="LKR"
+                              size="sm"
+                            />
+                          ) : (
+                            <span className="text-xs font-sans uppercase tracking-widest text-[var(--accent)] font-semibold">
+                              Call For Price / Inquire
+                            </span>
+                          )}
+                        </div>
+
+                        {/* 4-Stat Micro Spec Strip */}
+                        <div className="grid grid-cols-4 gap-2 pt-3 border-t border-[var(--border-hairline)] text-center">
+                          <div className="bg-[var(--bg-base)] p-1.5 rounded-[1px] border border-[var(--border-hairline)]">
+                            <span className="text-[9px] font-mono text-[var(--text-muted)] block uppercase">KM</span>
+                            <span className="text-[10px] font-mono text-[var(--text-primary)] font-semibold truncate block">
+                              {(vehicle.mileage / 1000).toFixed(0)}k
+                            </span>
+                          </div>
+                          <div className="bg-[var(--bg-base)] p-1.5 rounded-[1px] border border-[var(--border-hairline)]">
+                            <span className="text-[9px] font-mono text-[var(--text-muted)] block uppercase">Engine</span>
+                            <span className="text-[10px] font-mono text-[var(--text-primary)] font-semibold truncate block">
+                              {vehicle.engineCC}cc
+                            </span>
+                          </div>
+                          <div className="bg-[var(--bg-base)] p-1.5 rounded-[1px] border border-[var(--border-hairline)]">
+                            <span className="text-[9px] font-mono text-[var(--text-muted)] block uppercase">Drive</span>
+                            <span className="text-[10px] font-mono text-[var(--text-primary)] font-semibold truncate block">
+                              {vehicle.driveType}
+                            </span>
+                          </div>
+                          <div className="bg-[var(--bg-base)] p-1.5 rounded-[1px] border border-[var(--border-hairline)]">
+                            <span className="text-[9px] font-mono text-[var(--text-muted)] block uppercase">Grade</span>
+                            <span className="text-[10px] font-mono text-[var(--text-primary)] font-semibold truncate block">
+                              {vehicle.auctionGrade || "5.0"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Bar (1-Tap WhatsApp for non-tech buyers + View Details) */}
+                    <div className="p-5 sm:p-6 pt-0 flex items-center gap-2.5">
+                      <WhatsAppButton
+                        vehicleTitle={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                        label="WhatsApp"
+                        size="sm"
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        href={`/vehicles/${vehicle.slug}`}
+                        className="flex-1"
+                      >
+                        View Car
+                      </Button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+
+              {/* Bottom Showroom CTA Strip */}
+              <div className="pt-4 text-center">
+                <Button
+                  variant="outline"
+                  size="md"
+                  href="/vehicles"
+                  className="w-full sm:w-auto px-8 py-3.5"
+                >
+                  Browse Full Showroom Inventory ({vehicles.length}+ Vehicles) &rarr;
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </Container>
     </section>
