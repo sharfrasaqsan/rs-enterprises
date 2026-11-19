@@ -996,24 +996,27 @@ export function LeadsPipelineClient({
           {/* Clean Stage Navigation Tabs */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-[var(--border-hairline)]">
             {[
-              { key: "all", label: "All Inquiries", count: leads.length },
-              { key: "new", label: "🟡 New", count: leads.filter((l) => l.stage === "new").length },
-              { key: "contacted", label: "🟣 Contacted", count: leads.filter((l) => l.stage === "contacted").length },
-              { key: "viewing", label: "🔵 Viewing / Test", count: leads.filter((l) => l.stage === "viewing").length },
-              { key: "negotiating", label: "🟠 Negotiating", count: leads.filter((l) => l.stage === "negotiating").length },
-              { key: "won", label: "🟢 Won (Sold)", count: leads.filter((l) => l.stage === "won").length },
-              { key: "lost", label: "⚪ Lost", count: leads.filter((l) => l.stage === "lost").length },
+              { key: "all", label: "All Inquiries", count: leads.length, dot: "" },
+              { key: "new", label: "New", count: leads.filter((l) => l.stage === "new").length, dot: "bg-amber-400" },
+              { key: "contacted", label: "Contacted", count: leads.filter((l) => l.stage === "contacted").length, dot: "bg-purple-400" },
+              { key: "viewing", label: "Viewing / Test", count: leads.filter((l) => l.stage === "viewing").length, dot: "bg-blue-400" },
+              { key: "negotiating", label: "Negotiating", count: leads.filter((l) => l.stage === "negotiating").length, dot: "bg-amber-600" },
+              { key: "won", label: "Won (Sold)", count: leads.filter((l) => l.stage === "won").length, dot: "bg-emerald-500" },
+              { key: "lost", label: "Closed / Lost", count: leads.filter((l) => l.stage === "lost").length, dot: "bg-slate-400" },
             ].map((tab) => (
               <button
                 key={tab.key}
                 type="button"
                 onClick={() => setStageFilter(tab.key)}
-                className={`h-9 px-3.5 text-xs font-sans uppercase font-medium tracking-wider rounded-[2px] transition-colors cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+                className={`h-9 px-3.5 text-xs font-sans uppercase font-medium tracking-wider rounded-[2px] transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
                   stageFilter === tab.key
                     ? "bg-[var(--accent)] text-white shadow-xs font-semibold"
                     : "bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-base)] border border-[var(--border-hairline)]"
                 }`}
               >
+                {tab.dot && (
+                  <span className={`w-1.5 h-1.5 rounded-full ${tab.dot}`} />
+                )}
                 <span>{tab.label}</span>
                 <span
                   className={`px-1.5 py-0.2 text-[10px] font-mono rounded-[1px] ${
@@ -1202,10 +1205,13 @@ export function LeadsPipelineClient({
                               href={waUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="min-h-[32px] px-2 inline-flex items-center text-[10px] uppercase font-sans tracking-wider bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] rounded-[1px]"
-                              title="WhatsApp"
+                              className="min-h-[32px] px-2 inline-flex items-center gap-1 text-[10px] uppercase font-sans font-medium tracking-wider bg-[#25D366] text-white hover:bg-[#20ba59] rounded-[2px] transition-colors"
+                              title="Chat on WhatsApp"
                             >
-                              WA
+                              <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
+                                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.077-1.782-.397-1.424-.589-2.348-2.029-2.42-2.125-.071-.096-.575-.765-.575-1.458 0-.693.361-1.033.49-1.177.129-.144.282-.18.377-.18.094 0 .188.001.27.005.086.004.202-.033.315.239.119.284.405.992.441 1.064.036.072.06.156.012.252-.048.096-.072.156-.144.24-.072.084-.152.188-.217.252-.072.072-.147.151-.063.295.084.144.373.616.8 1.002.549.497 1.013.652 1.157.724.144.072.228.06.313-.036.084-.096.36-.42.456-.564.096-.144.193-.12.325-.072.132.048.841.396.985.468.144.072.24.108.276.168.036.06.036.348-.108.753z"/>
+                              </svg>
+                              <span>WA</span>
                             </a>
                           </div>
 
@@ -1216,14 +1222,14 @@ export function LeadsPipelineClient({
                               onChange={(e) =>
                                 handleStageChange(lead.id, e.target.value as LeadStage)
                               }
-                              className="h-8 px-1.5 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[1px] focus:outline-none"
+                              className="h-8 px-2 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs font-sans text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] cursor-pointer"
                             >
-                              <option value="new">🟡 New</option>
-                              <option value="contacted">🟣 Contacted</option>
-                              <option value="viewing">🔵 Viewing</option>
-                              <option value="negotiating">🟠 Negotiate</option>
-                              <option value="won">🟢 Won</option>
-                              <option value="lost">⚪ Lost</option>
+                              <option value="new">New</option>
+                              <option value="contacted">Contacted</option>
+                              <option value="viewing">Viewing</option>
+                              <option value="negotiating">Negotiating</option>
+                              <option value="won">Won (Sold)</option>
+                              <option value="lost">Lost</option>
                             </select>
                           )}
                         </div>
@@ -1536,18 +1542,35 @@ export function LeadsPipelineClient({
 
                       {/* Stage (1-Tap Dropdown) */}
                       <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
-                        <select
-                          value={lead.stage}
-                          onChange={(e) => handleStageChange(lead.id, e.target.value as LeadStage)}
-                          className="h-8 px-2.5 text-xs font-sans font-medium rounded-[2px] cursor-pointer bg-[var(--bg-surface)] text-[var(--text-primary)] border border-[var(--border-subtle)] focus:outline-none focus:border-[var(--accent)] hover:border-[var(--border-focus)] transition-colors shadow-xs"
-                        >
-                          <option value="new">🟡 New</option>
-                          <option value="contacted">🟣 Contacted</option>
-                          <option value="viewing">🔵 Viewing / Test</option>
-                          <option value="negotiating">🟠 Negotiating</option>
-                          <option value="won">🟢 Won (Sold)</option>
-                          <option value="lost">⚪ Lost</option>
-                        </select>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 ${
+                              lead.stage === "won"
+                                ? "bg-emerald-500"
+                                : lead.stage === "lost"
+                                ? "bg-slate-400"
+                                : lead.stage === "negotiating"
+                                ? "bg-amber-600"
+                                : lead.stage === "viewing"
+                                ? "bg-blue-500"
+                                : lead.stage === "contacted"
+                                ? "bg-purple-500"
+                                : "bg-amber-400"
+                            }`}
+                          />
+                          <select
+                            value={lead.stage}
+                            onChange={(e) => handleStageChange(lead.id, e.target.value as LeadStage)}
+                            className="h-8 pl-2 pr-6 text-xs font-sans font-medium rounded-[2px] cursor-pointer bg-[var(--bg-surface)] text-[var(--text-primary)] border border-[var(--border-subtle)] focus:outline-none focus:border-[var(--accent)] hover:border-[var(--border-focus)] transition-colors shadow-xs"
+                          >
+                            <option value="new">New</option>
+                            <option value="contacted">Contacted</option>
+                            <option value="viewing">Viewing / Test Drive</option>
+                            <option value="negotiating">Negotiating</option>
+                            <option value="won">Won (Sold)</option>
+                            <option value="lost">Closed / Lost</option>
+                          </select>
+                        </div>
                       </td>
 
                       {/* Next Follow-Up */}
@@ -1610,27 +1633,34 @@ export function LeadsPipelineClient({
                         <div className="flex items-center gap-1.5 justify-end">
                           <a
                             href={`tel:${lead.phone}`}
-                            className="h-8 px-2.5 inline-flex items-center text-[10px] font-sans uppercase font-medium tracking-wider border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--accent)] hover:text-[var(--accent)] rounded-[2px] transition-colors"
+                            className="h-8 px-2.5 inline-flex items-center gap-1 text-[10px] font-sans uppercase font-medium tracking-wider border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--accent)] hover:text-[var(--accent)] rounded-[2px] transition-colors"
                             title="Call client"
                           >
-                            Call
+                            <svg className="w-3.5 h-3.5 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
+                            <span>Call</span>
                           </a>
                           <a
                             href={waUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="h-8 px-2.5 inline-flex items-center text-[10px] font-sans uppercase font-medium tracking-wider bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] rounded-[2px] transition-colors"
+                            className="h-8 px-2.5 inline-flex items-center gap-1 text-[10px] font-sans uppercase font-medium tracking-wider bg-[#25D366] text-white hover:bg-[#20ba59] rounded-[2px] transition-colors shadow-xs"
                             title="Open WhatsApp chat"
                           >
-                            WA
+                            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                              <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.077-1.782-.397-1.424-.589-2.348-2.029-2.42-2.125-.071-.096-.575-.765-.575-1.458 0-.693.361-1.033.49-1.177.129-.144.282-.18.377-.18.094 0 .188.001.27.005.086.004.202-.033.315.239.119.284.405.992.441 1.064.036.072.06.156.012.252-.048.096-.072.156-.144.24-.072.084-.152.188-.217.252-.072.072-.147.151-.063.295.084.144.373.616.8 1.002.549.497 1.013.652 1.157.724.144.072.228.06.313-.036.084-.096.36-.42.456-.564.096-.144.193-.12.325-.072.132.048.841.396.985.468.144.072.24.108.276.168.036.06.036.348-.108.753z"/>
+                            </svg>
+                            <span>WhatsApp</span>
                           </a>
                           <button
                             type="button"
                             onClick={() => setActiveLeadId(lead.id)}
-                            className="h-8 px-2.5 inline-flex items-center text-[10px] font-sans uppercase font-medium tracking-wider bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-subtle)] rounded-[2px] transition-colors"
+                            className="h-8 px-2.5 inline-flex items-center gap-1 text-[10px] font-sans uppercase font-medium tracking-wider bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-subtle)] rounded-[2px] transition-colors"
                             title="Open customer details"
                           >
-                            Details &rarr;
+                            <span>View</span>
+                            <span className="text-[var(--accent)] font-semibold">&rarr;</span>
                           </button>
                         </div>
                       </td>
@@ -1713,36 +1743,45 @@ export function LeadsPipelineClient({
                     <select
                       value={lead.stage}
                       onChange={(e) => handleStageChange(lead.id, e.target.value as LeadStage)}
-                      className="h-8 px-2 text-xs font-sans font-medium bg-[var(--bg-base)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-[2px]"
+                      className="h-8 px-2 text-xs font-sans font-medium bg-[var(--bg-base)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-[2px] cursor-pointer"
                     >
-                      <option value="new">🟡 New</option>
-                      <option value="contacted">🟣 Contacted</option>
-                      <option value="viewing">🔵 Viewing</option>
-                      <option value="negotiating">🟠 Negotiating</option>
-                      <option value="won">🟢 Won</option>
-                      <option value="lost">⚪ Lost</option>
+                      <option value="new">New</option>
+                      <option value="contacted">Contacted</option>
+                      <option value="viewing">Viewing</option>
+                      <option value="negotiating">Negotiating</option>
+                      <option value="won">Won (Sold)</option>
+                      <option value="lost">Lost</option>
                     </select>
                   </div>
 
                   <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                     <a
                       href={`tel:${lead.phone}`}
-                      className="h-8 px-2.5 inline-flex items-center text-[10px] font-sans uppercase font-medium tracking-wider border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-[2px]"
+                      className="h-8 px-2 inline-flex items-center gap-1 text-[10px] font-sans uppercase font-medium tracking-wider border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-[2px]"
+                      title="Call"
                     >
-                      Call
+                      <svg className="w-3 h-3 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                      <span>Call</span>
                     </a>
                     <a
                       href={waUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="h-8 px-2.5 inline-flex items-center text-[10px] font-sans uppercase font-medium tracking-wider bg-[var(--accent)] text-white rounded-[2px]"
+                      className="h-8 px-2 inline-flex items-center gap-1 text-[10px] font-sans uppercase font-medium tracking-wider bg-[#25D366] text-white rounded-[2px]"
+                      title="WhatsApp"
                     >
-                      WA
+                      <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
+                        <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.077-1.782-.397-1.424-.589-2.348-2.029-2.42-2.125-.071-.096-.575-.765-.575-1.458 0-.693.361-1.033.49-1.177.129-.144.282-.18.377-.18.094 0 .188.001.27.005.086.004.202-.033.315.239.119.284.405.992.441 1.064.036.072.06.156.012.252-.048.096-.072.156-.144.24-.072.084-.152.188-.217.252-.072.072-.147.151-.063.295.084.144.373.616.8 1.002.549.497 1.013.652 1.157.724.144.072.228.06.313-.036.084-.096.36-.42.456-.564.096-.144.193-.12.325-.072.132.048.841.396.985.468.144.072.24.108.276.168.036.06.036.348-.108.753z"/>
+                      </svg>
+                      <span>WA</span>
                     </a>
                     <button
                       type="button"
                       onClick={() => setActiveLeadId(lead.id)}
-                      className="h-8 px-2.5 inline-flex items-center text-[10px] font-sans uppercase text-[var(--text-secondary)]"
+                      className="h-8 px-2 inline-flex items-center text-[10px] font-sans uppercase font-medium tracking-wider bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--text-secondary)] rounded-[2px]"
+                      title="View Details"
                     >
                       &rarr;
                     </button>
