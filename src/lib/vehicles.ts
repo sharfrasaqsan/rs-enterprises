@@ -211,8 +211,16 @@ export async function getVehicleBySlug(slug: string): Promise<Vehicle | null> {
   const cached = allVehicles.find((v) => v.slug === slug);
   if (cached) return cached;
 
-  // Direct database lookup (for drafts / newly published units)
-  if (hasAdminCredentials()) {
+  // Check seed vehicles fallback
+  const seedFallback = SEED_VEHICLES.find(
+    (v) => v.slug === slug || (slug.startsWith("2023-nissan-x-trail") && v.slug.startsWith("2023-nissan-x-trail"))
+  );
+  if (seedFallback && !seedFallback.archived) {
+    return seedFallback;
+  }
+
+  // Direct database lookup (for drafts / newly published units during runtime)
+  if (hasAdminCredentials() && process.env.NEXT_PHASE !== "phase-production-build") {
     try {
       const snapshot = await adminDb
         .collection("vehicles")
@@ -231,11 +239,6 @@ export async function getVehicleBySlug(slug: string): Promise<Vehicle | null> {
     }
   }
 
-  // Check seed vehicles fallback
-  const seedFallback = SEED_VEHICLES.find((v) => v.slug === slug);
-  if (seedFallback && !seedFallback.archived) {
-    return seedFallback;
-  }
   return null;
 }
 

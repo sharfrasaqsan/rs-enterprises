@@ -16,7 +16,7 @@ export async function GET(
   const imageIndexParam = parseInt(searchParams.get("imageIndex") || "0", 10);
   const customBadge = searchParams.get("badge") || "";
 
-  // Fetch vehicle details
+  // Fetch vehicle details & settings
   const [vehicles, settings] = await Promise.all([
     getAdminVehiclesAction(),
     getCompanySettings(),
@@ -62,11 +62,13 @@ export async function GET(
     }
   }
 
-  // Read self-hosted font if available
+  // Load premier modern sans-serif font (Segoe UI Bold / Arial Bold)
   let fontBuffer: ArrayBuffer | null = null;
   const possibleFontPaths = [
-    "C:/Windows/Fonts/georgia.ttf",
-    "C:/Windows/Fonts/times.ttf",
+    "C:/Windows/Fonts/segoeuib.ttf",
+    "C:/Windows/Fonts/segoeui.ttf",
+    "C:/Windows/Fonts/arialbd.ttf",
+    "C:/Windows/Fonts/arial.ttf",
   ];
   for (const fp of possibleFontPaths) {
     try {
@@ -88,7 +90,7 @@ export async function GET(
       ? `LKR ${vehicle.price.toLocaleString("en-US")}`
       : "Call for Price";
 
-  // Status configuration
+  // Status visual identity configuration
   const statusConfig = {
     available: {
       label: "AVAILABLE IN SHOWROOM",
@@ -159,7 +161,7 @@ export async function GET(
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
-            backgroundColor: "#0A0A0C",
+            backgroundColor: "#0B0B0E",
             color: "#FFFFFF",
             padding: "36px",
             fontFamily: fontBuffer ? "BrandFont" : "sans-serif",
@@ -170,10 +172,10 @@ export async function GET(
           <div
             style={{
               position: "absolute",
-              top: "16px",
-              left: "16px",
-              right: "16px",
-              bottom: "16px",
+              top: "14px",
+              left: "14px",
+              right: "14px",
+              bottom: "14px",
               border: "1px solid rgba(184, 155, 98, 0.35)",
               pointerEvents: "none",
             }}
@@ -186,7 +188,7 @@ export async function GET(
               alignItems: "center",
               justifyContent: "space-between",
               width: "100%",
-              paddingBottom: "18px",
+              paddingBottom: "16px",
               borderBottom: "1px solid rgba(184, 155, 98, 0.35)",
             }}
           >
@@ -194,7 +196,7 @@ export async function GET(
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <span
                   style={{
-                    fontSize: "30px",
+                    fontSize: "28px",
                     letterSpacing: "0.22em",
                     color: "#D4AF37",
                     fontWeight: 800,
@@ -204,10 +206,10 @@ export async function GET(
                 </span>
                 <span
                   style={{
-                    fontSize: "11px",
+                    fontSize: "10px",
                     letterSpacing: "0.25em",
                     color: "#9CA3AF",
-                    padding: "3px 8px",
+                    padding: "2px 7px",
                     border: "1px solid rgba(156, 163, 175, 0.3)",
                     borderRadius: "1px",
                   }}
@@ -218,16 +220,16 @@ export async function GET(
               <span
                 style={{
                   fontSize: "11px",
-                  letterSpacing: "0.28em",
+                  letterSpacing: "0.26em",
                   color: "#9CA3AF",
                   marginTop: "3px",
                 }}
               >
-                DIRECT JAPANESE IMPORTERS • POLONNARUWA
+                DIRECT JAPANESE AUTOMOTIVE IMPORTERS • POLONNARUWA
               </span>
             </div>
 
-            {/* Status Ribbon */}
+            {/* Status Ribbon Pill */}
             <div
               style={{
                 display: "flex",
@@ -245,15 +247,15 @@ export async function GET(
                   color: "#FFFFFF",
                   fontSize: "12px",
                   fontWeight: 800,
-                  letterSpacing: "0.18em",
-                  padding: "8px 16px",
+                  letterSpacing: "0.16em",
+                  padding: "7px 16px",
                   borderRadius: "2px",
                 }}
               >
                 <span
                   style={{
-                    width: "8px",
-                    height: "8px",
+                    width: "7px",
+                    height: "7px",
                     borderRadius: "50%",
                     backgroundColor: statusConfig.accent,
                   }}
@@ -264,7 +266,7 @@ export async function GET(
                 style={{
                   fontSize: "9px",
                   color: "#9CA3AF",
-                  letterSpacing: "0.2em",
+                  letterSpacing: "0.18em",
                   marginTop: "3px",
                 }}
               >
@@ -278,10 +280,10 @@ export async function GET(
             style={{
               display: "flex",
               width: "100%",
-              height: "580px",
+              height: "560px",
               borderRadius: "3px",
               overflow: "hidden",
-              border: "1px solid rgba(184, 155, 98, 0.45)",
+              border: "1px solid rgba(184, 155, 98, 0.4)",
               backgroundColor: "#121214",
               position: "relative",
             }}
@@ -302,18 +304,18 @@ export async function GET(
               <div
                 style={{
                   position: "absolute",
-                  top: "16px",
-                  left: "16px",
+                  top: "14px",
+                  left: "14px",
                   display: "flex",
                   alignItems: "center",
                   gap: "6px",
-                  backgroundColor: "rgba(10, 10, 12, 0.88)",
+                  backgroundColor: "rgba(11, 11, 14, 0.9)",
                   border: "1px solid rgba(212, 175, 55, 0.6)",
                   padding: "6px 14px",
                   borderRadius: "2px",
                 }}
               >
-                <span style={{ color: "#D4AF37", fontSize: "11px", fontWeight: 700, letterSpacing: "0.15em" }}>
+                <span style={{ color: "#D4AF37", fontSize: "11px", fontWeight: 700, letterSpacing: "0.14em" }}>
                   ★ {displayBadge.toUpperCase()}
                 </span>
               </div>
@@ -323,11 +325,11 @@ export async function GET(
             <div
               style={{
                 position: "absolute",
-                top: "16px",
-                right: "16px",
+                top: "14px",
+                right: "14px",
                 display: "flex",
                 alignItems: "center",
-                backgroundColor: "rgba(10, 10, 12, 0.88)",
+                backgroundColor: "rgba(11, 11, 14, 0.9)",
                 border: "1px solid rgba(156, 163, 175, 0.4)",
                 padding: "6px 12px",
                 borderRadius: "2px",
@@ -337,18 +339,6 @@ export async function GET(
                 日本直輸入 • 厳選車両
               </span>
             </div>
-
-            {/* Subtle Gradient Shadow Base */}
-            <div
-              style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: "80px",
-                background: "linear-gradient(to top, rgba(10,10,12,0.85), transparent)",
-              }}
-            />
           </div>
 
           {/* Bottom Vehicle Dossier Strip */}
@@ -356,27 +346,30 @@ export async function GET(
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: "12px",
-              paddingTop: "16px",
+              gap: "10px",
+              paddingTop: "14px",
               borderTop: "1px solid rgba(184, 155, 98, 0.35)",
             }}
           >
-            {/* Title & Valuation */}
+            {/* Title & Valuation Row: Dedicated separate containers to guarantee ZERO overlap */}
             <div
               style={{
                 display: "flex",
-                alignItems: "baseline",
+                alignItems: "center",
                 justifyContent: "space-between",
                 width: "100%",
+                gap: "20px",
               }}
             >
-              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+              {/* Left Column: Full-width vehicle title */}
+              <div style={{ display: "flex", flexDirection: "column", maxWidth: "620px" }}>
                 <span
                   style={{
-                    fontSize: "36px",
+                    fontSize: "32px",
                     fontWeight: 800,
                     letterSpacing: "0.02em",
                     color: "#FFFFFF",
+                    lineHeight: 1.2,
                   }}
                 >
                   {vehicle.year} {vehicle.make} {vehicle.model}
@@ -384,10 +377,11 @@ export async function GET(
                 {vehicle.grade && (
                   <span
                     style={{
-                      fontSize: "15px",
+                      fontSize: "14px",
                       color: "#D4AF37",
                       letterSpacing: "0.1em",
-                      fontWeight: 600,
+                      fontWeight: 700,
+                      marginTop: "3px",
                     }}
                   >
                     {vehicle.grade.toUpperCase()}
@@ -395,11 +389,22 @@ export async function GET(
                 )}
               </div>
 
-              {/* Price / Sold Tag */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+              {/* Right Column: Encapsulated Price Tag */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-end",
+                  flexShrink: 0,
+                  padding: "8px 16px",
+                  backgroundColor: "#16161A",
+                  border: "1px solid rgba(184, 155, 98, 0.35)",
+                  borderRadius: "2px",
+                }}
+              >
                 <span
                   style={{
-                    fontSize: effectiveStatus === "sold" ? "30px" : "34px",
+                    fontSize: effectiveStatus === "sold" ? "24px" : "30px",
                     fontWeight: 800,
                     color: effectiveStatus === "sold" ? "#F87171" : "#D4AF37",
                     fontFamily: "monospace",
@@ -409,13 +414,14 @@ export async function GET(
                 </span>
                 <span
                   style={{
-                    fontSize: "10px",
+                    fontSize: "9px",
                     color: "#9CA3AF",
                     letterSpacing: "0.18em",
                     textTransform: "uppercase",
+                    marginTop: "2px",
                   }}
                 >
-                  {effectiveStatus === "sold" ? "Unit Closed" : "Showroom Direct Price"}
+                  {effectiveStatus === "sold" ? "Unit Delivered" : "Walk-in Valuation"}
                 </span>
               </div>
             </div>
@@ -427,17 +433,17 @@ export async function GET(
                 alignItems: "center",
                 justifyContent: "space-between",
                 width: "100%",
-                padding: "10px 14px",
+                padding: "9px 14px",
                 backgroundColor: "#141417",
-                border: "1px solid rgba(184, 155, 98, 0.2)",
+                border: "1px solid rgba(184, 155, 98, 0.22)",
                 borderRadius: "2px",
-                fontSize: "13px",
+                fontSize: "12px",
                 color: "#E5E7EB",
-                letterSpacing: "0.06em",
+                letterSpacing: "0.05em",
               }}
             >
-              <div style={{ display: "flex", gap: "14px", alignItems: "center" }}>
-                <span style={{ fontWeight: 600 }}>{vehicle.mileage.toLocaleString()} KM</span>
+              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                <span style={{ fontWeight: 700 }}>{vehicle.mileage.toLocaleString()} KM</span>
                 <span style={{ color: "rgba(184, 155, 98, 0.5)" }}>•</span>
                 <span style={{ textTransform: "uppercase" }}>{vehicle.fuel}</span>
                 <span style={{ color: "rgba(184, 155, 98, 0.5)" }}>•</span>
@@ -460,7 +466,7 @@ export async function GET(
                 alignItems: "center",
                 justifyContent: "space-between",
                 width: "100%",
-                fontSize: "13px",
+                fontSize: "12px",
                 color: "#9CA3AF",
                 letterSpacing: "0.04em",
                 paddingTop: "2px",
@@ -468,7 +474,7 @@ export async function GET(
             >
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <span style={{ color: "#D4AF37" }}>📍</span>
-                <span style={{ color: "#F3F4F6", fontWeight: 500 }}>{branchName}</span>
+                <span style={{ color: "#F3F4F6", fontWeight: 600 }}>{branchName}</span>
                 <span>•</span>
                 <span>{branchAddress}</span>
               </div>
@@ -513,9 +519,9 @@ export async function GET(
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          backgroundColor: "#0A0A0C",
+          backgroundColor: "#0B0B0E",
           color: "#FFFFFF",
-          padding: "56px 48px",
+          padding: "52px 48px",
           fontFamily: fontBuffer ? "BrandFont" : "sans-serif",
           position: "relative",
         }}
@@ -524,10 +530,10 @@ export async function GET(
         <div
           style={{
             position: "absolute",
-            top: "20px",
-            left: "20px",
-            right: "20px",
-            bottom: "20px",
+            top: "18px",
+            left: "18px",
+            right: "18px",
+            bottom: "18px",
             border: "1px solid rgba(184, 155, 98, 0.35)",
             pointerEvents: "none",
           }}
@@ -541,15 +547,15 @@ export async function GET(
             alignItems: "center",
             width: "100%",
             textAlign: "center",
-            paddingBottom: "24px",
+            paddingBottom: "22px",
             borderBottom: "1px solid rgba(184, 155, 98, 0.35)",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <span
               style={{
-                fontSize: "42px",
-                letterSpacing: "0.26em",
+                fontSize: "40px",
+                letterSpacing: "0.25em",
                 color: "#D4AF37",
                 fontWeight: 800,
               }}
@@ -559,10 +565,10 @@ export async function GET(
           </div>
           <span
             style={{
-              fontSize: "14px",
-              letterSpacing: "0.32em",
+              fontSize: "13px",
+              letterSpacing: "0.3em",
               color: "#9CA3AF",
-              marginTop: "6px",
+              marginTop: "5px",
             }}
           >
             DIRECT JAPANESE AUTOMOBILE IMPORTERS • POLONNARUWA
@@ -577,18 +583,18 @@ export async function GET(
               backgroundColor: statusConfig.bg,
               border: `1px solid ${statusConfig.border}`,
               color: "#FFFFFF",
-              fontSize: "14px",
+              fontSize: "13px",
               fontWeight: 800,
-              letterSpacing: "0.22em",
-              padding: "10px 28px",
+              letterSpacing: "0.2em",
+              padding: "9px 26px",
               borderRadius: "2px",
-              marginTop: "18px",
+              marginTop: "16px",
             }}
           >
             <span
               style={{
-                width: "9px",
-                height: "9px",
+                width: "8px",
+                height: "8px",
                 borderRadius: "50%",
                 backgroundColor: statusConfig.accent,
               }}
@@ -602,12 +608,12 @@ export async function GET(
           style={{
             display: "flex",
             width: "100%",
-            height: "920px",
+            height: "880px",
             borderRadius: "4px",
             overflow: "hidden",
-            border: "1px solid rgba(184, 155, 98, 0.45)",
+            border: "1px solid rgba(184, 155, 98, 0.4)",
             backgroundColor: "#121214",
-            margin: "24px 0",
+            margin: "20px 0",
             position: "relative",
           }}
         >
@@ -627,18 +633,18 @@ export async function GET(
             <div
               style={{
                 position: "absolute",
-                top: "20px",
-                left: "20px",
+                top: "18px",
+                left: "18px",
                 display: "flex",
                 alignItems: "center",
                 gap: "8px",
-                backgroundColor: "rgba(10, 10, 12, 0.9)",
+                backgroundColor: "rgba(11, 11, 14, 0.92)",
                 border: "1px solid rgba(212, 175, 55, 0.6)",
                 padding: "8px 18px",
                 borderRadius: "2px",
               }}
             >
-              <span style={{ color: "#D4AF37", fontSize: "13px", fontWeight: 700, letterSpacing: "0.15em" }}>
+              <span style={{ color: "#D4AF37", fontSize: "12px", fontWeight: 700, letterSpacing: "0.14em" }}>
                 ★ {displayBadge.toUpperCase()}
               </span>
             </div>
@@ -648,23 +654,23 @@ export async function GET(
           <div
             style={{
               position: "absolute",
-              top: "20px",
-              right: "20px",
+              top: "18px",
+              right: "18px",
               display: "flex",
               alignItems: "center",
-              backgroundColor: "rgba(10, 10, 12, 0.9)",
+              backgroundColor: "rgba(11, 11, 14, 0.92)",
               border: "1px solid rgba(156, 163, 175, 0.4)",
               padding: "8px 16px",
               borderRadius: "2px",
             }}
           >
-            <span style={{ color: "#E5E7EB", fontSize: "11px", letterSpacing: "0.2em", fontWeight: 600 }}>
+            <span style={{ color: "#E5E7EB", fontSize: "11px", letterSpacing: "0.18em", fontWeight: 600 }}>
               日本直輸入 • 厳選オークション車両
             </span>
           </div>
         </div>
 
-        {/* Detailed Spec & Price Card */}
+        {/* Detailed Spec & Price Card - Restructured so Title & Price NEVER collide */}
         <div
           style={{
             display: "flex",
@@ -673,50 +679,58 @@ export async function GET(
             backgroundColor: "#121215",
             border: "1px solid rgba(184, 155, 98, 0.35)",
             borderRadius: "4px",
-            padding: "28px 32px",
-            gap: "18px",
+            padding: "24px 28px",
+            gap: "14px",
           }}
         >
-          {/* Headline & Valuation */}
+          {/* Section 1: Full-width Vehicle Title & Grade */}
+          <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
+            <span
+              style={{
+                fontSize: "36px",
+                fontWeight: 800,
+                color: "#FFFFFF",
+                letterSpacing: "0.02em",
+                lineHeight: 1.2,
+              }}
+            >
+              {vehicle.year} {vehicle.make} {vehicle.model}
+            </span>
+            {vehicle.grade && (
+              <span
+                style={{
+                  fontSize: "16px",
+                  color: "#D4AF37",
+                  letterSpacing: "0.1em",
+                  fontWeight: 700,
+                  marginTop: "3px",
+                }}
+              >
+                {vehicle.grade.toUpperCase()}
+              </span>
+            )}
+          </div>
+
+          {/* Section 2: Illuminated Valuation Bar (Dedicated standalone row) */}
           <div
             style={{
               display: "flex",
-              alignItems: "baseline",
+              alignItems: "center",
               justifyContent: "space-between",
               width: "100%",
-              paddingBottom: "16px",
-              borderBottom: "1px solid rgba(184, 155, 98, 0.25)",
+              padding: "12px 18px",
+              backgroundColor: "#18181D",
+              border: "1px solid rgba(184, 155, 98, 0.28)",
+              borderRadius: "2px",
             }}
           >
-            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-              <span
-                style={{
-                  fontSize: "40px",
-                  fontWeight: 800,
-                  color: "#FFFFFF",
-                  letterSpacing: "0.02em",
-                }}
-              >
-                {vehicle.year} {vehicle.make} {vehicle.model}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span style={{ fontSize: "10px", color: "#9CA3AF", letterSpacing: "0.18em", textTransform: "uppercase" }}>
+                {effectiveStatus === "sold" ? "Delivered Vehicle Record" : "Showroom Direct Valuation"}
               </span>
-              {vehicle.grade && (
-                <span
-                  style={{
-                    fontSize: "18px",
-                    color: "#D4AF37",
-                    letterSpacing: "0.08em",
-                    fontWeight: 600,
-                  }}
-                >
-                  {vehicle.grade.toUpperCase()}
-                </span>
-              )}
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
               <span
                 style={{
-                  fontSize: effectiveStatus === "sold" ? "32px" : "38px",
+                  fontSize: effectiveStatus === "sold" ? "28px" : "34px",
                   fontWeight: 800,
                   color: effectiveStatus === "sold" ? "#F87171" : "#D4AF37",
                   fontFamily: "monospace",
@@ -724,51 +738,75 @@ export async function GET(
               >
                 {formattedPrice}
               </span>
-              <span style={{ fontSize: "11px", color: "#9CA3AF", letterSpacing: "0.2em", textTransform: "uppercase" }}>
-                {effectiveStatus === "sold" ? "Unit Delivered" : "Walk-in Valuation"}
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                backgroundColor: statusConfig.bg,
+                border: `1px solid ${statusConfig.border}`,
+                padding: "6px 14px",
+                borderRadius: "2px",
+              }}
+            >
+              <span style={{ color: "#FFFFFF", fontSize: "11px", fontWeight: 800, letterSpacing: "0.15em" }}>
+                {statusConfig.badgeText}
               </span>
             </div>
           </div>
 
-          {/* 6-Item Spec Grid (using Flex rows for safe Satori rendering) */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
+          {/* Section 3: 6-Item Spec Grid (Structured Flex rows) */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+              width: "100%",
+              paddingTop: "6px",
+              borderTop: "1px solid rgba(184, 155, 98, 0.2)",
+            }}
+          >
+            {/* Top Row: Mileage, Powertrain, Transmission */}
             <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
               <div style={{ display: "flex", flexDirection: "column", width: "32%" }}>
-                <span style={{ fontSize: "11px", color: "#9CA3AF", letterSpacing: "0.15em" }}>MILEAGE</span>
-                <span style={{ fontSize: "18px", color: "#FFFFFF", fontWeight: 700 }}>
+                <span style={{ fontSize: "10px", color: "#9CA3AF", letterSpacing: "0.15em" }}>MILEAGE</span>
+                <span style={{ fontSize: "17px", color: "#FFFFFF", fontWeight: 700, marginTop: "2px" }}>
                   {vehicle.mileage.toLocaleString()} KM
                 </span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", width: "32%" }}>
-                <span style={{ fontSize: "11px", color: "#9CA3AF", letterSpacing: "0.15em" }}>POWERTRAIN</span>
-                <span style={{ fontSize: "18px", color: "#FFFFFF", fontWeight: 700, textTransform: "uppercase" }}>
+                <span style={{ fontSize: "10px", color: "#9CA3AF", letterSpacing: "0.15em" }}>POWERTRAIN</span>
+                <span style={{ fontSize: "17px", color: "#FFFFFF", fontWeight: 700, textTransform: "uppercase", marginTop: "2px" }}>
                   {vehicle.engineCC} CC • {vehicle.fuel}
                 </span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", width: "32%" }}>
-                <span style={{ fontSize: "11px", color: "#9CA3AF", letterSpacing: "0.15em" }}>TRANSMISSION</span>
-                <span style={{ fontSize: "18px", color: "#FFFFFF", fontWeight: 700, textTransform: "uppercase" }}>
+                <span style={{ fontSize: "10px", color: "#9CA3AF", letterSpacing: "0.15em" }}>TRANSMISSION</span>
+                <span style={{ fontSize: "17px", color: "#FFFFFF", fontWeight: 700, textTransform: "uppercase", marginTop: "2px" }}>
                   {vehicle.transmission}
                 </span>
               </div>
             </div>
 
+            {/* Bottom Row: Exterior Color, Seats & Body, Registration */}
             <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
               <div style={{ display: "flex", flexDirection: "column", width: "32%" }}>
-                <span style={{ fontSize: "11px", color: "#9CA3AF", letterSpacing: "0.15em" }}>EXTERIOR COLOR</span>
-                <span style={{ fontSize: "18px", color: "#FFFFFF", fontWeight: 700 }}>
+                <span style={{ fontSize: "10px", color: "#9CA3AF", letterSpacing: "0.15em" }}>EXTERIOR COLOR</span>
+                <span style={{ fontSize: "16px", color: "#FFFFFF", fontWeight: 600, marginTop: "2px" }}>
                   {vehicle.color}
                 </span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", width: "32%" }}>
-                <span style={{ fontSize: "11px", color: "#9CA3AF", letterSpacing: "0.15em" }}>SEATS &amp; BODY</span>
-                <span style={{ fontSize: "18px", color: "#FFFFFF", fontWeight: 700, textTransform: "uppercase" }}>
+                <span style={{ fontSize: "10px", color: "#9CA3AF", letterSpacing: "0.15em" }}>SEATS &amp; BODY</span>
+                <span style={{ fontSize: "16px", color: "#FFFFFF", fontWeight: 600, textTransform: "uppercase", marginTop: "2px" }}>
                   {vehicle.seats} Seats • {vehicle.bodyType}
                 </span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", width: "32%" }}>
-                <span style={{ fontSize: "11px", color: "#9CA3AF", letterSpacing: "0.15em" }}>REGISTRATION</span>
-                <span style={{ fontSize: "18px", color: "#34D399", fontWeight: 700, textTransform: "uppercase" }}>
+                <span style={{ fontSize: "10px", color: "#9CA3AF", letterSpacing: "0.15em" }}>REGISTRATION</span>
+                <span style={{ fontSize: "16px", color: "#34D399", fontWeight: 700, textTransform: "uppercase", marginTop: "2px" }}>
                   {vehicle.registrationStatus === "unregistered" ? "Unregistered" : "Registered"}
                 </span>
               </div>
@@ -783,19 +821,19 @@ export async function GET(
             flexDirection: "column",
             alignItems: "center",
             textAlign: "center",
-            gap: "8px",
-            paddingTop: "20px",
+            gap: "6px",
+            paddingTop: "16px",
             borderTop: "1px solid rgba(184, 155, 98, 0.35)",
           }}
         >
-          <span style={{ fontSize: "17px", color: "#F3F4F6", letterSpacing: "0.08em" }}>
+          <span style={{ fontSize: "16px", color: "#F3F4F6", letterSpacing: "0.08em" }}>
             📍 {branchAddress}
           </span>
-          <span style={{ fontSize: "22px", color: "#D4AF37", fontWeight: 700, letterSpacing: "0.08em" }}>
+          <span style={{ fontSize: "20px", color: "#D4AF37", fontWeight: 800, letterSpacing: "0.08em" }}>
             Hotlines &amp; WhatsApp: {branchPhone}
           </span>
-          <span style={{ fontSize: "13px", color: "#9CA3AF", letterSpacing: "0.18em" }}>
-            ONLINE DOSSIER: rsenterprises.lk/vehicles/{vehicle.slug}
+          <span style={{ fontSize: "12px", color: "#9CA3AF", letterSpacing: "0.18em" }}>
+            ONLINE INVENTORY: rsenterprises.lk/vehicles/{vehicle.slug}
           </span>
         </div>
       </div>
