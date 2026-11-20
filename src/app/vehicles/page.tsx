@@ -112,7 +112,7 @@ async function VehiclesListContent({
       typeof resolvedSearchParams.page === "string" && !isNaN(Number(resolvedSearchParams.page))
         ? Math.max(1, Number(resolvedSearchParams.page))
         : 1,
-    limit: 8,
+    limit: 10,
   };
 
   const {

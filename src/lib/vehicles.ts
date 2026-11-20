@@ -183,7 +183,7 @@ export async function getVehicles(
   // 4. In-Memory Pagination
   const total = filtered.length;
   const page = Math.max(1, filters.page || 1);
-  const limit = Math.max(1, Math.min(50, filters.limit || 9));
+  const limit = Math.max(1, Math.min(50, filters.limit || 10));
   const totalPages = Math.ceil(total / limit) || 1;
   const startIndex = (page - 1) * limit;
   const endIndex = startIndex + limit;

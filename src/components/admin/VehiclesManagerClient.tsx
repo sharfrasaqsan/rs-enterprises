@@ -822,7 +822,7 @@ export function VehiclesManagerClient({
           setPageSize(sz);
           setCurrentPage(1);
         }}
-        pageSizeOptions={[5, 10, 20, 50]}
+        pageSizeOptions={[10, 20, 50, 100]}
         itemName={
           viewTab === "active"
             ? "active showroom cars"

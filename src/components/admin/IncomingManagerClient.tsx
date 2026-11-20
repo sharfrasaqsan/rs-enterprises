@@ -418,7 +418,7 @@ export function IncomingManagerClient({
           setPageSize(sz);
           setCurrentPage(1);
         }}
-        pageSizeOptions={[5, 10, 20]}
+        pageSizeOptions={[10, 20, 50]}
         itemName="shipments"
       />
     </div>
