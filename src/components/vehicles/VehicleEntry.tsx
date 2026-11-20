@@ -112,6 +112,8 @@ export function VehicleEntry({ vehicle }: { vehicle: Vehicle }) {
                   label={
                     isSold
                       ? "Delivered at Showroom Price"
+                      : vehicle.status === "reserved"
+                      ? "Reserved • Under Deposit Hold"
                       : vehicle.branch === "trincomalee"
                       ? "Available at Trincomalee Branch"
                       : "Available at Kaduruwela Showroom"
@@ -121,10 +123,10 @@ export function VehicleEntry({ vehicle }: { vehicle: Vehicle }) {
               ) : (
                 <div className="space-y-0.5">
                   <span className="text-sm font-sans uppercase font-medium tracking-widest text-[var(--accent)]">
-                    Call For Price / Inquire
+                    {vehicle.status === "reserved" ? "Reserved Unit" : "Call For Price / Inquire"}
                   </span>
                   <span className="text-[10px] text-[var(--text-muted)] block uppercase tracking-wider">
-                    Direct Import from Japan
+                    {vehicle.status === "reserved" ? "Under Deposit Hold" : "Direct Import from Japan"}
                   </span>
                 </div>
               )}
@@ -141,7 +143,7 @@ export function VehicleEntry({ vehicle }: { vehicle: Vehicle }) {
                 <div className="flex items-center gap-2.5">
                   <WhatsAppButton
                     vehicleTitle={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
-                    label="Inquire"
+                    label={vehicle.status === "reserved" ? "Waitlist" : "Inquire"}
                     size="md"
                   />
                   <Button

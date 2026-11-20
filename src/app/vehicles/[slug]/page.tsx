@@ -86,11 +86,14 @@ export default async function VehicleDetailPage(props: {
 
   const relatedVehicles = await getRelated(vehicle, 3);
   const isSold = vehicle.status === "sold";
+  const isReserved = vehicle.status === "reserved";
   const vehicleTitle = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
   const canonicalUrl = `https://rsenterprises.lk/vehicles/${vehicle.slug}`;
 
   // WhatsApp prefilled message
-  const waInquiryMessage = `Hello RS Enterprises, I am inquiring regarding the ${vehicleTitle} listed at ${canonicalUrl}. Could you please share the inspection sheet and latest availability?`;
+  const waInquiryMessage = isReserved
+    ? `Hello RS Enterprises, I see the ${vehicleTitle} listed at ${canonicalUrl} is currently marked Reserved (Under Deposit Hold). If the reservation expires or an identical unit becomes available, please register my backup waitlist inquiry.`
+    : `Hello RS Enterprises, I am inquiring regarding the ${vehicleTitle} listed at ${canonicalUrl}. Could you please share the inspection sheet and latest availability?`;
 
   // Structured Data (JSON-LD): Car + Offer schema
   const carJsonLd = {
@@ -429,6 +432,8 @@ export default async function VehicleDetailPage(props: {
                           label={
                             isSold
                               ? "Sold Price Record"
+                              : isReserved
+                              ? "Reserved • Under Deposit Hold"
                               : vehicle.branch === "trincomalee"
                               ? "Trincomalee Showroom Price"
                               : "Kaduruwela Showroom Price"
@@ -438,10 +443,12 @@ export default async function VehicleDetailPage(props: {
                       ) : (
                         <div className="space-y-1">
                           <span className="font-serif text-3xl font-light text-[var(--accent)] block">
-                            Call For Price
+                            {isReserved ? "Reserved Unit" : "Call For Price"}
                           </span>
                           <span className="text-xs text-[var(--text-muted)] block">
-                            Duty concession &amp; CIF direct import valuation available
+                            {isReserved
+                              ? "Advance deposit recorded • Backup inquiries accepted"
+                              : "Duty concession & CIF direct import valuation available"}
                           </span>
                         </div>
                       )}
@@ -453,9 +460,22 @@ export default async function VehicleDetailPage(props: {
                   {/* Primary Direct CTAs */}
                   {!isSold ? (
                     <div className="space-y-3">
+                      {isReserved && (
+                        <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-[2px] space-y-1.5 text-xs">
+                          <div className="flex items-center gap-1.5 text-amber-500 font-medium">
+                            <svg className="w-3.5 h-3.5 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="2">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                            <span className="font-mono uppercase tracking-wider text-[11px] font-bold">Advance Deposit Hold Active</span>
+                          </div>
+                          <p className="text-[11px] text-[var(--text-secondary)] font-light leading-relaxed">
+                            A refundable advance deposit has been placed on this vehicle. Showroom inspections and priority waitlist registrations are welcome in the event the hold is released.
+                          </p>
+                        </div>
+                      )}
                       <WhatsAppButton
                         message={waInquiryMessage}
-                        label="Inquire via WhatsApp"
+                        label={isReserved ? "Join Waitlist via WhatsApp" : "Inquire via WhatsApp"}
                         className="w-full text-center"
                       />
                       <PhoneLink
