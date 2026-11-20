@@ -25,7 +25,7 @@ export function Container({
 
   return (
     <div
-      className={`w-full mx-auto px-4 sm:px-6 lg:px-12 ${sizeClasses} ${className}`}
+      className={`w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 ${sizeClasses} ${className}`}
       {...props}
     >
       {children}
