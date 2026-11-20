@@ -16,6 +16,7 @@ import { Eyebrow } from "@/components/ui/Eyebrow";
 import { VehicleImage } from "@/components/ui/VehicleImage";
 import { ReserveVehicleModal } from "./ReserveVehicleModal";
 import { AdminPagination } from "./AdminPagination";
+import { SocialPosterGenerator } from "./SocialPosterGenerator";
 import { formatPhoneDisplay } from "@/lib/phone";
 
 export function VehiclesManagerClient({
@@ -36,6 +37,7 @@ export function VehiclesManagerClient({
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [archiveConfirmId, setArchiveConfirmId] = useState<string | null>(null);
   const [reserveModalVehicle, setReserveModalVehicle] = useState<Vehicle | null>(null);
+  const [posterModalVehicle, setPosterModalVehicle] = useState<Vehicle | null>(null);
   const [releaseConfirmId, setReleaseConfirmId] = useState<string | null>(null);
 
   // Split inventory strictly: Active Fleet (Available/Incoming/Reserved) vs Sold vs Archived
@@ -735,13 +737,14 @@ export function VehiclesManagerClient({
                         </Link>
 
                         {/* Social Poster Kit */}
-                        <Link
-                          href={`/admin/vehicles/${vehicle.id}/edit#marketing`}
-                          className="min-h-[40px] px-3.5 inline-flex items-center text-xs font-sans uppercase font-medium tracking-wider bg-[var(--bg-base)] border border-[var(--border-subtle)] text-[var(--accent)] hover:border-[var(--accent)] transition-colors"
-                          title="Generate branded square & story posters with captions"
+                        <button
+                          type="button"
+                          onClick={() => setPosterModalVehicle(vehicle)}
+                          className="min-h-[40px] px-3.5 inline-flex items-center text-xs font-sans uppercase font-medium tracking-wider bg-[var(--bg-base)] border border-[var(--border-subtle)] text-[var(--accent)] hover:border-[var(--accent)] hover:bg-[var(--accent)] hover:text-stone-900 transition-colors cursor-pointer"
+                          title="Open Social Media Poster Studio & captions"
                         >
                           Poster
-                        </Link>
+                        </button>
 
                         {/* Live Public View */}
                         <Link
@@ -843,6 +846,19 @@ export function VehiclesManagerClient({
           );
         }}
       />
+
+      {/* Social Poster Studio Modal */}
+      {posterModalVehicle && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+          <div className="relative w-full max-w-5xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] shadow-2xl rounded-[2px] overflow-hidden my-8">
+            <SocialPosterGenerator
+              vehicle={posterModalVehicle}
+              onClose={() => setPosterModalVehicle(null)}
+              isModal={true}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
