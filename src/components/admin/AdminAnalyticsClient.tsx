@@ -30,8 +30,8 @@ export function AdminAnalyticsClient({
   const [chartMetric, setChartMetric] = useState<"financials" | "volume">("financials");
   const [hoveredMonthKey, setHoveredMonthKey] = useState<string | null>(null);
 
-  // Default Margin Assumption (used when a vehicle has no explicit landed cost entered)
-  const [defaultMarginPercent, setDefaultMarginPercent] = useState<number>(12);
+  // Default Margin Assumption (standard conservative fallback when a vehicle has no explicit landed cost entered)
+  const defaultMarginPercent = 12;
 
   // Cost edit modal state
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
@@ -556,7 +556,7 @@ export function AdminAnalyticsClient({
           </div>
         </div>
 
-        {/* Profit Assumption / Landed Cost Controller */}
+        {/* Active Filter & Ledger Status */}
         <div className="pt-3 border-t border-[var(--border-hairline)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[var(--text-secondary)]">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-[var(--accent)]" />
@@ -565,24 +565,9 @@ export function AdminAnalyticsClient({
             </span>
           </div>
 
-          <div className="flex items-center gap-2 font-mono text-[11px]">
-            <span>Dealer Margin on Unspecified Costs:</span>
-            <div className="inline-flex items-center gap-1 bg-[var(--bg-base)] px-2 py-0.5 border border-[var(--border-hairline)] rounded-[2px]">
-              {[10, 12, 15, 18].map((pct) => (
-                <button
-                  key={pct}
-                  type="button"
-                  onClick={() => setDefaultMarginPercent(pct)}
-                  className={`px-1.5 py-0.5 rounded-[1px] text-[10px] cursor-pointer ${
-                    defaultMarginPercent === pct
-                      ? "bg-[var(--accent)] text-white font-bold"
-                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                  }`}
-                >
-                  {pct}%
-                </button>
-              ))}
-            </div>
+          <div className="flex items-center gap-2 font-mono text-[11px] text-[var(--text-secondary)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span>Exact Recorded Landed Costs Prioritized</span>
           </div>
         </div>
       </div>
@@ -1262,8 +1247,12 @@ export function AdminAnalyticsClient({
                         {/* Landed Cost */}
                         <td className="py-3.5 px-4 text-right font-mono text-[var(--text-secondary)]">
                           <div>{formatFullLKR(f.costPrice)}</div>
-                          <span className="text-[9px] text-[var(--text-muted)] block">
-                            {f.hasKnownCost ? "Actual recorded cost" : `Est. (${100 - defaultMarginPercent}%)`}
+                          <span
+                            className={`text-[9px] block ${
+                              f.hasKnownCost ? "text-emerald-400 font-medium" : "text-amber-400/80"
+                            }`}
+                          >
+                            {f.hasKnownCost ? "✓ Actual recorded cost" : "Cost Pending (12% Est.)"}
                           </span>
                         </td>
 
