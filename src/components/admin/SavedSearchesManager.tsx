@@ -2,11 +2,16 @@
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
-import { SavedSearch, matchVehicleWithSavedSearch, CreateSavedSearchInput } from "@/types/saved-search";
+import {
+  SavedSearch,
+  matchVehicleWithSavedSearch,
+  CreateSavedSearchInput,
+} from "@/types/saved-search";
 import { Vehicle } from "@/types/vehicle";
 import { formatPhoneDisplay, buildWhatsAppUrl, normalizePhoneNumber } from "@/lib/phone";
 import { createSavedSearchAction } from "@/app/actions/saved-searches";
 import { VehicleImage } from "@/components/ui/VehicleImage";
+import { AdminPagination } from "@/components/admin/AdminPagination";
 
 interface SavedSearchesManagerProps {
   savedSearches: SavedSearch[];
@@ -15,6 +20,8 @@ interface SavedSearchesManagerProps {
   onFulfill: (savedSearchId: string) => Promise<void>;
   onDelete: (savedSearchId: string) => Promise<void>;
   onCreatedSearch?: (newSearch: SavedSearch) => void;
+  externalOpenAddModal?: boolean;
+  onCloseExternalModal?: () => void;
 }
 
 export function SavedSearchesManager({
@@ -24,14 +31,36 @@ export function SavedSearchesManager({
   onFulfill,
   onDelete,
   onCreatedSearch,
+  externalOpenAddModal = false,
+  onCloseExternalModal,
 }: SavedSearchesManagerProps) {
+  // View mode: split (master-detail), table (high-density), or grid (2-col cards)
+  const [viewMode, setViewMode] = useState<"split" | "table" | "grid">("split");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"budget" | "date" | "matches">("matches");
+  const [sortBy, setSortBy] = useState<"matches" | "budget" | "date">("matches");
   const [sendingAlertId, setSendingAlertId] = useState<string | null>(null);
 
+  // Selected item in Master-Detail Split view
+  const [selectedSearchId, setSelectedSearchId] = useState<string | null>(null);
+
+  // Mobile detail view toggle for Split view on small screens
+  const [showMobileDetail, setShowMobileDetail] = useState(false);
+
+  // Pagination for Table & Grid views
+  const [tablePage, setTablePage] = useState(1);
+  const [tablePageSize, setTablePageSize] = useState(10);
+  const [gridPage, setGridPage] = useState(1);
+  const [gridPageSize, setGridPageSize] = useState(10);
+
   // Add Buyer Demand Modal State
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [internalShowAddModal, setInternalShowAddModal] = useState(false);
+  const showAddModal = internalShowAddModal || externalOpenAddModal;
+
+  const handleCloseModal = () => {
+    setInternalShowAddModal(false);
+    if (onCloseExternalModal) onCloseExternalModal();
+  };
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
@@ -66,7 +95,7 @@ export function SavedSearchesManager({
     });
   }, [savedSearches, vehicles]);
 
-  // Aggregate Executive Metrics
+  // Executive Metrics
   const activeSearches = savedSearches.filter((s) => s.status === "active");
   const readyToAlertCount = searchesWithMatches.filter(
     (s) => s.search.status === "active" && s.matches.length > 0
@@ -79,7 +108,9 @@ export function SavedSearchesManager({
   }, [savedSearches]);
 
   const totalNotifiedCount = useMemo(() => {
-    return savedSearches.filter((s) => s.status === "notified" || (s.notificationLog && s.notificationLog.length > 0)).length;
+    return savedSearches.filter(
+      (s) => s.status === "notified" || (s.notificationLog && s.notificationLog.length > 0)
+    ).length;
   }, [savedSearches]);
 
   // Filter & Sort
@@ -93,60 +124,92 @@ export function SavedSearchesManager({
           return search.status === "active";
         }
         if (statusFilter === "notified") {
-          return search.status === "notified";
+          return search.status === "notified" || (search.notificationLog && search.notificationLog.length > 0);
         }
         if (statusFilter === "fulfilled") {
           return search.status === "fulfilled";
         }
-
-        if (searchQuery.trim()) {
-          const q = searchQuery.toLowerCase().trim();
-          const matchName = search.customerName.toLowerCase().includes(q);
-          const matchPhone = search.customerPhone.includes(q);
-          const matchTitle = search.queryTitle.toLowerCase().includes(q);
-          const matchMake = search.criteria.make?.toLowerCase().includes(q) || false;
-          const matchModel = search.criteria.model?.toLowerCase().includes(q) || false;
-          if (!matchName && !matchPhone && !matchTitle && !matchMake && !matchModel) {
-            return false;
-          }
-        }
         return true;
+      })
+      .filter(({ search }) => {
+        if (!searchQuery.trim()) return true;
+        const q = searchQuery.toLowerCase().trim();
+        const nameMatch = search.customerName.toLowerCase().includes(q);
+        const phoneMatch = search.customerPhone.includes(q);
+        const titleMatch = search.queryTitle.toLowerCase().includes(q);
+        const makeMatch = (search.criteria.make || "").toLowerCase().includes(q);
+        const modelMatch = (search.criteria.model || "").toLowerCase().includes(q);
+        const notesMatch = (search.notes || "").toLowerCase().includes(q);
+        return nameMatch || phoneMatch || titleMatch || makeMatch || modelMatch || notesMatch;
       })
       .sort((a, b) => {
         if (sortBy === "matches") {
-          if (b.matches.length !== a.matches.length) {
-            return b.matches.length - a.matches.length;
-          }
+          const matchDiff = b.matches.length - a.matches.length;
+          if (matchDiff !== 0) return matchDiff;
           return new Date(b.search.createdAt).getTime() - new Date(a.search.createdAt).getTime();
         }
         if (sortBy === "budget") {
-          const budgetA = a.search.criteria.maxPrice || 0;
-          const budgetB = b.search.criteria.maxPrice || 0;
-          return budgetB - budgetA;
+          return (b.search.criteria.maxPrice || 0) - (a.search.criteria.maxPrice || 0);
         }
-        return new Date(b.search.createdAt).getTime() - new Date(a.search.createdAt).getTime();
+        if (sortBy === "date") {
+          return new Date(b.search.createdAt).getTime() - new Date(a.search.createdAt).getTime();
+        }
+        return 0;
       });
   }, [searchesWithMatches, statusFilter, searchQuery, sortBy]);
 
-  // Handle Create Saved Search Modal Submit
-  async function handleCreateWishlist(e: React.FormEvent) {
+  // Active selected item for Master-Detail Split Studio
+  const activeDetail = useMemo(() => {
+    if (filteredSearches.length === 0) return null;
+    if (selectedSearchId) {
+      const found = filteredSearches.find((item) => item.search.id === selectedSearchId);
+      if (found) return found;
+    }
+    return filteredSearches[0];
+  }, [filteredSearches, selectedSearchId]);
+
+  // Paginated Slices for Table & Grid Views (10 items per page min)
+  const paginatedTableItems = useMemo(() => {
+    const start = (tablePage - 1) * tablePageSize;
+    return filteredSearches.slice(start, start + tablePageSize);
+  }, [filteredSearches, tablePage, tablePageSize]);
+
+  const paginatedGridItems = useMemo(() => {
+    const start = (gridPage - 1) * gridPageSize;
+    return filteredSearches.slice(start, start + gridPageSize);
+  }, [filteredSearches, gridPage, gridPageSize]);
+
+  // Reset page when filter changes
+  function handleFilterChange(newFilter: string) {
+    setStatusFilter(newFilter);
+    setTablePage(1);
+    setGridPage(1);
+  }
+
+  function handleSearchChange(newQuery: string) {
+    setSearchQuery(newQuery);
+    setTablePage(1);
+    setGridPage(1);
+  }
+
+  // Handle Create New Wishlist Submission
+  async function handleAddWishlistSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setModalError(null);
+
     if (!addName.trim()) {
       setModalError("Please enter the prospective buyer's name.");
       return;
     }
-    const cleanPhone = normalizePhoneNumber(addPhone);
-    if (!cleanPhone || cleanPhone.length < 10) {
-      setModalError("Please enter a valid phone number (e.g. 077 123 4567).");
+    if (!addPhone.trim()) {
+      setModalError("Please enter a valid phone or WhatsApp number.");
       return;
     }
 
     setIsSubmitting(true);
-    setModalError(null);
-
     const inputData: CreateSavedSearchInput = {
       customerName: addName.trim(),
-      customerPhone: cleanPhone,
+      customerPhone: normalizePhoneNumber(addPhone.trim()),
       customerEmail: addEmail.trim() || undefined,
       make: addMake !== "all" ? addMake : undefined,
       model: addModel.trim() || undefined,
@@ -167,7 +230,9 @@ export function SavedSearchesManager({
         if (onCreatedSearch) {
           onCreatedSearch(res.savedSearch);
         }
-        setShowAddModal(false);
+        handleCloseModal();
+        // Select newly added search
+        setSelectedSearchId(res.savedSearch.id);
         // Reset form
         setAddName("");
         setAddPhone("");
@@ -185,141 +250,184 @@ export function SavedSearchesManager({
   }
 
   return (
-    <div className="space-y-8">
-      {/* 1. Executive Banner & Actions */}
-      <div className="p-6 sm:p-8 bg-gradient-to-r from-[var(--bg-surface)] via-[var(--bg-surface)] to-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] relative overflow-hidden">
-        {/* Subtle decorative gold ambient glow */}
-        <div className="absolute top-0 right-0 w-80 h-80 bg-[var(--accent)]/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2 max-w-2xl">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[10px] font-mono uppercase tracking-[0.22em] text-[var(--accent)] font-semibold">
-                VIP Demand Radar &bull; Automated Showroom Matching
-              </span>
-            </div>
-            <h2 className="font-serif text-2xl sm:text-3xl text-[var(--text-primary)] font-normal tracking-tight">
-              Japanese Auction Stock Alerts &amp; Buyer Demand
-            </h2>
-            <p className="text-xs sm:text-sm text-[var(--text-secondary)] font-light leading-relaxed">
-              Real-time cross-referencing between prospective client requests and live Japanese auction intake.
-              When matching chassis dock or arrive at our Kaduruwela showroom, dispatch verified WhatsApp alerts in 1 click.
-            </p>
+    <div className="space-y-6">
+      {/* 1. Executive Header & Global Actions */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[var(--border-hairline)]">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--accent)] font-semibold">
+              VIP Demand Radar &bull; Automated Showroom Matching
+            </span>
           </div>
+          <h2 className="font-serif text-2xl sm:text-3xl text-[var(--text-primary)] font-normal tracking-tight">
+            Saved Searches &amp; Stock Alerts
+          </h2>
+          <p className="text-xs text-[var(--text-secondary)] font-light">
+            Real-time cross-referencing between client demands and Japanese auction intake. 1-click WhatsApp dispatch.
+          </p>
+        </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-2.5 self-start lg:self-auto">
+          {/* View Mode Switcher */}
+          <div className="inline-flex p-0.5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px]">
             <button
               type="button"
-              onClick={() => setShowAddModal(true)}
-              className="h-11 px-5 inline-flex items-center gap-2 text-xs font-sans uppercase font-medium tracking-[0.14em] bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-all rounded-[2px] cursor-pointer shadow-md active:scale-[0.98]"
+              onClick={() => {
+                setViewMode("split");
+                setShowMobileDetail(false);
+              }}
+              className={`h-9 px-3 inline-flex items-center gap-1.5 text-xs font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer ${
+                viewMode === "split"
+                  ? "bg-[var(--accent)] text-white font-medium shadow-sm"
+                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              }`}
+              title="Executive Split Studio (Master-Detail)"
             >
-              <svg className="w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="2.2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M10 3v18" />
               </svg>
-              <span>+ Record Buyer Wishlist</span>
+              <span>Split Studio</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode("table")}
+              className={`h-9 px-3 inline-flex items-center gap-1.5 text-xs font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer ${
+                viewMode === "table"
+                  ? "bg-[var(--accent)] text-white font-medium shadow-sm"
+                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              }`}
+              title="High-Density Table View for Fast Triage"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+              <span>Table</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              className={`h-9 px-3 inline-flex items-center gap-1.5 text-xs font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer ${
+                viewMode === "grid"
+                  ? "bg-[var(--accent)] text-white font-medium shadow-sm"
+                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              }`}
+              title="2-Column Card Grid"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="7" height="7" />
+                <rect x="14" y="3" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" />
+              </svg>
+              <span>Grid</span>
             </button>
           </div>
+
+          {/* Record Buyer Demand Button */}
+          <button
+            type="button"
+            onClick={() => setInternalShowAddModal(true)}
+            className="h-10 px-4 inline-flex items-center gap-2 text-xs font-sans uppercase font-medium tracking-wider bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-all rounded-[2px] cursor-pointer shadow-sm active:scale-[0.98]"
+          >
+            <svg className="w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="2.2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            <span>+ Record Buyer Wishlist</span>
+          </button>
         </div>
       </div>
 
       {/* 2. Executive 4-Metric KPI Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Metric 1 */}
-        <div className="p-5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] space-y-1.5 relative overflow-hidden group hover:border-[var(--accent)]/30 transition-colors">
+        <div className="p-4 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] space-y-1 hover:border-[var(--accent)]/30 transition-colors">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[var(--text-secondary)]">
-              Monitored Demands
+            <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--text-secondary)]">
+              Demands Tracked
             </span>
             <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="font-serif text-3xl font-light text-[var(--text-primary)]">
+            <span className="font-serif text-2xl sm:text-3xl font-light text-[var(--text-primary)]">
               {savedSearches.length}
             </span>
-            <span className="text-xs font-mono text-[var(--text-secondary)]">
+            <span className="text-[11px] font-mono text-[var(--text-secondary)]">
               ({activeSearches.length} active)
             </span>
           </div>
-          <p className="text-[11px] text-[var(--text-muted)] font-light">
-            Prospective buyers waiting for auction units
-          </p>
         </div>
 
-        {/* Metric 2: Ready to Alert (Highlight) */}
-        <div className={`p-5 bg-[var(--bg-surface)] border rounded-[2px] space-y-1.5 relative overflow-hidden transition-all ${
-          readyToAlertCount > 0
-            ? "border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.08)] bg-gradient-to-b from-emerald-950/20 to-[var(--bg-surface)]"
-            : "border-[var(--border-hairline)]"
-        }`}>
+        {/* Metric 2: Ready to Alert */}
+        <div
+          className={`p-4 bg-[var(--bg-surface)] border rounded-[2px] space-y-1 transition-all ${
+            readyToAlertCount > 0
+              ? "border-emerald-500/50 shadow-[0_0_16px_rgba(16,185,129,0.08)] bg-gradient-to-b from-emerald-950/20 to-[var(--bg-surface)]"
+              : "border-[var(--border-hairline)]"
+          }`}
+        >
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-emerald-400 font-semibold flex items-center gap-1">
+            <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-emerald-400 font-semibold flex items-center gap-1">
               <span>⚡</span>
-              <span>Ready for Dispatch</span>
+              <span>Ready to Dispatch</span>
             </span>
             {readyToAlertCount > 0 && (
-              <span className="px-1.5 py-0.5 text-[9px] font-mono uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full font-bold">
+              <span className="px-1.5 py-0.2 text-[9px] font-mono uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full font-bold animate-pulse">
                 Action Ready
               </span>
             )}
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="font-serif text-3xl font-normal text-emerald-400">
+            <span className="font-serif text-2xl sm:text-3xl font-normal text-emerald-400">
               {readyToAlertCount}
             </span>
-            <span className="text-xs font-mono text-emerald-300/80">
+            <span className="text-[11px] font-mono text-emerald-300/80">
               Chassis Matched
             </span>
           </div>
-          <p className="text-[11px] text-[var(--text-secondary)] font-light">
-            Buyers with identical cars currently in showroom stock
-          </p>
         </div>
 
         {/* Metric 3: Total Buying Capital */}
-        <div className="p-5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] space-y-1.5 group hover:border-[var(--accent)]/30 transition-colors">
+        <div className="p-4 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] space-y-1 hover:border-[var(--accent)]/30 transition-colors">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[var(--accent)] font-semibold">
-              Tracked Buying Budget
+            <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--accent)] font-semibold">
+              Buying Budget
             </span>
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-xs font-mono text-[var(--accent)]">LKR</span>
-            <span className="font-serif text-3xl font-light text-[var(--text-primary)]">
+            <span className="text-[11px] font-mono text-[var(--accent)]">LKR</span>
+            <span className="font-serif text-2xl sm:text-3xl font-light text-[var(--text-primary)]">
               {totalDemandBudget > 0 ? (totalDemandBudget / 1000000).toFixed(1) : "0"}M
             </span>
           </div>
-          <p className="text-[11px] text-[var(--text-muted)] font-light">
-            Cumulative purchasing capacity in tracked wishlists
-          </p>
         </div>
 
         {/* Metric 4: Alert Dispatch History */}
-        <div className="p-5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] space-y-1.5 group hover:border-[var(--accent)]/30 transition-colors">
+        <div className="p-4 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] space-y-1 hover:border-[var(--accent)]/30 transition-colors">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[var(--text-secondary)]">
-              Dispatched Alerts
+            <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--text-secondary)]">
+              Alerts Dispatched
             </span>
             <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="font-serif text-3xl font-light text-[var(--text-primary)]">
+            <span className="font-serif text-2xl sm:text-3xl font-light text-[var(--text-primary)]">
               {totalNotifiedCount}
             </span>
-            <span className="text-xs font-mono text-[var(--text-secondary)]">
-              VIP Notifications
+            <span className="text-[11px] font-mono text-[var(--text-secondary)]">
+              Notifications Sent
             </span>
           </div>
-          <p className="text-[11px] text-[var(--text-muted)] font-light">
-            Verified WhatsApp dossiers sent to prospective buyers
-          </p>
         </div>
       </div>
 
       {/* 3. Filter Toolbar & Search Bar */}
       <div className="space-y-3">
-        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
           {/* Search Box */}
           <div className="relative flex-1">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[var(--text-secondary)]">
@@ -331,14 +439,14 @@ export function SavedSearchesManager({
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by buyer name, phone (+94), vehicle model (e.g. Prado, Vezel, Harrier)..."
-              className="w-full h-11 pl-10 pr-9 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--text-muted)]"
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder="Search by buyer name, phone (+94), car model (Prado, Vezel, Harrier)..."
+              className="w-full h-10 pl-10 pr-9 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--text-muted)]"
             />
             {searchQuery && (
               <button
                 type="button"
-                onClick={() => setSearchQuery("")}
+                onClick={() => handleSearchChange("")}
                 className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
               >
                 ✕
@@ -349,25 +457,25 @@ export function SavedSearchesManager({
           {/* Sort Selector */}
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] hidden sm:inline">
-              Sort By:
+              Sort:
             </span>
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as "budget" | "date" | "matches")}
-              className="h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs font-sans text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] cursor-pointer"
+              onChange={(e) => setSortBy(e.target.value as "matches" | "budget" | "date")}
+              className="h-10 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs font-sans text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] cursor-pointer"
             >
-              <option value="matches">Most Showroom Matches First</option>
+              <option value="matches">Showroom Matches First</option>
               <option value="budget">Highest Budget (LKR)</option>
-              <option value="date">Newest Demand Recorded</option>
+              <option value="date">Newest Registered</option>
             </select>
           </div>
         </div>
 
         {/* Filter Pills */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
+        <div className="flex flex-wrap items-center gap-2 pt-0.5">
           <button
             type="button"
-            onClick={() => setStatusFilter("all")}
+            onClick={() => handleFilterChange("all")}
             className={`px-3 py-1.5 text-xs font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer border ${
               statusFilter === "all"
                 ? "bg-[var(--accent)] text-white border-[var(--accent)] font-medium"
@@ -379,7 +487,7 @@ export function SavedSearchesManager({
 
           <button
             type="button"
-            onClick={() => setStatusFilter("ready")}
+            onClick={() => handleFilterChange("ready")}
             className={`px-3 py-1.5 text-xs font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer border flex items-center gap-1.5 ${
               statusFilter === "ready"
                 ? "bg-emerald-600 text-white border-emerald-600 font-medium"
@@ -394,7 +502,7 @@ export function SavedSearchesManager({
 
           <button
             type="button"
-            onClick={() => setStatusFilter("active")}
+            onClick={() => handleFilterChange("active")}
             className={`px-3 py-1.5 text-xs font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer border ${
               statusFilter === "active"
                 ? "bg-[var(--accent)] text-white border-[var(--accent)] font-medium"
@@ -406,7 +514,7 @@ export function SavedSearchesManager({
 
           <button
             type="button"
-            onClick={() => setStatusFilter("notified")}
+            onClick={() => handleFilterChange("notified")}
             className={`px-3 py-1.5 text-xs font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer border ${
               statusFilter === "notified"
                 ? "bg-[var(--accent)] text-white border-[var(--accent)] font-medium"
@@ -418,7 +526,7 @@ export function SavedSearchesManager({
 
           <button
             type="button"
-            onClick={() => setStatusFilter("fulfilled")}
+            onClick={() => handleFilterChange("fulfilled")}
             className={`px-3 py-1.5 text-xs font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer border ${
               statusFilter === "fulfilled"
                 ? "bg-[var(--accent)] text-white border-[var(--accent)] font-medium"
@@ -430,7 +538,7 @@ export function SavedSearchesManager({
         </div>
       </div>
 
-      {/* 4. Luxury Buyer Demands List */}
+      {/* 4. MAIN CONTENT AREA */}
       {filteredSearches.length === 0 ? (
         <div className="py-20 text-center border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-[2px] space-y-4">
           <div className="w-14 h-14 mx-auto rounded-full bg-[var(--bg-base)] border border-[var(--border-hairline)] flex items-center justify-center text-[var(--text-secondary)]">
@@ -452,8 +560,8 @@ export function SavedSearchesManager({
             <button
               type="button"
               onClick={() => {
-                setSearchQuery("");
-                setStatusFilter("all");
+                handleSearchChange("");
+                handleFilterChange("all");
               }}
               className="text-xs font-mono uppercase text-[var(--accent)] underline hover:no-underline cursor-pointer"
             >
@@ -461,499 +569,891 @@ export function SavedSearchesManager({
             </button>
           )}
         </div>
-      ) : (
-        <div className="space-y-5">
-          {filteredSearches.map(({ search, matches }) => {
-            const hasMatches = matches.length > 0;
-            const waDirectUrl = buildWhatsAppUrl(
-              search.customerPhone,
-              `Hello ${search.customerName}, this is RS Enterprises Showroom regarding your vehicle inquiry.`
-            );
+      ) : viewMode === "split" ? (
+        /* ============================================================
+           MODE A: EXECUTIVE SPLIT STUDIO (MASTER-DETAIL)
+           ============================================================ */
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left Column: Master Buyer Queue (5 cols on lg, 4 on xl) */}
+          <div
+            className={`lg:col-span-5 xl:col-span-4 space-y-3 ${
+              showMobileDetail ? "hidden lg:block" : "block"
+            }`}
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-[var(--border-hairline)]">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-[var(--text-secondary)] font-semibold">
+                Buyer Queue ({filteredSearches.length})
+              </span>
+              <span className="text-[10px] font-mono text-[var(--text-muted)]">
+                Click to inspect dossier
+              </span>
+            </div>
 
-            // Get initials for avatar
-            const initials = search.customerName
-              .split(" ")
-              .filter(Boolean)
-              .slice(0, 2)
-              .map((p) => p[0].toUpperCase())
-              .join("");
+            <div className="space-y-2.5 max-h-[820px] overflow-y-auto pr-1">
+              {filteredSearches.map(({ search, matches }) => {
+                const isSelected = activeDetail?.search.id === search.id;
+                const hasMatches = matches.length > 0;
+                const waUrl = buildWhatsAppUrl(
+                  search.customerPhone,
+                  `Hello ${search.customerName}, this is RS Enterprises Showroom regarding your inquiry for ${search.queryTitle}.`
+                );
 
-            return (
-              <div
-                key={search.id}
-                className={`bg-[var(--bg-surface)] border rounded-[2px] transition-all overflow-hidden ${
-                  hasMatches && search.status === "active"
-                    ? "border-[var(--accent)] shadow-[0_0_24px_rgba(212,175,55,0.09)]"
-                    : "border-[var(--border-hairline)] hover:border-[var(--border-subtle)]"
-                }`}
-              >
-                {/* Immediate Match Ribbon Header (If matches in stock) */}
-                {hasMatches && search.status === "active" && (
-                  <div className="bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-700 px-5 py-2 flex items-center justify-between text-white text-xs font-mono uppercase tracking-wider font-semibold">
-                    <span className="flex items-center gap-2">
-                      <span className="text-sm">⚡</span>
-                      <span>Showroom Match Ready &bull; {matches.length} Vehicle{matches.length === 1 ? "" : "s"} Available Now</span>
-                    </span>
-                    <span className="text-[10px] tracking-widest opacity-95">
-                      Ready for WhatsApp Dispatch
-                    </span>
-                  </div>
-                )}
-
-                <div className="p-5 sm:p-7 space-y-6">
-                  {/* Row 1: Buyer Profile & Status Badges */}
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-4 border-b border-[var(--border-hairline)]">
-                    <div className="flex items-center gap-3.5">
-                      {/* Monogram Avatar */}
-                      <div className="w-11 h-11 rounded-full bg-[var(--bg-base)] border border-[var(--accent)]/40 flex items-center justify-center font-serif text-base font-normal text-[var(--accent)] shrink-0 shadow-inner">
-                        {initials || "VP"}
+                return (
+                  <div
+                    key={search.id}
+                    onClick={() => {
+                      setSelectedSearchId(search.id);
+                      setShowMobileDetail(true);
+                    }}
+                    className={`p-4 rounded-[2px] border transition-all cursor-pointer relative ${
+                      isSelected
+                        ? "bg-[var(--bg-surface)] border-[var(--accent)] shadow-[0_0_15px_rgba(212,175,55,0.12)] ring-1 ring-[var(--accent)]"
+                        : "bg-[var(--bg-surface)] border-[var(--border-hairline)] hover:border-[var(--border-subtle)] hover:bg-[var(--bg-base)]"
+                    }`}
+                  >
+                    {/* Top Row: Customer & Status */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-serif text-base text-[var(--text-primary)] font-medium">
+                          {search.customerName}
+                        </span>
+                        <a
+                          href={waUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                          title="Direct WhatsApp Chat"
+                        >
+                          <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                            <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.18-2.587-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.694.075-2.222-.556-1.528-.631-2.518-2.183-2.593-2.285-.075-.102-.622-.828-.622-1.58 0-.752.39-1.121.529-1.272.138-.15.302-.188.404-.188.102 0 .204.001.294.006.094.004.22-.036.344.262.129.311.442 1.077.481 1.156.039.078.065.17.013.272-.051.102-.077.165-.152.253-.075.088-.158.197-.225.265-.076.076-.155.158-.067.31.088.152.393.649.843 1.05.58.517 1.07.677 1.222.753.152.076.241.063.33-.038.089-.102.381-.444.483-.596.102-.152.204-.127.343-.076.139.051.884.417 1.036.493.153.076.255.114.293.178.038.064.038.37-.106.775z" />
+                          </svg>
+                        </a>
                       </div>
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-2.5 flex-wrap">
-                          <h3 className="font-serif text-xl text-[var(--text-primary)] font-medium">
-                            {search.customerName}
-                          </h3>
-                          <span className="text-xs font-mono text-[var(--text-secondary)]">
-                            {formatPhoneDisplay(search.customerPhone)}
-                          </span>
-                          <a
-                            href={waDirectUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-mono uppercase bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-[1px] hover:bg-emerald-500/25 transition-colors font-semibold cursor-pointer"
-                            title="Open direct WhatsApp conversation"
-                          >
-                            <span>WhatsApp Direct</span>
-                            <span className="text-[9px]">↗</span>
-                          </a>
-                        </div>
 
-                        <div className="flex items-center gap-3 text-xs text-[var(--text-secondary)] font-light">
-                          {search.customerEmail && (
-                            <span className="font-mono text-[11px] text-[var(--text-muted)]">
-                              {search.customerEmail}
-                            </span>
-                          )}
-                          <span className="text-[10px] font-mono text-[var(--text-muted)]">
-                            Registered {new Date(search.createdAt).toLocaleDateString("en-LK", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Status Pill */}
-                    <div className="flex items-center gap-2 shrink-0">
                       <span
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono uppercase font-semibold border ${
+                        className={`text-[9px] font-mono uppercase px-2 py-0.5 rounded-full border ${
                           search.status === "active"
-                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-semibold"
                             : search.status === "notified"
                             ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
                             : "bg-slate-500/10 text-slate-400 border-slate-500/30"
                         }`}
                       >
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            search.status === "active"
-                              ? "bg-emerald-400 animate-pulse"
-                              : search.status === "notified"
-                              ? "bg-amber-400"
-                              : "bg-slate-400"
-                          }`}
-                        />
-                        <span>
-                          {search.status === "active"
-                            ? "Active Monitoring"
-                            : search.status === "notified"
-                            ? "Alert Sent"
-                            : "Fulfilled / Acquired"}
+                        {search.status === "active"
+                          ? "Active"
+                          : search.status === "notified"
+                          ? "Alerted"
+                          : "Fulfilled"}
+                      </span>
+                    </div>
+
+                    {/* Middle: Target Car Inquiry */}
+                    <div className="mt-1">
+                      <span className="font-serif text-sm text-[var(--accent)] font-medium block truncate">
+                        &ldquo;{search.queryTitle}&rdquo;
+                      </span>
+                      <div className="flex items-center justify-between text-xs font-mono text-[var(--text-secondary)] mt-1">
+                        <span>{formatPhoneDisplay(search.customerPhone)}</span>
+                        {search.criteria.maxPrice && (
+                          <span className="text-[var(--text-primary)] font-medium">
+                            Max LKR {(search.criteria.maxPrice / 1000000).toFixed(1)}M
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Bottom: Match Counter or Radar Status */}
+                    <div className="mt-3 pt-2.5 border-t border-[var(--border-hairline)] flex items-center justify-between text-[11px] font-mono">
+                      {hasMatches ? (
+                        <span className="inline-flex items-center gap-1.5 text-emerald-400 font-semibold">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                          <span>⚡ {matches.length} Showroom Unit{matches.length === 1 ? "" : "s"} Ready</span>
                         </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 text-[var(--text-muted)]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                          <span>Auction Radar Active</span>
+                        </span>
+                      )}
+
+                      <span className="text-[10px] text-[var(--text-muted)]">
+                        {new Date(search.createdAt).toLocaleDateString("en-LK", {
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </span>
                     </div>
                   </div>
+                );
+              })}
+            </div>
+          </div>
 
-                  {/* Row 2: Target Criteria Specification Matrix */}
-                  <div className="space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
-                      <div className="space-y-0.5">
-                        <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--text-secondary)]">
-                          Wishlist Target Query:
+          {/* Right Column: Detailed Match Studio Dossier (7 cols on lg, 8 on xl) */}
+          <div
+            className={`lg:col-span-7 xl:col-span-8 ${
+              showMobileDetail ? "block" : "hidden lg:block"
+            }`}
+          >
+            {activeDetail ? (
+              <div className="bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] p-6 sm:p-8 space-y-6 relative overflow-hidden">
+                {/* Mobile Back Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowMobileDetail(false)}
+                  className="lg:hidden mb-2 inline-flex items-center gap-1.5 text-xs font-mono uppercase text-[var(--accent)] cursor-pointer"
+                >
+                  <span>← Back to Buyer Queue</span>
+                </button>
+
+                {/* Section A: Buyer Profile & Contact Ribbon */}
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-5 border-b border-[var(--border-hairline)]">
+                  <div className="flex items-center gap-3.5">
+                    {/* Initials Avatar */}
+                    <div className="w-12 h-12 rounded-full bg-[var(--bg-base)] border border-[var(--accent)]/40 flex items-center justify-center font-serif text-lg font-normal text-[var(--accent)] shrink-0 shadow-inner">
+                      {activeDetail.search.customerName
+                        .split(" ")
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .map((p) => p[0].toUpperCase())
+                        .join("") || "VP"}
+                    </div>
+                    <div>
+                      <h3 className="font-serif text-2xl text-[var(--text-primary)] font-medium">
+                        {activeDetail.search.customerName}
+                      </h3>
+                      <div className="flex items-center gap-3 flex-wrap mt-0.5">
+                        <span className="text-xs font-mono text-[var(--text-secondary)]">
+                          {formatPhoneDisplay(activeDetail.search.customerPhone)}
                         </span>
-                        <h4 className="font-serif text-2xl text-[var(--accent)] font-normal tracking-tight">
-                          &ldquo;{search.queryTitle}&rdquo;
-                        </h4>
+                        <a
+                          href={buildWhatsAppUrl(
+                            activeDetail.search.customerPhone,
+                            `Hello ${activeDetail.search.customerName}, this is RS Enterprises Showroom regarding your vehicle inquiry.`
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-mono uppercase bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-[1px] hover:bg-emerald-500/25 transition-colors font-semibold cursor-pointer"
+                        >
+                          <span>WhatsApp Direct</span>
+                          <span className="text-[9px]">↗</span>
+                        </a>
+                        {activeDetail.search.customerEmail && (
+                          <span className="text-xs font-mono text-[var(--text-muted)]">
+                            {activeDetail.search.customerEmail}
+                          </span>
+                        )}
                       </div>
+                    </div>
+                  </div>
 
-                      {search.criteria.maxPrice && (
-                        <div className="text-left sm:text-right">
-                          <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] block">
-                            Target Budget Ceiling
-                          </span>
-                          <span className="font-serif text-xl sm:text-2xl text-[var(--text-primary)] font-light tabular-nums">
-                            LKR {search.criteria.maxPrice.toLocaleString("en-US")}
-                          </span>
-                        </div>
-                      )}
+                  {/* Top Right: Status Badge & Delete */}
+                  <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                    {activeDetail.search.status !== "fulfilled" ? (
+                      <button
+                        type="button"
+                        onClick={() => onFulfill(activeDetail.search.id)}
+                        className="px-3 py-1.5 text-[11px] font-mono uppercase bg-[var(--bg-base)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-emerald-400 hover:border-emerald-500/40 rounded-[2px] transition-colors cursor-pointer"
+                        title="Mark inquiry as acquired / fulfilled"
+                      >
+                        ✓ Mark Fulfilled
+                      </button>
+                    ) : (
+                      <span className="px-2.5 py-1 text-[10px] font-mono uppercase bg-slate-500/15 text-slate-300 border border-slate-500/30 rounded-[2px]">
+                        Fulfilled
+                      </span>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => onDelete(activeDetail.search.id)}
+                      className="px-2.5 py-1.5 text-[11px] font-mono uppercase text-red-400/80 hover:text-red-300 hover:bg-red-950/20 rounded-[2px] transition-colors cursor-pointer"
+                      title="Delete demand record"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+
+                {/* Section B: Target Inquiry Specification Matrix */}
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
+                    <div>
+                      <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--text-secondary)]">
+                        Target Requirement:
+                      </span>
+                      <h4 className="font-serif text-2xl text-[var(--accent)] font-normal tracking-tight">
+                        &ldquo;{activeDetail.search.queryTitle}&rdquo;
+                      </h4>
                     </div>
 
-                    {/* Specification Badges */}
-                    <div className="flex flex-wrap items-center gap-2 pt-1 text-xs font-mono">
-                      {search.criteria.make && search.criteria.make !== "all" && (
-                        <span className="px-2.5 py-1 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] text-[var(--text-primary)]">
-                          Brand: <strong className="font-semibold">{search.criteria.make}</strong>
+                    {activeDetail.search.criteria.maxPrice && (
+                      <div className="text-left sm:text-right">
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] block">
+                          Budget Ceiling
                         </span>
-                      )}
-                      {(search.criteria.model || search.criteria.keyword) && (
-                        <span className="px-2.5 py-1 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] text-[var(--text-primary)]">
-                          Model: <strong className="font-semibold">{search.criteria.model || search.criteria.keyword}</strong>
+                        <span className="font-serif text-xl sm:text-2xl text-[var(--text-primary)] font-light tabular-nums">
+                          LKR {activeDetail.search.criteria.maxPrice.toLocaleString("en-US")}
                         </span>
-                      )}
-                      {(search.criteria.minYear || search.criteria.maxYear) && (
-                        <span className="px-2.5 py-1 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] text-[var(--text-secondary)]">
-                          Year: {search.criteria.minYear || "Any"} – {search.criteria.maxYear || "Present"}
-                        </span>
-                      )}
-                      {search.criteria.bodyType && search.criteria.bodyType !== "all" && (
-                        <span className="px-2.5 py-1 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] text-[var(--text-secondary)]">
-                          Body: {search.criteria.bodyType.toUpperCase()}
-                        </span>
-                      )}
-                      {search.criteria.fuel && search.criteria.fuel !== "all" && (
-                        <span className="px-2.5 py-1 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] text-[var(--text-secondary)]">
-                          Fuel: {search.criteria.fuel.toUpperCase()}
-                        </span>
-                      )}
-                      {search.criteria.branch && search.criteria.branch !== "all" && (
-                        <span className="px-2.5 py-1 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] text-[var(--text-secondary)]">
-                          Branch: {search.criteria.branch === "trincomalee" ? "Trincomalee" : "Kaduruwela"}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Customer Notes Quote */}
-                    {search.notes && (
-                      <div className="p-3 bg-[var(--bg-base)] border-l-2 border-[var(--accent)] text-xs text-[var(--text-secondary)] font-light italic rounded-r-[2px]">
-                        &ldquo;{search.notes}&rdquo;
                       </div>
                     )}
                   </div>
 
-                  {/* Row 3: Matching Showroom Inventory Units */}
-                  <div className="pt-2">
-                    {hasMatches ? (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between pb-1">
-                          <span className="text-[11px] font-mono uppercase tracking-wider text-[var(--text-secondary)] font-semibold flex items-center gap-1.5">
-                            <span className="text-emerald-400">●</span>
-                            <span>Matching Showroom Units Available for Dispatch ({matches.length})</span>
-                          </span>
-                        </div>
+                  {/* Specification Badges */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1 text-xs font-mono">
+                    {activeDetail.search.criteria.make && activeDetail.search.criteria.make !== "all" && (
+                      <span className="px-2.5 py-1 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] text-[var(--text-primary)]">
+                        Brand: <strong className="font-semibold">{activeDetail.search.criteria.make}</strong>
+                      </span>
+                    )}
+                    {(activeDetail.search.criteria.model || activeDetail.search.criteria.keyword) && (
+                      <span className="px-2.5 py-1 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] text-[var(--text-primary)]">
+                        Model: <strong className="font-semibold">{activeDetail.search.criteria.model || activeDetail.search.criteria.keyword}</strong>
+                      </span>
+                    )}
+                    {(activeDetail.search.criteria.minYear || activeDetail.search.criteria.maxYear) && (
+                      <span className="px-2.5 py-1 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] text-[var(--text-secondary)]">
+                        Year: {activeDetail.search.criteria.minYear || "Any"} – {activeDetail.search.criteria.maxYear || "Present"}
+                      </span>
+                    )}
+                    {activeDetail.search.criteria.bodyType && activeDetail.search.criteria.bodyType !== "all" && (
+                      <span className="px-2.5 py-1 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] text-[var(--text-secondary)]">
+                        Body: {activeDetail.search.criteria.bodyType.toUpperCase()}
+                      </span>
+                    )}
+                    {activeDetail.search.criteria.fuel && activeDetail.search.criteria.fuel !== "all" && (
+                      <span className="px-2.5 py-1 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] text-[var(--text-secondary)]">
+                        Fuel: {activeDetail.search.criteria.fuel.toUpperCase()}
+                      </span>
+                    )}
+                    {activeDetail.search.criteria.branch && activeDetail.search.criteria.branch !== "all" && (
+                      <span className="px-2.5 py-1 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] text-[var(--text-secondary)]">
+                        Branch: {activeDetail.search.criteria.branch === "trincomalee" ? "Trincomalee" : "Kaduruwela"}
+                      </span>
+                    )}
+                  </div>
 
-                        <div className="grid grid-cols-1 gap-3">
-                          {matches.map((v) => {
-                            const isAlreadyNotified = search.matchedVehicleIds.includes(v.id);
-                            const isSending = sendingAlertId === `${search.id}-${v.id}`;
-                            const primaryImage = v.images[0] || "/images/vehicles/placeholder-coming-soon.png";
+                  {/* Customer Notes Quote */}
+                  {activeDetail.search.notes && (
+                    <div className="p-3.5 bg-[var(--bg-base)] border-l-2 border-[var(--accent)] text-xs text-[var(--text-secondary)] font-light italic rounded-r-[2px]">
+                      &ldquo;{activeDetail.search.notes}&rdquo;
+                    </div>
+                  )}
+                </div>
 
-                            return (
-                              <div
-                                key={v.id}
-                                className="p-4 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-[var(--accent)]/40 transition-colors"
-                              >
-                                <div className="flex items-center gap-4">
-                                  {/* Vehicle Thumbnail */}
-                                  <div className="w-20 shrink-0">
-                                    <VehicleImage
-                                      src={primaryImage}
-                                      alt={`${v.year} ${v.make} ${v.model}`}
-                                      aspectRatio="16/10"
-                                    />
-                                  </div>
+                {/* Section C: Live Showroom Matching Studio */}
+                <div className="pt-2 border-t border-[var(--border-hairline)] space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono uppercase tracking-wider text-[var(--text-secondary)] font-semibold flex items-center gap-2">
+                      <span className="text-emerald-400">●</span>
+                      <span>Showroom Cross-Reference &amp; Dispatch Studio</span>
+                    </span>
 
-                                  <div className="space-y-1">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <Link
-                                        href={`/vehicles/${v.slug}`}
-                                        target="_blank"
-                                        className="font-serif text-lg text-[var(--text-primary)] hover:text-[var(--accent)] transition-colors underline font-medium"
-                                      >
-                                        {v.year} {v.make} {v.model}
-                                      </Link>
-                                      {v.grade && (
-                                        <span className="text-[10px] font-mono px-2 py-0.5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] text-[var(--text-secondary)] uppercase">
-                                          {v.grade}
-                                        </span>
-                                      )}
-                                    </div>
+                    {activeDetail.matches.length > 0 && (
+                      <span className="text-xs font-mono text-emerald-400 font-semibold">
+                        ⚡ {activeDetail.matches.length} Chassis Available in Fleet
+                      </span>
+                    )}
+                  </div>
 
-                                    <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-[var(--text-secondary)]">
-                                      <span className="text-[var(--accent)] font-semibold text-sm">
-                                        {v.price ? `LKR ${v.price.toLocaleString("en-US")}` : "Price on Call"}
-                                      </span>
-                                      <span>&bull;</span>
-                                      <span>{v.mileage.toLocaleString("en-US")} KM</span>
-                                      <span>&bull;</span>
-                                      <span className="capitalize">{v.branch === "trincomalee" ? "Trincomalee Branch" : "Kaduruwela Showroom"}</span>
-                                      {isAlreadyNotified && (
-                                        <>
-                                          <span>&bull;</span>
-                                          <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                                            <span>✓</span>
-                                            <span>Alert Previously Sent</span>
-                                          </span>
-                                        </>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
+                  {activeDetail.matches.length > 0 ? (
+                    <div className="space-y-3">
+                      {activeDetail.matches.map((v) => {
+                        const isAlreadyNotified = activeDetail.search.matchedVehicleIds.includes(v.id);
+                        const isSending = sendingAlertId === `${activeDetail.search.id}-${v.id}`;
+                        const primaryImage = v.images[0] || "/images/vehicles/placeholder-coming-soon.png";
 
-                                {/* Dispatch Trigger Button */}
-                                <div className="flex items-center gap-3 shrink-0">
+                        return (
+                          <div
+                            key={v.id}
+                            className="p-4 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-[var(--accent)]/40 transition-colors"
+                          >
+                            <div className="flex items-center gap-4">
+                              {/* Vehicle Thumbnail */}
+                              <div className="w-24 shrink-0">
+                                <VehicleImage
+                                  src={primaryImage}
+                                  alt={`${v.year} ${v.make} ${v.model}`}
+                                  aspectRatio="16/10"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   <Link
                                     href={`/vehicles/${v.slug}`}
                                     target="_blank"
-                                    className="px-3 py-2 text-xs font-mono uppercase text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px] transition-colors"
+                                    className="font-serif text-lg text-[var(--text-primary)] hover:text-[var(--accent)] transition-colors underline font-medium"
                                   >
-                                    View Dossier ↗
+                                    {v.year} {v.make} {v.model}
                                   </Link>
+                                  {v.grade && (
+                                    <span className="text-[10px] font-mono px-2 py-0.5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] text-[var(--text-secondary)] uppercase">
+                                      {v.grade}
+                                    </span>
+                                  )}
+                                </div>
 
-                                  <button
-                                    type="button"
-                                    disabled={isSending}
-                                    onClick={async () => {
-                                      setSendingAlertId(`${search.id}-${v.id}`);
-                                      await onSendAlert(search.id, v.id);
-                                      setSendingAlertId(null);
-                                    }}
-                                    className={`min-h-[42px] px-5 inline-flex items-center justify-center gap-2 text-xs font-sans uppercase font-medium tracking-[0.12em] rounded-[2px] cursor-pointer transition-all shadow-md disabled:opacity-50 ${
-                                      isAlreadyNotified
-                                        ? "bg-[var(--bg-surface)] border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white"
-                                        : "bg-emerald-600 hover:bg-emerald-500 text-white"
-                                    }`}
-                                  >
-                                    {isSending ? (
-                                      <span>Opening WhatsApp...</span>
-                                    ) : (
-                                      <>
-                                        <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                                          <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.18-2.587-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.694.075-2.222-.556-1.528-.631-2.518-2.183-2.593-2.285-.075-.102-.622-.828-.622-1.58 0-.752.39-1.121.529-1.272.138-.15.302-.188.404-.188.102 0 .204.001.294.006.094.004.22-.036.344.262.129.311.442 1.077.481 1.156.039.078.065.17.013.272-.051.102-.077.165-.152.253-.075.088-.158.197-.225.265-.076.076-.155.158-.067.31.088.152.393.649.843 1.05.58.517 1.07.677 1.222.753.152.076.241.063.33-.038.089-.102.381-.444.483-.596.102-.152.204-.127.343-.076.139.051.884.417 1.036.493.153.076.255.114.293.178.038.064.038.37-.106.775z" />
-                                        </svg>
-                                        <span>{isAlreadyNotified ? "Re-send WhatsApp Alert" : "Send WhatsApp Alert"}</span>
-                                      </>
-                                    )}
-                                  </button>
+                                <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-[var(--text-secondary)]">
+                                  <span className="text-[var(--accent)] font-semibold text-sm">
+                                    {v.price ? `LKR ${v.price.toLocaleString("en-US")}` : "Call for Price"}
+                                  </span>
+                                  <span>&bull;</span>
+                                  <span>{v.mileage.toLocaleString()} KM</span>
+                                  <span>&bull;</span>
+                                  <span className="uppercase">{v.fuel}</span>
+                                  <span>&bull;</span>
+                                  <span className="capitalize">{v.branch || "Kaduruwela"}</span>
+                                  {isAlreadyNotified && (
+                                    <>
+                                      <span>&bull;</span>
+                                      <span className="text-emerald-400 font-semibold inline-flex items-center gap-1">
+                                        <span>✓</span>
+                                        <span>Alert Previously Sent</span>
+                                      </span>
+                                    </>
+                                  )}
                                 </div>
                               </div>
-                            );
-                          })}
+                            </div>
+
+                            {/* Dispatch Trigger Button */}
+                            <div className="flex items-center gap-2.5 shrink-0">
+                              <Link
+                                href={`/vehicles/${v.slug}`}
+                                target="_blank"
+                                className="px-3 py-2 text-xs font-mono uppercase text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-hairline)] rounded-[2px] transition-colors"
+                              >
+                                View Dossier ↗
+                              </Link>
+
+                              <button
+                                type="button"
+                                disabled={isSending}
+                                onClick={async () => {
+                                  setSendingAlertId(`${activeDetail.search.id}-${v.id}`);
+                                  await onSendAlert(activeDetail.search.id, v.id);
+                                  setSendingAlertId(null);
+                                }}
+                                className={`min-h-[40px] px-4 inline-flex items-center justify-center gap-2 text-xs font-sans uppercase font-medium tracking-wider rounded-[2px] cursor-pointer transition-all shadow-sm disabled:opacity-50 ${
+                                  isAlreadyNotified
+                                    ? "bg-[var(--bg-surface)] border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white"
+                                    : "bg-emerald-600 hover:bg-emerald-500 text-white"
+                                }`}
+                              >
+                                {isSending ? (
+                                  <span>Opening WhatsApp...</span>
+                                ) : (
+                                  <>
+                                    <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                                      <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.18-2.587-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.694.075-2.222-.556-1.528-.631-2.518-2.183-2.593-2.285-.075-.102-.622-.828-.622-1.58 0-.752.39-1.121.529-1.272.138-.15.302-.188.404-.188.102 0 .204.001.294.006.094.004.22-.036.344.262.129.311.442 1.077.481 1.156.039.078.065.17.013.272-.051.102-.077.165-.152.253-.075.088-.158.197-.225.265-.076.076-.155.158-.067.31.088.152.393.649.843 1.05.58.517 1.07.677 1.222.753.152.076.241.063.33-.038.089-.102.381-.444.483-.596.102-.152.204-.127.343-.076.139.051.884.417 1.036.493.153.076.255.114.293.178.038.064.038.37-.106.775z" />
+                                    </svg>
+                                    <span>{isAlreadyNotified ? "Re-send Alert" : "Send WhatsApp Alert"}</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    /* Tokyo Auction Radar Box */
+                    <div className="p-5 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 shrink-0">
+                          <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping" />
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-[var(--text-primary)] block">
+                            Automated Japanese Auction Radar Active
+                          </span>
+                          <span className="text-xs text-[var(--text-secondary)] font-light leading-relaxed">
+                            0 units currently in Kaduruwela/Trincomalee showroom stock. System actively monitors upcoming Tokyo auction allocations (USS Tokyo, TAA, ARAI) for this chassis specification.
+                          </span>
                         </div>
                       </div>
-                    ) : (
-                      /* No matches currently in showroom: Radar Scanning Box */
-                      <div className="p-4 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-                          </div>
-                          <div>
-                            <span className="text-[var(--text-primary)] font-medium block">
-                              Automated Tokyo Auction Radar Active
-                            </span>
-                            <span className="text-[11px] text-[var(--text-secondary)] font-light">
-                              0 units currently in Kaduruwela showroom. System scans every new auction allocation for this specification.
-                            </span>
-                          </div>
-                        </div>
 
-                        <div className="shrink-0 text-left sm:text-right font-mono text-[10px] text-[var(--text-muted)]">
-                          USS Tokyo &bull; TAA &bull; ARAI
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono uppercase bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] text-[var(--text-secondary)] shrink-0">
+                        <span>📡</span>
+                        <span>Radar Active</span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Section D: Notification Dispatch Log */}
+                {activeDetail.search.notificationLog && activeDetail.search.notificationLog.length > 0 && (
+                  <div className="pt-4 border-t border-[var(--border-hairline)] space-y-2.5">
+                    <span className="text-[11px] font-mono uppercase tracking-wider text-[var(--text-secondary)] font-semibold block">
+                      Dispatched Alert History ({activeDetail.search.notificationLog.length})
+                    </span>
+                    <div className="space-y-2">
+                      {activeDetail.search.notificationLog.map((log, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] flex items-center justify-between text-xs font-mono"
+                        >
+                          <div className="space-y-0.5">
+                            <span className="text-[var(--text-primary)] font-medium block">
+                              WhatsApp Dossier Sent: {log.vehicleTitle}
+                            </span>
+                            <span className="text-[10px] text-[var(--text-muted)]">
+                              Delivered on {new Date(log.notifiedAt).toLocaleString("en-LK")}
+                            </span>
+                          </div>
+                          <Link
+                            href={`/vehicles/${log.vehicleSlug}`}
+                            target="_blank"
+                            className="text-[var(--accent)] underline hover:no-underline text-[11px]"
+                          >
+                            View Vehicle ↗
+                          </Link>
                         </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-12 text-center border border-[var(--border-hairline)] bg-[var(--bg-surface)] rounded-[2px] text-xs text-[var(--text-secondary)]">
+                Select a buyer from the queue to view target specifications and showroom matches.
+              </div>
+            )}
+          </div>
+        </div>
+      ) : viewMode === "table" ? (
+        /* ============================================================
+           MODE B: HIGH-DENSITY TABLE VIEW (WITH PAGINATION)
+           ============================================================ */
+        <div className="space-y-4">
+          <div className="overflow-x-auto bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px]">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[var(--bg-base)] border-b border-[var(--border-hairline)] text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)]">
+                <tr>
+                  <th className="py-3 px-4 font-medium">Customer / Phone</th>
+                  <th className="py-3 px-4 font-medium">Desired Vehicle Query</th>
+                  <th className="py-3 px-4 font-medium">Target Budget</th>
+                  <th className="py-3 px-4 font-medium">Showroom Match</th>
+                  <th className="py-3 px-4 font-medium">Status</th>
+                  <th className="py-3 px-4 font-medium">Registered</th>
+                  <th className="py-3 px-4 font-medium text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border-hairline)]">
+                {paginatedTableItems.map(({ search, matches }) => {
+                  const hasMatches = matches.length > 0;
+                  const waDirectUrl = buildWhatsAppUrl(
+                    search.customerPhone,
+                    `Hello ${search.customerName}, this is RS Enterprises Showroom regarding your vehicle inquiry.`
+                  );
+
+                  return (
+                    <tr
+                      key={search.id}
+                      className="hover:bg-[var(--bg-base)] transition-colors group cursor-pointer"
+                      onClick={() => {
+                        setSelectedSearchId(search.id);
+                        setViewMode("split");
+                        setShowMobileDetail(true);
+                      }}
+                    >
+                      {/* Customer */}
+                      <td className="py-3.5 px-4">
+                        <div className="font-serif text-sm text-[var(--text-primary)] font-medium">
+                          {search.customerName}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs font-mono text-[var(--text-secondary)] mt-0.5">
+                          <span>{formatPhoneDisplay(search.customerPhone)}</span>
+                          <a
+                            href={waDirectUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-emerald-400 hover:text-emerald-300"
+                            title="Direct WhatsApp"
+                          >
+                            ↗
+                          </a>
+                        </div>
+                      </td>
+
+                      {/* Query Title */}
+                      <td className="py-3.5 px-4">
+                        <div className="text-[var(--accent)] font-medium">
+                          &ldquo;{search.queryTitle}&rdquo;
+                        </div>
+                        <div className="text-[10px] font-mono text-[var(--text-muted)] mt-0.5">
+                          {search.criteria.make && search.criteria.make !== "all" && `${search.criteria.make} • `}
+                          {search.criteria.minYear || 2018}–{search.criteria.maxYear || "Present"}
+                          {search.criteria.bodyType && search.criteria.bodyType !== "all" && ` • ${search.criteria.bodyType}`}
+                        </div>
+                      </td>
+
+                      {/* Budget */}
+                      <td className="py-3.5 px-4 font-mono text-xs text-[var(--text-primary)]">
+                        {search.criteria.maxPrice
+                          ? `LKR ${search.criteria.maxPrice.toLocaleString("en-US")}`
+                          : "Unspecified"}
+                      </td>
+
+                      {/* Matches */}
+                      <td className="py-3.5 px-4">
+                        {hasMatches ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-mono uppercase bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-full font-semibold">
+                            <span>⚡</span>
+                            <span>{matches.length} in Showroom</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono uppercase bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border-hairline)] rounded-full">
+                            Radar Active
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-3.5 px-4">
+                        <span
+                          className={`text-[9px] font-mono uppercase px-2 py-0.5 rounded-full border ${
+                            search.status === "active"
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-semibold"
+                              : search.status === "notified"
+                              ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                              : "bg-slate-500/10 text-slate-400 border-slate-500/30"
+                          }`}
+                        >
+                          {search.status === "active"
+                            ? "Active"
+                            : search.status === "notified"
+                            ? "Alert Sent"
+                            : "Fulfilled"}
+                        </span>
+                      </td>
+
+                      {/* Date */}
+                      <td className="py-3.5 px-4 font-mono text-[10px] text-[var(--text-muted)]">
+                        {new Date(search.createdAt).toLocaleDateString("en-LK", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-3.5 px-4 text-right">
+                        <div
+                          className="flex items-center justify-end gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedSearchId(search.id);
+                              setViewMode("split");
+                              setShowMobileDetail(true);
+                            }}
+                            className="px-2.5 py-1 text-[10px] font-mono uppercase bg-[var(--bg-base)] border border-[var(--border-hairline)] hover:border-[var(--accent)] text-[var(--text-primary)] rounded-[2px]"
+                          >
+                            Inspect Dossier
+                          </button>
+
+                          {hasMatches && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const v = matches[0];
+                                if (v) {
+                                  await onSendAlert(search.id, v.id);
+                                }
+                              }}
+                              className="px-2.5 py-1 text-[10px] font-mono uppercase bg-emerald-600 hover:bg-emerald-500 text-white rounded-[2px]"
+                              title="Send 1-click WhatsApp Alert for first matching vehicle"
+                            >
+                              Dispatch ⚡
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* AdminPagination for Table */}
+          <AdminPagination
+            currentPage={tablePage}
+            totalItems={filteredSearches.length}
+            pageSize={tablePageSize}
+            onPageChange={setTablePage}
+            onPageSizeChange={(sz) => {
+              setTablePageSize(sz);
+              setTablePage(1);
+            }}
+            pageSizeOptions={[10, 25, 50]}
+            itemName="buyer demands"
+          />
+        </div>
+      ) : (
+        /* ============================================================
+           MODE C: 2-COLUMN BALANCED CARD GRID (WITH PAGINATION)
+           ============================================================ */
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {paginatedGridItems.map(({ search, matches }) => {
+              const hasMatches = matches.length > 0;
+              const waDirectUrl = buildWhatsAppUrl(
+                search.customerPhone,
+                `Hello ${search.customerName}, this is RS Enterprises Showroom regarding your inquiry.`
+              );
+
+              return (
+                <div
+                  key={search.id}
+                  className={`bg-[var(--bg-surface)] border rounded-[2px] p-5 space-y-4 transition-all ${
+                    hasMatches && search.status === "active"
+                      ? "border-[var(--accent)] shadow-[0_0_15px_rgba(212,175,55,0.08)]"
+                      : "border-[var(--border-hairline)] hover:border-[var(--border-subtle)]"
+                  }`}
+                >
+                  {/* Card Header */}
+                  <div className="flex items-start justify-between gap-3 pb-3 border-b border-[var(--border-hairline)]">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-serif text-lg text-[var(--text-primary)] font-medium">
+                          {search.customerName}
+                        </h4>
+                        <a
+                          href={waDirectUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-emerald-400 hover:text-emerald-300 text-xs"
+                          title="Direct WhatsApp"
+                        >
+                          ↗
+                        </a>
+                      </div>
+                      <span className="text-xs font-mono text-[var(--text-secondary)]">
+                        {formatPhoneDisplay(search.customerPhone)}
+                      </span>
+                    </div>
+
+                    <span
+                      className={`text-[9px] font-mono uppercase px-2.5 py-0.5 rounded-full border ${
+                        search.status === "active"
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-semibold"
+                          : search.status === "notified"
+                          ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                          : "bg-slate-500/10 text-slate-400 border-slate-500/30"
+                      }`}
+                    >
+                      {search.status === "active"
+                        ? "Active"
+                        : search.status === "notified"
+                        ? "Alert Sent"
+                        : "Fulfilled"}
+                    </span>
+                  </div>
+
+                  {/* Target Query & Budget */}
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)]">
+                      Target Inquiry:
+                    </span>
+                    <div className="font-serif text-xl text-[var(--accent)] font-medium">
+                      &ldquo;{search.queryTitle}&rdquo;
+                    </div>
+                    {search.criteria.maxPrice && (
+                      <div className="text-xs font-mono text-[var(--text-primary)]">
+                        Budget Ceiling: LKR {search.criteria.maxPrice.toLocaleString("en-US")}
                       </div>
                     )}
                   </div>
 
-                  {/* Row 4: Card Footer & Notification Logs */}
-                  <div className="pt-3 border-t border-[var(--border-hairline)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                    {/* Log status */}
-                    <div>
-                      {search.notificationLog && search.notificationLog.length > 0 ? (
-                        <div className="text-[11px] font-mono text-[var(--text-secondary)] flex items-center gap-2">
-                          <span className="text-[var(--accent)] font-semibold">Latest Alert:</span>
-                          <span>
-                            {search.notificationLog[0]?.vehicleTitle} &bull;{" "}
-                            {new Date(search.notificationLog[0]?.notifiedAt || "").toLocaleDateString("en-LK", {
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-[11px] font-mono text-[var(--text-muted)]">
-                          No alerts dispatched yet for this buyer.
+                  {/* Match Preview */}
+                  <div className="pt-2 border-t border-[var(--border-hairline)]">
+                    {hasMatches ? (
+                      <div className="space-y-2">
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-semibold block">
+                          ⚡ {matches.length} Matching Unit{matches.length === 1 ? "" : "s"} in Stock
                         </span>
-                      )}
-                    </div>
+                        {/* Show first vehicle preview */}
+                        {matches[0] && (
+                          <div className="p-3 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] flex items-center justify-between gap-3 text-xs">
+                            <div className="space-y-0.5">
+                              <span className="text-[var(--text-primary)] font-medium block">
+                                {matches[0].year} {matches[0].make} {matches[0].model}
+                              </span>
+                              <span className="font-mono text-[var(--accent)] text-[11px]">
+                                {matches[0].price ? `LKR ${matches[0].price.toLocaleString("en-US")}` : "Call"}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => onSendAlert(search.id, matches[0].id)}
+                              className="px-3 py-1.5 text-[10px] font-mono uppercase bg-emerald-600 hover:bg-emerald-500 text-white rounded-[2px] cursor-pointer"
+                            >
+                              Dispatch Alert
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-xs font-mono text-[var(--text-muted)] flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-sky-400" />
+                        <span>Automated Tokyo Auction Radar Active</span>
+                      </div>
+                    )}
+                  </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-3">
-                      {search.status !== "fulfilled" ? (
-                        <button
-                          type="button"
-                          onClick={() => onFulfill(search.id)}
-                          className="px-3 py-1.5 text-[10px] font-mono uppercase bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--text-secondary)] hover:text-emerald-400 hover:border-emerald-500/40 transition-colors rounded-[2px] cursor-pointer"
-                        >
-                          ✓ Mark as Fulfilled
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => onFulfill(search.id)}
-                          className="px-3 py-1.5 text-[10px] font-mono uppercase bg-[var(--bg-base)] border border-[var(--border-hairline)] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors rounded-[2px] cursor-pointer"
-                        >
-                          ↺ Re-activate Alert
-                        </button>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => onDelete(search.id)}
-                        className="text-[10px] font-mono uppercase text-[var(--text-secondary)] hover:text-red-400 transition-colors cursor-pointer px-1"
-                      >
-                        Delete Wishlist
-                      </button>
-                    </div>
+                  {/* Footer Actions */}
+                  <div className="pt-2 border-t border-[var(--border-hairline)] flex items-center justify-between text-xs font-mono">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedSearchId(search.id);
+                        setViewMode("split");
+                        setShowMobileDetail(true);
+                      }}
+                      className="text-[var(--accent)] hover:underline"
+                    >
+                      Open Full Dossier →
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDelete(search.id)}
+                      className="text-red-400/80 hover:text-red-300"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+
+          {/* AdminPagination for Grid */}
+          <AdminPagination
+            currentPage={gridPage}
+            totalItems={filteredSearches.length}
+            pageSize={gridPageSize}
+            onPageChange={setGridPage}
+            onPageSizeChange={(sz) => {
+              setGridPageSize(sz);
+              setGridPage(1);
+            }}
+            pageSizeOptions={[10, 20, 50]}
+            itemName="buyer demands"
+          />
         </div>
       )}
 
-      {/* 5. Add Buyer Demand Modal */}
+      {/* 5. ADD BUYER DEMAND / WISHLIST MODAL */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
           <div
-            className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity"
-            onClick={() => setShowAddModal(false)}
-          />
-
-          <div className="relative w-full max-w-xl bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] p-6 sm:p-8 space-y-6 shadow-2xl z-10 my-8">
-            <div className="flex items-start justify-between pb-4 border-b border-[var(--border-hairline)]">
+            className="w-full max-w-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[2px] shadow-2xl p-6 sm:p-8 space-y-6 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-[var(--border-hairline)]">
               <div>
-                <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--accent)] font-semibold block">
-                  Walk-In &bull; Telephone Intake
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--accent)] block">
+                  Showroom Walk-in / Telephone Request
                 </span>
-                <h3 className="font-serif text-2xl text-[var(--text-primary)] font-normal mt-1">
+                <h3 className="font-serif text-2xl text-[var(--text-primary)] font-normal mt-0.5">
                   Record Buyer Demand Wishlist
                 </h3>
-                <p className="text-xs text-[var(--text-secondary)] font-light mt-0.5">
-                  Save prospective client requirements to auto-match against auction intake and current stock.
-                </p>
               </div>
               <button
                 type="button"
-                onClick={() => setShowAddModal(false)}
-                className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xl p-1 cursor-pointer"
+                onClick={handleCloseModal}
+                className="w-8 h-8 rounded-[2px] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors cursor-pointer flex items-center justify-center"
               >
                 ✕
               </button>
             </div>
 
+            {/* Error Banner */}
             {modalError && (
               <div className="p-3 bg-red-950/40 border border-red-500/40 text-red-200 text-xs rounded-[2px]">
                 {modalError}
               </div>
             )}
 
-            <form onSubmit={handleCreateWishlist} className="space-y-4">
-              {/* Buyer Contact Information */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] block">
-                    Customer Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={addName}
-                    onChange={(e) => setAddName(e.target.value)}
-                    placeholder="e.g. Dr. Rohan Jayasinghe"
-                    className="w-full h-10 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] block">
-                    Mobile Number (WhatsApp) *
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={addPhone}
-                    onChange={(e) => setAddPhone(e.target.value)}
-                    placeholder="077 123 4567"
-                    className="w-full h-10 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs font-mono text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] block">
-                  Email Address (Optional)
-                </label>
-                <input
-                  type="email"
-                  value={addEmail}
-                  onChange={(e) => setAddEmail(e.target.value)}
-                  placeholder="customer@domain.lk"
-                  className="w-full h-10 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs font-mono text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
-                />
-              </div>
-
-              {/* Target Vehicle Details */}
-              <div className="pt-2 border-t border-[var(--border-hairline)] space-y-4">
+            {/* Modal Form */}
+            <form onSubmit={handleAddWishlistSubmit} className="space-y-4 text-left">
+              <div className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] block">
-                      Target Make / Brand
+                      Buyer Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={addName}
+                      onChange={(e) => setAddName(e.target.value)}
+                      placeholder="e.g. Dr. Nalin Bandara"
+                      className="w-full h-10 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] block">
+                      WhatsApp / Phone (+94) *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={addPhone}
+                      onChange={(e) => setAddPhone(e.target.value)}
+                      placeholder="077 123 4567 or +9477..."
+                      className="w-full h-10 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] block">
+                      Manufacturer / Make
                     </label>
                     <select
                       value={addMake}
                       onChange={(e) => setAddMake(e.target.value)}
-                      className="w-full h-10 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] cursor-pointer"
+                      className="w-full h-10 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] cursor-pointer"
                     >
+                      <option value="all">Any Make</option>
                       <option value="Toyota">Toyota</option>
                       <option value="Honda">Honda</option>
-                      <option value="Nissan">Nissan</option>
                       <option value="Mitsubishi">Mitsubishi</option>
+                      <option value="Nissan">Nissan</option>
                       <option value="Suzuki">Suzuki</option>
-                      <option value="all">Any Japanese Make</option>
+                      <option value="Mazda">Mazda</option>
+                      <option value="Mercedes-Benz">Mercedes-Benz</option>
+                      <option value="BMW">BMW</option>
+                      <option value="Lexus">Lexus</option>
                     </select>
                   </div>
 
                   <div className="space-y-1">
                     <label className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] block">
-                      Model / Keyword
+                      Model / Package Name
                     </label>
                     <input
                       type="text"
                       value={addModel}
                       onChange={(e) => setAddModel(e.target.value)}
-                      placeholder="e.g. Prado, Vezel, X-Trail, Harrier"
+                      placeholder="e.g. Land Cruiser Prado TX-L or Vezel"
                       className="w-full h-10 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="space-y-1 sm:col-span-2">
+                  <div className="space-y-1">
                     <label className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] block">
                       Max Budget (LKR)
                     </label>
@@ -961,33 +1461,10 @@ export function SavedSearchesManager({
                       type="number"
                       value={addMaxPrice}
                       onChange={(e) => setAddMaxPrice(e.target.value)}
-                      placeholder="e.g. 25000000"
-                      className="w-full h-10 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs font-mono text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
+                      placeholder="e.g. 38500000"
+                      className="w-full h-10 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs font-mono text-[var(--text-primary)] rounded-[2px]"
                     />
-                    {addMaxPrice && Number(addMaxPrice) > 0 && (
-                      <span className="text-[10px] font-mono text-[var(--accent)] block">
-                        ≈ LKR {(Number(addMaxPrice) / 1000000).toFixed(2)} Million
-                      </span>
-                    )}
                   </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] block">
-                      Preferred Branch
-                    </label>
-                    <select
-                      value={addBranch}
-                      onChange={(e) => setAddBranch(e.target.value)}
-                      className="w-full h-10 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] cursor-pointer"
-                    >
-                      <option value="all">Any Branch</option>
-                      <option value="polonnaruwa">Kaduruwela Main</option>
-                      <option value="trincomalee">Trincomalee</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] block">
                       Min Year
@@ -1012,7 +1489,7 @@ export function SavedSearchesManager({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] block">
                       Powertrain
@@ -1046,6 +1523,21 @@ export function SavedSearchesManager({
                       <option value="wagon">Wagon</option>
                     </select>
                   </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)] block">
+                      Preferred Branch
+                    </label>
+                    <select
+                      value={addBranch}
+                      onChange={(e) => setAddBranch(e.target.value)}
+                      className="w-full h-10 px-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] cursor-pointer"
+                    >
+                      <option value="all">Any Showroom</option>
+                      <option value="polonnaruwa">Kaduruwela Main Showroom</option>
+                      <option value="trincomalee">Trincomalee Branch</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div className="space-y-1">
@@ -1067,7 +1559,7 @@ export function SavedSearchesManager({
                 <button
                   type="button"
                   disabled={isSubmitting}
-                  onClick={() => setShowAddModal(false)}
+                  onClick={handleCloseModal}
                   className="px-4 py-2 text-xs font-mono uppercase text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
                 >
                   Cancel

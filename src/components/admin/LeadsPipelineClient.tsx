@@ -112,6 +112,7 @@ export function LeadsPipelineClient({
 
   // Add Lead Modal
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddWishlistModal, setShowAddWishlistModal] = useState(false);
   const [addName, setAddName] = useState("");
   const [addPhone, setAddPhone] = useState("");
   const [addVehicleTitle, setAddVehicleTitle] = useState("");
@@ -755,121 +756,142 @@ export function LeadsPipelineClient({
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[var(--border-hairline)]">
         <div>
-          <Eyebrow>Customer Enquiries &amp; Pipeline</Eyebrow>
+          <Eyebrow>
+            {activeTab === "pipeline"
+              ? "Customer Enquiries & Pipeline"
+              : "VIP Demand Radar • Japanese Auction Cross-Reference"}
+          </Eyebrow>
           <Heading level={1} className="text-3xl sm:text-4xl mt-1">
-            Leads
+            {activeTab === "pipeline" ? "Leads" : "Saved Searches & Alerts"}
           </Heading>
           <p className="text-xs text-[var(--text-secondary)] font-light mt-1">
-            Manage incoming inquiries, schedule viewings, and log customer conversations
+            {activeTab === "pipeline"
+              ? "Manage incoming inquiries, schedule viewings, and log customer conversations"
+              : "Track prospective buyer wishlists and dispatch verified WhatsApp stock alerts as Japanese chassis dock"}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
-          {/* Export PDF Menu */}
-          <div className="relative" ref={exportMenuRef}>
+          {activeTab === "pipeline" ? (
+            <>
+              {/* Export PDF Menu */}
+              <div className="relative" ref={exportMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (filteredLeads.length === leads.length) {
+                      exportLeadsToPDF(leads, {
+                        title: "RS ENTERPRISES • CUSTOMER ENQUIRIES & PIPELINE REPORT",
+                        filterSummary: `All Showroom Enquiries (${leads.length} Records)`,
+                      });
+                    } else {
+                      setShowExportMenu((prev) => !prev);
+                    }
+                  }}
+                  className="min-h-[44px] px-4 inline-flex items-center justify-center gap-2 text-xs font-sans uppercase font-medium tracking-wider bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors rounded-[2px] cursor-pointer shadow-sm"
+                  aria-label="Export leads to PDF report"
+                >
+                  <svg className="w-4 h-4 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                  <span>Export PDF</span>
+                  {filteredLeads.length !== leads.length && (
+                    <svg className={`w-3.5 h-3.5 text-[var(--text-secondary)] transition-transform duration-200 ${showExportMenu ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  )}
+                </button>
+
+                {showExportMenu && filteredLeads.length !== leads.length && (
+                  <div className="absolute right-0 mt-2 w-72 bg-[var(--bg-surface)] border border-[var(--border-subtle)] shadow-2xl z-30 rounded-[2px] p-2 space-y-2 animate-in fade-in zoom-in-95 duration-100">
+                    <div className="px-3 py-2 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px]">
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)]">PDF Scope</div>
+                      <div className="text-xs font-medium text-[var(--text-primary)] mt-0.5">
+                        Filter Active: {filteredLeads.length} of {leads.length} Leads
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          exportLeadsToPDF(filteredLeads, {
+                            title:
+                              filterMonth !== "all"
+                                ? `RS ENTERPRISES • ${activeMonthLabel.toUpperCase()} CUSTOMERS & ENQUIRIES REPORT`
+                                : "RS ENTERPRISES • FILTERED CUSTOMERS & ENQUIRIES REPORT",
+                            filterSummary:
+                              filterMonth !== "all"
+                                ? `${activeMonthLabel} Monthly Customers (${filteredLeads.length} of ${leads.length} Records)`
+                                : `Filtered View (${filteredLeads.length} of ${leads.length} Records)`,
+                          });
+                          setShowExportMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2.5 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-base)] rounded-[2px] flex items-center justify-between transition-colors cursor-pointer"
+                      >
+                        <div>
+                          <div className="font-medium flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]"></span>
+                            <span>{filterMonth !== "all" ? `${activeMonthLabel} Report` : "Filtered View"}</span>
+                          </div>
+                          <div className="text-[10px] text-[var(--text-secondary)] mt-0.5">
+                            {filteredLeads.length} leads matching filter
+                          </div>
+                        </div>
+                        <svg className="w-4 h-4 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          exportLeadsToPDF(leads, {
+                            title: "RS ENTERPRISES • COMPLETE CUSTOMERS & ENQUIRIES REPORT",
+                            filterSummary: `All Showroom Records (${leads.length} Total Records)`,
+                          });
+                          setShowExportMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-base)] rounded-[2px] flex items-center justify-between transition-colors cursor-pointer"
+                      >
+                        <div>
+                          <div className="font-medium flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-neutral-500"></span>
+                            <span>All Showroom Records</span>
+                          </div>
+                          <div className="text-[10px] text-[var(--text-secondary)] mt-0.5">
+                            {leads.length} total showroom records
+                          </div>
+                        </div>
+                        <svg className="w-4 h-4 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowAddModal(true)}
+                className="min-h-[44px] px-6 inline-flex items-center justify-center text-xs font-sans uppercase font-medium tracking-wider bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors shadow-sm rounded-[2px] cursor-pointer"
+              >
+                + Add Lead (Phone / Walk-in)
+              </button>
+            </>
+          ) : (
             <button
               type="button"
-              onClick={() => {
-                if (filteredLeads.length === leads.length) {
-                  exportLeadsToPDF(leads, {
-                    title: "RS ENTERPRISES • CUSTOMER ENQUIRIES & PIPELINE REPORT",
-                    filterSummary: `All Showroom Enquiries (${leads.length} Records)`,
-                  });
-                } else {
-                  setShowExportMenu((prev) => !prev);
-                }
-              }}
-              className="min-h-[44px] px-4 inline-flex items-center justify-center gap-2 text-xs font-sans uppercase font-medium tracking-wider bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors rounded-[2px] cursor-pointer shadow-sm"
-              aria-label="Export leads to PDF report"
+              onClick={() => setShowAddWishlistModal(true)}
+              className="min-h-[44px] px-6 inline-flex items-center justify-center gap-2 text-xs font-sans uppercase font-medium tracking-wider bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors shadow-sm rounded-[2px] cursor-pointer"
             >
-              <svg className="w-4 h-4 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              <svg className="w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="2.2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
-              <span>Export PDF</span>
-              {filteredLeads.length !== leads.length && (
-                <svg className={`w-3.5 h-3.5 text-[var(--text-secondary)] transition-transform duration-200 ${showExportMenu ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              )}
+              <span>+ Record Buyer Wishlist</span>
             </button>
-
-            {showExportMenu && filteredLeads.length !== leads.length && (
-              <div className="absolute right-0 mt-2 w-72 bg-[var(--bg-surface)] border border-[var(--border-subtle)] shadow-2xl z-30 rounded-[2px] p-2 space-y-2 animate-in fade-in zoom-in-95 duration-100">
-                <div className="px-3 py-2 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px]">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-secondary)]">PDF Scope</div>
-                  <div className="text-xs font-medium text-[var(--text-primary)] mt-0.5">
-                    Filter Active: {filteredLeads.length} of {leads.length} Leads
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      exportLeadsToPDF(filteredLeads, {
-                        title:
-                          filterMonth !== "all"
-                            ? `RS ENTERPRISES • ${activeMonthLabel.toUpperCase()} CUSTOMERS & ENQUIRIES REPORT`
-                            : "RS ENTERPRISES • FILTERED CUSTOMERS & ENQUIRIES REPORT",
-                        filterSummary:
-                          filterMonth !== "all"
-                            ? `${activeMonthLabel} Monthly Customers (${filteredLeads.length} of ${leads.length} Records)`
-                            : `Filtered View (${filteredLeads.length} of ${leads.length} Records)`,
-                      });
-                      setShowExportMenu(false);
-                    }}
-                    className="w-full text-left px-3 py-2.5 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-base)] rounded-[2px] flex items-center justify-between transition-colors cursor-pointer"
-                  >
-                    <div>
-                      <div className="font-medium flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]"></span>
-                        <span>{filterMonth !== "all" ? `${activeMonthLabel} Report` : "Filtered View"}</span>
-                      </div>
-                      <div className="text-[10px] text-[var(--text-secondary)] mt-0.5">
-                        {filteredLeads.length} leads matching filter
-                      </div>
-                    </div>
-                    <svg className="w-4 h-4 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                    </svg>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      exportLeadsToPDF(leads, {
-                        title: "RS ENTERPRISES • COMPLETE CUSTOMERS & ENQUIRIES REPORT",
-                        filterSummary: `All Showroom Records (${leads.length} Total Records)`,
-                      });
-                      setShowExportMenu(false);
-                    }}
-                    className="w-full text-left px-3 py-2.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-base)] rounded-[2px] flex items-center justify-between transition-colors cursor-pointer"
-                  >
-                    <div>
-                      <div className="font-medium flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-neutral-500"></span>
-                        <span>All Showroom Records</span>
-                      </div>
-                      <div className="text-[10px] text-[var(--text-secondary)] mt-0.5">
-                        {leads.length} total showroom records
-                      </div>
-                    </div>
-                    <svg className="w-4 h-4 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setShowAddModal(true)}
-            className="min-h-[44px] px-6 inline-flex items-center justify-center text-xs font-sans uppercase font-medium tracking-wider bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors shadow-sm rounded-[2px] cursor-pointer"
-          >
-            + Add Lead (Phone / Walk-in)
-          </button>
+          )}
         </div>
       </div>
 
@@ -1966,6 +1988,8 @@ export function LeadsPipelineClient({
           onFulfill={handleFulfillSavedSearch}
           onDelete={handleDeleteSavedSearch}
           onCreatedSearch={(newSearch) => setSavedSearches((prev) => [newSearch, ...prev])}
+          externalOpenAddModal={showAddWishlistModal}
+          onCloseExternalModal={() => setShowAddWishlistModal(false)}
         />
       )}
 
