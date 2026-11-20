@@ -185,6 +185,8 @@ export function LeadsPipelineClient({
   const activeLead = leads.find((l) => l.id === activeLeadId) || null;
 
   // Dynamic Month Computations for Monthly Customers Filter
+  const customMonthInputRef = useRef<HTMLInputElement>(null);
+
   const currentYearMonth = useMemo(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -195,6 +197,36 @@ export function LeadsPipelineClient({
     d.setMonth(d.getMonth() - 1);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   }, []);
+
+  const currentMonthName = useMemo(() => {
+    return new Date().toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+  }, []);
+
+  const lastMonthName = useMemo(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+  }, []);
+
+  const thisMonthCount = useMemo(() => {
+    return leads.filter((l) => {
+      if (!l.createdAt) return false;
+      const d = new Date(l.createdAt);
+      if (isNaN(d.getTime())) return false;
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      return ym === currentYearMonth;
+    }).length;
+  }, [leads, currentYearMonth]);
+
+  const lastMonthCount = useMemo(() => {
+    return leads.filter((l) => {
+      if (!l.createdAt) return false;
+      const d = new Date(l.createdAt);
+      if (isNaN(d.getTime())) return false;
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      return ym === lastYearMonth;
+    }).length;
+  }, [leads, lastYearMonth]);
 
   const availableMonths = useMemo(() => {
     const monthMap = new Map<string, { label: string; count: number }>();
@@ -905,38 +937,11 @@ export function LeadsPipelineClient({
               />
             </div>
 
-            {/* Monthly Calendar Input (5 Cols) */}
+            {/* Monthly Inquiries Selector (5 Cols) */}
             <div className="sm:col-span-5 flex items-center gap-2">
-              <div className="relative flex-1">
-                <input
-                  type="month"
-                  value={
-                    filterMonth === "all"
-                      ? ""
-                      : filterMonth === "this_month"
-                      ? currentYearMonth
-                      : filterMonth === "last_month"
-                      ? lastYearMonth
-                      : filterMonth
-                  }
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setFilterMonth(val || "all");
-                  }}
-                  onClick={(e) => {
-                    try {
-                      (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.();
-                    } catch {
-                      // Fallback
-                    }
-                  }}
-                  className="w-full h-11 pl-9 pr-9 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] font-mono cursor-pointer"
-                  title="Click to open calendar and select any month"
-                  aria-label="Select Calendar Month"
-                />
-
-                {/* Left Calendar Icon */}
-                <div className="absolute left-3 pointer-events-none text-[var(--accent)]">
+              <div className="relative flex-1 h-11 flex items-center">
+                {/* Left Gold Calendar Icon - Strictly Vertically Centered */}
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-[var(--accent)] z-10">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                     <line x1="16" y1="2" x2="16" y2="6" />
@@ -945,24 +950,95 @@ export function LeadsPipelineClient({
                   </svg>
                 </div>
 
-                {/* Clear / All indicator */}
+                {/* Luxury Dropdown for Non-Technical Showroom Client */}
+                <select
+                  value={
+                    filterMonth === "all"
+                      ? "all"
+                      : filterMonth === "this_month"
+                      ? "this_month"
+                      : filterMonth === "last_month"
+                      ? "last_month"
+                      : filterMonth
+                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "__custom_calendar_picker__") {
+                      try {
+                        customMonthInputRef.current?.showPicker?.();
+                      } catch {
+                        // Fallback
+                      }
+                    } else {
+                      setFilterMonth(val);
+                    }
+                  }}
+                  className="w-full h-11 pl-9 pr-9 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] cursor-pointer appearance-none tracking-wide font-sans shadow-xs transition-colors"
+                  title="Filter customer inquiries by month"
+                  aria-label="Filter customer inquiries by month"
+                >
+                  <option value="all">All Inquiries ({leads.length} leads • All Time)</option>
+                  <option value="this_month">This Month ({currentMonthName} • {thisMonthCount} {thisMonthCount === 1 ? "lead" : "leads"})</option>
+                  <option value="last_month">Last Month ({lastMonthName} • {lastMonthCount} {lastMonthCount === 1 ? "lead" : "leads"})</option>
+
+                  {availableMonths.length > 0 && (
+                    <optgroup label="Showroom Recorded Months">
+                      {availableMonths.map((m) => (
+                        <option key={m.key} value={m.key}>
+                          {m.label} ({m.count} {m.count === 1 ? "lead" : "leads"})
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {/* Keep active custom month visible if not in availableMonths */}
+                  {filterMonth !== "all" &&
+                    filterMonth !== "this_month" &&
+                    filterMonth !== "last_month" &&
+                    !availableMonths.some((m) => m.key === filterMonth) && (
+                      <option value={filterMonth}>
+                        {activeMonthLabel} (Selected)
+                      </option>
+                    )}
+
+                  <option value="__custom_calendar_picker__">📅 Pick Any Month from Calendar...</option>
+                </select>
+
+                {/* Right Action: Clear '✕' when filtered, or Dropdown Chevron when all */}
                 {filterMonth !== "all" ? (
                   <button
                     type="button"
                     onClick={() => setFilterMonth("all")}
-                    className="absolute right-2.5 h-6 w-6 flex items-center justify-center text-xs text-[var(--text-secondary)] hover:text-status-danger hover:bg-[var(--bg-base)] rounded-[1px] transition-colors cursor-pointer"
+                    className="absolute inset-y-0 right-2.5 my-auto h-6 w-6 flex items-center justify-center text-xs text-[var(--text-secondary)] hover:text-status-danger hover:bg-[var(--bg-base)] rounded-[1px] transition-colors cursor-pointer z-10"
                     title="Clear month filter (Show all time)"
+                    aria-label="Clear month filter"
                   >
                     ✕
                   </button>
                 ) : (
-                  <span className="absolute right-2.5 text-[9px] font-mono text-[var(--text-muted)] pointer-events-none uppercase">
-                    All
-                  </span>
+                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-[var(--text-muted)] z-10">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 )}
+
+                {/* Hidden native input for custom calendar picking without visual artifacts */}
+                <input
+                  ref={customMonthInputRef}
+                  type="month"
+                  className="sr-only"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      setFilterMonth(e.target.value);
+                    }
+                  }}
+                />
               </div>
 
-              {/* Quick This Month / All Months Switcher */}
+              {/* Quick Switcher Strip */}
               <div className="inline-flex p-0.5 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] shrink-0">
                 <button
                   type="button"
@@ -988,6 +1064,30 @@ export function LeadsPipelineClient({
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                   <span>This Month</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      customMonthInputRef.current?.showPicker?.();
+                    } catch {
+                      // Fallback
+                    }
+                  }}
+                  className={`h-8 px-2 text-[10px] font-sans uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer flex items-center justify-center ${
+                    filterMonth !== "all" && filterMonth !== "this_month" && filterMonth !== "last_month"
+                      ? "bg-[var(--accent)] text-white font-medium shadow-xs"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  }`}
+                  title="Open Calendar to select custom month"
+                  aria-label="Open Calendar Month Picker"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
                 </button>
               </div>
             </div>

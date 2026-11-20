@@ -524,7 +524,7 @@ export function AdminAnalyticsClient({
                 title="Click to open calendar and select any month"
                 aria-label="Select custom month calendar"
               />
-              <div className="absolute left-2 pointer-events-none text-[var(--accent)]">
+              <div className="absolute inset-y-0 left-2 flex items-center pointer-events-none text-[var(--accent)]">
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                   <line x1="16" y1="2" x2="16" y2="6" />
@@ -536,7 +536,7 @@ export function AdminAnalyticsClient({
                 <button
                   type="button"
                   onClick={() => setPeriodFilter("all")}
-                  className="absolute right-1.5 h-5 w-5 flex items-center justify-center text-[10px] text-[var(--text-secondary)] hover:text-red-400 rounded-[1px] cursor-pointer"
+                  className="absolute inset-y-0 right-1.5 my-auto h-5 w-5 flex items-center justify-center text-[10px] text-[var(--text-secondary)] hover:text-status-danger rounded-[1px] cursor-pointer"
                   title="Clear custom month (Show All Time)"
                 >
                   ✕
