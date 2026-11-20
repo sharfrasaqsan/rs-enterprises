@@ -25,6 +25,34 @@ import {
 } from "@/lib/vehicles";
 import { getCompanySettings } from "@/lib/settings";
 
+function formatFuelSummary(fuel: string): { title: string; sub: string } {
+  const f = (fuel || "").toLowerCase();
+  switch (f) {
+    case "hybrid":
+      return { title: "Hybrid", sub: "Petrol + Electric" };
+    case "electric":
+      return { title: "Electric", sub: "Pure EV Drivetrain" };
+    case "diesel":
+      return { title: "Diesel", sub: "Common-Rail Turbo" };
+    case "petrol":
+    default:
+      return { title: "Petrol", sub: "Direct Injection" };
+  }
+}
+
+function formatTransmissionSummary(transmission: string): { title: string; sub: string } {
+  const t = (transmission || "").toLowerCase();
+  switch (t) {
+    case "cvt":
+      return { title: "CVT", sub: "Continuous Variable" };
+    case "manual":
+      return { title: "Manual", sub: "Precision Shifter" };
+    case "automatic":
+    default:
+      return { title: "Automatic", sub: "Electronic Drive" };
+  }
+}
+
 export async function generateStaticParams() {
   const vehicles = await getAllPublishedVehicles();
   return vehicles.map((v) => ({
@@ -266,34 +294,134 @@ export default async function VehicleDetailPage(props: {
                 {/* 1. Opening Full-Bleed Gallery */}
                 <VehicleGallery images={vehicle.images} title={vehicleTitle} slug={vehicle.slug} />
 
-                {/* 2. Key Figures (Large Light-weight Numerals) */}
-                <div className="p-6 sm:p-8 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] space-y-6">
-                  <Eyebrow>Technical Summary</Eyebrow>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-                    <Numeral
-                      value={vehicle.mileage.toLocaleString("en-US")}
-                      suffix="km"
-                      label="Certified Mileage"
-                      size="md"
-                    />
-                    <Numeral
-                      value={vehicle.engineCC.toLocaleString("en-US")}
-                      suffix="cc"
-                      label="Engine Displacement"
-                      size="md"
-                    />
-                    <Numeral
-                      value={vehicle.fuel.toUpperCase()}
-                      label="Powertrain"
-                      size="md"
-                    />
-                    <Numeral
-                      value={vehicle.transmission.toUpperCase()}
-                      label="Transmission"
-                      size="md"
-                    />
-                  </div>
-                </div>
+                {/* 2. Key Figures: Precision Engineered Spec Matrix */}
+                {(() => {
+                  const fuelSummary = formatFuelSummary(vehicle.fuel);
+                  const transSummary = formatTransmissionSummary(vehicle.transmission);
+                  return (
+                    <div className="p-5 sm:p-7 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] space-y-5">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border-hairline)] pb-4">
+                        <div className="space-y-0.5">
+                          <Eyebrow>Technical Summary</Eyebrow>
+                          <p className="text-xs text-[var(--text-secondary)] font-light">
+                            Certified Japanese factory specifications &amp; operational metrics
+                          </p>
+                        </div>
+                        <span className="self-start sm:self-center inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest text-[var(--accent)] bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+                          Auction Sheet Verified
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                        {/* Mileage */}
+                        <div className="p-4 bg-[var(--bg-base)] border border-[var(--border-hairline)] hover:border-[var(--accent)]/40 transition-colors rounded-[2px] flex flex-col justify-between space-y-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-[var(--text-muted)] whitespace-nowrap">
+                              Certified Mileage
+                            </span>
+                            <div className="w-6 h-6 rounded-[2px] bg-[var(--accent)]/10 text-[var(--accent)] flex items-center justify-center shrink-0" aria-hidden="true">
+                              <svg className="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="1.8">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.4 15a8 8 0 10-14.8 0" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v2" />
+                              </svg>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex items-baseline gap-1">
+                              <span className="font-serif text-2xl sm:text-3xl text-[var(--text-primary)] tabular-nums font-normal leading-tight">
+                                {vehicle.mileage.toLocaleString("en-US")}
+                              </span>
+                              <span className="font-mono text-xs uppercase text-[var(--text-muted)] font-medium">
+                                KM
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-mono text-[var(--accent)] uppercase tracking-wider block mt-1">
+                              Genuine &bull; Verified
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Displacement */}
+                        <div className="p-4 bg-[var(--bg-base)] border border-[var(--border-hairline)] hover:border-[var(--accent)]/40 transition-colors rounded-[2px] flex flex-col justify-between space-y-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-[var(--text-muted)] whitespace-nowrap">
+                              Engine Capacity
+                            </span>
+                            <div className="w-6 h-6 rounded-[2px] bg-[var(--accent)]/10 text-[var(--accent)] flex items-center justify-center shrink-0" aria-hidden="true">
+                              <svg className="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="1.8">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 8h2m12 0h2M7 8V6a1 1 0 011-1h8a1 1 0 011 1v2m-10 0v8a2 2 0 002 2h6a2 2 0 002-2V8M7 12h10m-8 4h6" />
+                              </svg>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex items-baseline gap-1">
+                              <span className="font-serif text-2xl sm:text-3xl text-[var(--text-primary)] tabular-nums font-normal leading-tight">
+                                {vehicle.engineCC.toLocaleString("en-US")}
+                              </span>
+                              <span className="font-mono text-xs uppercase text-[var(--text-muted)] font-medium">
+                                CC
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-mono text-[var(--accent)] uppercase tracking-wider block mt-1">
+                              Displacement
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Powertrain */}
+                        <div className="p-4 bg-[var(--bg-base)] border border-[var(--border-hairline)] hover:border-[var(--accent)]/40 transition-colors rounded-[2px] flex flex-col justify-between space-y-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-[var(--text-muted)] whitespace-nowrap">
+                              Powertrain
+                            </span>
+                            <div className="w-6 h-6 rounded-[2px] bg-[var(--accent)]/10 text-[var(--accent)] flex items-center justify-center shrink-0" aria-hidden="true">
+                              <svg className="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="1.8">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
+                            </div>
+                          </div>
+                          <div>
+                            <span className="font-sans text-xl sm:text-2xl font-semibold text-[var(--text-primary)] tracking-tight leading-tight block">
+                              {fuelSummary.title}
+                            </span>
+                            <span className="text-[10px] font-mono text-[var(--accent)] uppercase tracking-wider block mt-1">
+                              {fuelSummary.sub}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Transmission */}
+                        <div className="p-4 bg-[var(--bg-base)] border border-[var(--border-hairline)] hover:border-[var(--accent)]/40 transition-colors rounded-[2px] flex flex-col justify-between space-y-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-[var(--text-muted)] whitespace-nowrap">
+                              Transmission
+                            </span>
+                            <div className="w-6 h-6 rounded-[2px] bg-[var(--accent)]/10 text-[var(--accent)] flex items-center justify-center shrink-0" aria-hidden="true">
+                              <svg className="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="1.8">
+                                <circle cx="6" cy="6" r="2" />
+                                <circle cx="12" cy="6" r="2" />
+                                <circle cx="18" cy="6" r="2" />
+                                <circle cx="6" cy="18" r="2" />
+                                <circle cx="18" cy="18" r="2" />
+                                <path strokeLinecap="round" d="M6 8v8M12 8v4m-6 0h12M18 8v8" />
+                              </svg>
+                            </div>
+                          </div>
+                          <div>
+                            <span className="font-sans text-xl sm:text-2xl font-semibold text-[var(--text-primary)] tracking-tight leading-tight block">
+                              {transSummary.title}
+                            </span>
+                            <span className="text-[10px] font-mono text-[var(--accent)] uppercase tracking-wider block mt-1">
+                              {transSummary.sub}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* 3. Detailed Specifications List (Two-Column with Hairlines) */}
                 <div className="space-y-6">

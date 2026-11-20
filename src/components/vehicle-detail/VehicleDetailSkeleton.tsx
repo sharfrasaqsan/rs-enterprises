@@ -38,13 +38,19 @@ export function VehicleDetailSkeleton() {
               </div>
 
               {/* Technical Summary Matrix */}
-              <div className="p-6 sm:p-8 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] space-y-6">
-                <Skeleton className="w-36 h-3" />
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-                  <Skeleton className="h-14" />
-                  <Skeleton className="h-14" />
-                  <Skeleton className="h-14" />
-                  <Skeleton className="h-14" />
+              <div className="p-5 sm:p-7 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] space-y-5">
+                <div className="flex items-center justify-between pb-4 border-b border-[var(--border-hairline)]">
+                  <div className="space-y-1">
+                    <Skeleton className="w-36 h-3" />
+                    <Skeleton className="w-56 h-3" />
+                  </div>
+                  <Skeleton className="hidden sm:block w-32 h-6" />
+                </div>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  <Skeleton className="h-24 rounded-[2px]" />
+                  <Skeleton className="h-24 rounded-[2px]" />
+                  <Skeleton className="h-24 rounded-[2px]" />
+                  <Skeleton className="h-24 rounded-[2px]" />
                 </div>
               </div>
 
