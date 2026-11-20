@@ -26,6 +26,10 @@ export function AdminAnalyticsClient({
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
+  // Graph View Controls: "financials" (Revenue & Profit) vs "volume" (Cars Sold & Stock Added)
+  const [chartMetric, setChartMetric] = useState<"financials" | "volume">("financials");
+  const [hoveredMonthKey, setHoveredMonthKey] = useState<string | null>(null);
+
   // Default Margin Assumption (used when a vehicle has no explicit landed cost entered)
   const [defaultMarginPercent, setDefaultMarginPercent] = useState<number>(12);
 
@@ -235,6 +239,103 @@ export function AdminAnalyticsClient({
       winRate,
     };
   }, [filteredVehicles, filteredLeads, defaultMarginPercent, getVehicleFinancials]);
+
+  // Chronological Monthly Performance Data for the Executive Graph (Last 6 Months)
+  const monthlyChartData = useMemo(() => {
+    const now = new Date();
+    const discoveredMonths = new Set<string>();
+
+    vehicles.forEach((v) => {
+      const dateStr = v.updatedAt || v.createdAt;
+      if (dateStr) {
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+          discoveredMonths.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+        }
+      }
+    });
+
+    // Ensure the last 6 calendar months are represented
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      discoveredMonths.add(ym);
+    }
+
+    const sortedMonthKeys = Array.from(discoveredMonths).sort().slice(-6);
+
+    return sortedMonthKeys.map((ym) => {
+      const [year, month] = ym.split("-").map(Number);
+      const d = new Date(year, month - 1, 1);
+      const label = d.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+      const monthShort = d.toLocaleDateString("en-GB", { month: "short" });
+
+      const soldThisMonth = vehicles.filter((v) => {
+        if (v.status !== "sold") return false;
+        if (branchFilter !== "all" && v.branch !== branchFilter) return false;
+        const dateStr = v.updatedAt || v.createdAt;
+        const vd = new Date(dateStr);
+        if (!isNaN(vd.getTime())) {
+          const vym = `${vd.getFullYear()}-${String(vd.getMonth() + 1).padStart(2, "0")}`;
+          return vym === ym;
+        }
+        return false;
+      });
+
+      const addedThisMonth = vehicles.filter((v) => {
+        if (branchFilter !== "all" && v.branch !== branchFilter) return false;
+        const vd = new Date(v.createdAt);
+        if (!isNaN(vd.getTime())) {
+          const vym = `${vd.getFullYear()}-${String(vd.getMonth() + 1).padStart(2, "0")}`;
+          return vym === ym;
+        }
+        return false;
+      });
+
+      let revenue = 0;
+      let cost = 0;
+      let profit = 0;
+
+      soldThisMonth.forEach((v) => {
+        const f = getVehicleFinancials(v);
+        revenue += f.retailPrice;
+        cost += f.costPrice;
+        profit += f.grossProfit;
+      });
+
+      const margin = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
+
+      return {
+        key: ym,
+        label,
+        monthShort,
+        year,
+        revenue,
+        cost,
+        profit,
+        margin,
+        soldCount: soldThisMonth.length,
+        addedCount: addedThisMonth.length,
+      };
+    });
+  }, [vehicles, branchFilter, getVehicleFinancials]);
+
+  // Peak Revenue Month
+  const peakMonth = useMemo(() => {
+    if (monthlyChartData.length === 0) return null;
+    return [...monthlyChartData].sort((a, b) => b.revenue - a.revenue)[0];
+  }, [monthlyChartData]);
+
+  // Active or Hovered Month for Focus Banner
+  const activeHoveredMonth = useMemo(() => {
+    if (hoveredMonthKey) {
+      const found = monthlyChartData.find((m) => m.key === hoveredMonthKey);
+      if (found) return found;
+    }
+    return peakMonth && peakMonth.revenue > 0
+      ? peakMonth
+      : monthlyChartData[monthlyChartData.length - 1];
+  }, [hoveredMonthKey, monthlyChartData, peakMonth]);
 
   // Detailed Ledger List for the Data Table
   const tableLedger = useMemo(() => {
@@ -547,7 +648,411 @@ export function AdminAnalyticsClient({
       </div>
 
       {/* ========================================================= */}
-      {/* 4. VEHICLE SALES & PROFIT LEDGER                          */}
+      {/* 4. SHOWROOM MONTHLY REVENUE & PROFIT GRAPH               */}
+      {/* ========================================================= */}
+      <div className="p-6 bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-[2px] space-y-5 shadow-sm">
+        {/* Graph Header: Title, Legend & Mode Switcher */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[var(--border-hairline)]">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+              <Eyebrow>Performance Trends</Eyebrow>
+            </div>
+            <h3 className="font-serif text-xl sm:text-2xl text-[var(--text-primary)] mt-1 font-medium">
+              {chartMetric === "financials" ? "Revenue vs Net Profit Progression" : "Sales Volume & Showroom Inventory Growth"}
+            </h3>
+            <p className="text-xs text-[var(--text-secondary)] font-light mt-0.5">
+              Kaduruwela Showroom &bull; 6-month historical progression with interactive month inspection
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Legend Pills */}
+            <div className="flex items-center gap-3 text-xs font-mono">
+              {chartMetric === "financials" ? (
+                <>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-[2px] bg-gradient-to-t from-[#A88438] to-[#E8C55C]" />
+                    <span className="text-[var(--text-secondary)]">Gross Sales</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-[2px] bg-gradient-to-t from-[#059669] to-[#34D399]" />
+                    <span className="text-[var(--text-secondary)]">Net Profit</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-[2px] bg-gradient-to-t from-[#A88438] to-[#E8C55C]" />
+                    <span className="text-[var(--text-secondary)]">Delivered (Sold)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-[2px] bg-gradient-to-t from-[#0284C7] to-[#38BDF8]" />
+                    <span className="text-[var(--text-secondary)]">Stock Added</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Metric Mode Switcher */}
+            <div className="inline-flex p-0.5 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px]">
+              <button
+                type="button"
+                onClick={() => setChartMetric("financials")}
+                className={`h-7 px-3 text-[10px] font-sans uppercase font-medium tracking-wider rounded-[1px] transition-colors cursor-pointer ${
+                  chartMetric === "financials"
+                    ? "bg-[var(--accent)] text-white shadow-xs font-semibold"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                }`}
+              >
+                Revenue &amp; Profit (LKR)
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartMetric("volume")}
+                className={`h-7 px-3 text-[10px] font-sans uppercase font-medium tracking-wider rounded-[1px] transition-colors cursor-pointer ${
+                  chartMetric === "volume"
+                    ? "bg-[var(--accent)] text-white shadow-xs font-semibold"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                }`}
+              >
+                Volume (Cars)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Live Month Focus Banner */}
+        <div className="p-3 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse shrink-0" />
+            <span className="font-sans font-medium text-[var(--text-primary)]">
+              {activeHoveredMonth?.label || "October 2026"}:
+            </span>
+            {chartMetric === "financials" ? (
+              <>
+                <span className="font-mono text-status-success font-semibold">
+                  {formatLKR(activeHoveredMonth?.profit || 0)} Net Profit
+                </span>
+                {activeHoveredMonth?.margin ? (
+                  <span className="px-1.5 py-0.2 badge-status-success text-[10px] font-mono rounded-[1px]">
+                    {activeHoveredMonth.margin}% Margin
+                  </span>
+                ) : null}
+              </>
+            ) : (
+              <span className="font-mono text-[var(--text-primary)] font-semibold">
+                {activeHoveredMonth?.soldCount || 0} Delivered &bull; {activeHoveredMonth?.addedCount || 0} Added to Showroom
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 font-mono text-[11px] text-[var(--text-secondary)]">
+            <span>
+              Gross Sales: <strong className="text-[var(--text-primary)]">{formatLKR(activeHoveredMonth?.revenue || 0)}</strong>
+            </span>
+            <span>&bull;</span>
+            <span>
+              Delivered: <strong className="text-[var(--accent)]">{activeHoveredMonth?.soldCount || 0} cars</strong>
+            </span>
+            {periodFilter === activeHoveredMonth?.key ? (
+              <button
+                type="button"
+                onClick={() => setPeriodFilter("all")}
+                className="px-2 py-0.5 text-[9px] uppercase font-sans font-medium bg-[var(--accent)] text-white rounded-[1px] cursor-pointer"
+              >
+                Clear Month Filter
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setPeriodFilter(activeHoveredMonth?.key || "all")}
+                className="px-2 py-0.5 text-[9px] uppercase font-sans font-medium bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--accent)] text-[var(--text-primary)] rounded-[1px] cursor-pointer"
+              >
+                Filter Ledger &rarr;
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* SVG Responsive Chart */}
+        <div className="w-full overflow-x-auto pb-2">
+          {(() => {
+            const width = 800;
+            const height = 240;
+            const padLeft = 75;
+            const padRight = 25;
+            const padTop = 25;
+            const padBottom = 35;
+            const chartW = width - padLeft - padRight;
+            const chartH = height - padTop - padBottom;
+
+            // Calculations based on active metric
+            const maxFinancial = Math.max(...monthlyChartData.map((m) => m.revenue), 10_000_000);
+            const ceilingFinancial = Math.max(10_000_000, Math.ceil(maxFinancial / 10_000_000) * 10_000_000);
+
+            const maxUnits = Math.max(...monthlyChartData.map((m) => Math.max(m.soldCount, m.addedCount)), 4);
+            const ceilingVolume = Math.max(4, Math.ceil(maxUnits / 2) * 2);
+
+            const ceiling = chartMetric === "financials" ? ceilingFinancial : ceilingVolume;
+
+            const gridLevels = [1, 0.75, 0.5, 0.25, 0];
+            const slotW = chartW / monthlyChartData.length;
+            const barW = 24;
+            const gap = 5;
+
+            return (
+              <svg
+                viewBox={`0 0 ${width} ${height}`}
+                className="w-full h-auto min-w-[620px] select-none"
+                style={{ maxHeight: "280px" }}
+              >
+                <defs>
+                  {/* Champagne Gold Gradient for Gross Sales / Delivered */}
+                  <linearGradient id="goldBarGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#E8C55C" />
+                    <stop offset="100%" stopColor="#A88438" />
+                  </linearGradient>
+
+                  {/* Emerald Gradient for Net Profit */}
+                  <linearGradient id="emeraldBarGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#34D399" />
+                    <stop offset="100%" stopColor="#059669" />
+                  </linearGradient>
+
+                  {/* Sky Blue Gradient for Stock Added */}
+                  <linearGradient id="skyBarGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#38BDF8" />
+                    <stop offset="100%" stopColor="#0284C7" />
+                  </linearGradient>
+                </defs>
+
+                {/* Horizontal Gridlines & Y-Axis Labels */}
+                {gridLevels.map((lvl) => {
+                  const y = padTop + chartH * (1 - lvl);
+                  const labelValue = ceiling * lvl;
+                  const labelText =
+                    chartMetric === "financials"
+                      ? lvl === 0
+                        ? "LKR 0"
+                        : formatLKR(labelValue)
+                      : `${Math.round(labelValue)} cars`;
+
+                  return (
+                    <g key={lvl}>
+                      <line
+                        x1={padLeft}
+                        y1={y}
+                        x2={padLeft + chartW}
+                        y2={y}
+                        stroke="currentColor"
+                        className="text-[var(--border-hairline)]"
+                        strokeDasharray={lvl === 0 ? "none" : "3 3"}
+                        strokeWidth={lvl === 0 ? "1.5" : "1"}
+                      />
+                      <text
+                        x={padLeft - 10}
+                        y={y + 3.5}
+                        textAnchor="end"
+                        className="text-[10px] font-mono fill-[var(--text-secondary)] font-medium"
+                      >
+                        {labelText}
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {/* Vertical Monthly Bars & Hit Areas */}
+                {monthlyChartData.map((m, idx) => {
+                  const slotCenterX = padLeft + (idx + 0.5) * slotW;
+                  const isHovered = hoveredMonthKey === m.key;
+                  const isSelected = periodFilter === m.key;
+
+                  // Values
+                  const val1 = chartMetric === "financials" ? m.revenue : m.soldCount;
+                  const val2 = chartMetric === "financials" ? m.profit : m.addedCount;
+
+                  const bar1H = ceiling > 0 && val1 > 0 ? (val1 / ceiling) * chartH : 0;
+                  const bar2H = ceiling > 0 && val2 > 0 ? (val2 / ceiling) * chartH : 0;
+
+                  const bar1X = slotCenterX - barW - gap / 2;
+                  const bar1Y = padTop + chartH - bar1H;
+
+                  const bar2X = slotCenterX + gap / 2;
+                  const bar2Y = padTop + chartH - bar2H;
+
+                  return (
+                    <g key={m.key} className="transition-all duration-200">
+                      {/* Active / Hover Background Column Highlight */}
+                      <rect
+                        x={padLeft + idx * slotW + 4}
+                        y={padTop}
+                        width={slotW - 8}
+                        height={chartH + 30}
+                        fill="currentColor"
+                        className={`transition-opacity cursor-pointer ${
+                          isSelected
+                            ? "text-[var(--accent)] opacity-10"
+                            : isHovered
+                            ? "text-[var(--text-primary)] opacity-5"
+                            : "opacity-0"
+                        }`}
+                        rx="2"
+                        onMouseEnter={() => setHoveredMonthKey(m.key)}
+                        onClick={() => setPeriodFilter(periodFilter === m.key ? "all" : m.key)}
+                      />
+
+                      {/* Bar 1 (Gross Sales or Delivered) */}
+                      {bar1H > 0 ? (
+                        <g>
+                          <rect
+                            x={bar1X}
+                            y={bar1Y}
+                            width={barW}
+                            height={bar1H}
+                            fill="url(#goldBarGrad)"
+                            rx="2"
+                            ry="2"
+                            className="transition-all duration-200 cursor-pointer hover:brightness-110"
+                            onMouseEnter={() => setHoveredMonthKey(m.key)}
+                            onClick={() => setPeriodFilter(periodFilter === m.key ? "all" : m.key)}
+                          />
+                          {/* Value callout above Bar 1 */}
+                          <text
+                            x={bar1X + barW / 2}
+                            y={bar1Y - 5}
+                            textAnchor="middle"
+                            className="text-[9px] font-mono fill-[var(--text-primary)] font-semibold"
+                          >
+                            {chartMetric === "financials"
+                              ? `${(m.revenue / 1000000).toFixed(1)}M`
+                              : m.soldCount}
+                          </text>
+                        </g>
+                      ) : (
+                        <circle
+                          cx={bar1X + barW / 2}
+                          cy={padTop + chartH - 2}
+                          r="1.5"
+                          className="fill-[var(--text-secondary)] opacity-30"
+                        />
+                      )}
+
+                      {/* Bar 2 (Net Profit or Stock Added) */}
+                      {bar2H > 0 ? (
+                        <g>
+                          <rect
+                            x={bar2X}
+                            y={bar2Y}
+                            width={barW}
+                            height={bar2H}
+                            fill={chartMetric === "financials" ? "url(#emeraldBarGrad)" : "url(#skyBarGrad)"}
+                            rx="2"
+                            ry="2"
+                            className="transition-all duration-200 cursor-pointer hover:brightness-110"
+                            onMouseEnter={() => setHoveredMonthKey(m.key)}
+                            onClick={() => setPeriodFilter(periodFilter === m.key ? "all" : m.key)}
+                          />
+                          {/* Value callout above Bar 2 */}
+                          <text
+                            x={bar2X + barW / 2}
+                            y={bar2Y - 5}
+                            textAnchor="middle"
+                            className={`text-[9px] font-mono font-semibold ${
+                              chartMetric === "financials" ? "fill-emerald-500" : "fill-sky-400"
+                            }`}
+                          >
+                            {chartMetric === "financials"
+                              ? `${(m.profit / 1000000).toFixed(1)}M`
+                              : m.addedCount}
+                          </text>
+                        </g>
+                      ) : (
+                        <circle
+                          cx={bar2X + barW / 2}
+                          cy={padTop + chartH - 2}
+                          r="1.5"
+                          className="fill-[var(--text-secondary)] opacity-30"
+                        />
+                      )}
+
+                      {/* X-Axis Month Label */}
+                      <text
+                        x={slotCenterX}
+                        y={padTop + chartH + 20}
+                        textAnchor="middle"
+                        className={`text-[11px] font-sans transition-colors cursor-pointer ${
+                          isSelected
+                            ? "fill-[var(--accent)] font-bold"
+                            : isHovered
+                            ? "fill-[var(--text-primary)] font-semibold"
+                            : "fill-[var(--text-secondary)] font-medium"
+                        }`}
+                        onMouseEnter={() => setHoveredMonthKey(m.key)}
+                        onClick={() => setPeriodFilter(periodFilter === m.key ? "all" : m.key)}
+                      >
+                        {m.monthShort}
+                      </text>
+                      <text
+                        x={slotCenterX}
+                        y={padTop + chartH + 31}
+                        textAnchor="middle"
+                        className="text-[9px] font-mono fill-[var(--text-secondary)] opacity-60 cursor-pointer"
+                        onMouseEnter={() => setHoveredMonthKey(m.key)}
+                        onClick={() => setPeriodFilter(periodFilter === m.key ? "all" : m.key)}
+                      >
+                        {m.year}
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
+            );
+          })()}
+        </div>
+
+        {/* 6-Month Quick Snapshot Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-3 border-t border-[var(--border-hairline)]">
+          {monthlyChartData.map((m) => {
+            const isSelected = periodFilter === m.key;
+            const hasSales = m.soldCount > 0;
+
+            return (
+              <button
+                key={m.key}
+                type="button"
+                onClick={() => setPeriodFilter(isSelected ? "all" : m.key)}
+                onMouseEnter={() => setHoveredMonthKey(m.key)}
+                className={`p-2.5 text-left rounded-[2px] transition-all cursor-pointer border ${
+                  isSelected
+                    ? "bg-[var(--accent)] text-white border-[var(--accent)] shadow-sm"
+                    : "bg-[var(--bg-base)] border-[var(--border-hairline)] hover:border-[var(--accent)] text-[var(--text-primary)]"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className={`text-[11px] font-sans font-semibold uppercase tracking-wider ${isSelected ? "text-white" : "text-[var(--text-primary)]"}`}>
+                    {m.monthShort} {m.year}
+                  </span>
+                  {hasSales && (
+                    <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white" : "bg-emerald-500"}`} />
+                  )}
+                </div>
+                <div className="mt-1 flex items-baseline justify-between gap-1">
+                  <span className={`text-xs font-mono font-medium ${isSelected ? "text-white" : hasSales ? "text-status-success font-semibold" : "text-[var(--text-secondary)]"}`}>
+                    {hasSales ? formatLKR(m.profit) : "0 Profit"}
+                  </span>
+                </div>
+                <div className={`text-[10px] font-mono mt-0.5 ${isSelected ? "text-white/80" : "text-[var(--text-secondary)]"}`}>
+                  {m.soldCount} sold &bull; {m.addedCount} in
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ========================================================= */}
+      {/* 5. VEHICLE SALES & PROFIT LEDGER                          */}
       {/* ========================================================= */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
