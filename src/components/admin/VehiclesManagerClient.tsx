@@ -99,7 +99,12 @@ export function VehiclesManagerClient({
 
     setLoadingId(vehicleId);
     const updatedBy = user?.displayName || "Showroom Staff";
-    const res = await updateVehicleStatusAction(vehicleId, newStatus, undefined, updatedBy);
+    const res = await updateVehicleStatusAction(
+      vehicleId,
+      newStatus,
+      newStatus === "available" ? "ready" : undefined,
+      updatedBy
+    );
     setLoadingId(null);
     if (res.success) {
       setVehicles((prev) =>
@@ -108,6 +113,7 @@ export function VehiclesManagerClient({
             ? {
                 ...v,
                 status: newStatus,
+                importStage: newStatus === "available" ? "ready" : v.importStage,
                 reservation: newStatus !== "reserved" ? null : v.reservation,
                 updatedAt: new Date().toISOString(),
                 updatedBy,

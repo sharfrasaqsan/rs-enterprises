@@ -27,10 +27,22 @@ export function IncomingManagerClient({
   const [editingEtaId, setEditingEtaId] = useState<string | null>(null);
   const [tempEta, setTempEta] = useState("");
 
-  // Only incoming vehicles (or recently arrived)
-  const incomingVehicles = vehicles.filter(
-    (v) => v.status === "incoming" || v.importStage !== null
+  // Active Japanese shipments: strictly vehicles with status === "incoming"
+  // Vehicles with status === "available", "reserved", or "sold" have arrived and are removed from shipments
+  const activeIncomingVehicles = vehicles.filter(
+    (v) => v.status === "incoming" && !v.archived
   );
+
+  // Arrived / ready showroom vehicles
+  const readyVehicles = vehicles.filter(
+    (v) =>
+      (v.status === "available" || normalizeImportStage(v.importStage) === "ready") &&
+      !v.archived
+  );
+
+  // Display active shipments by default; if filterStage === "ready", show arrived units
+  const incomingVehicles =
+    filterStage === "ready" ? readyVehicles : activeIncomingVehicles;
 
   const filtered = incomingVehicles.filter((v) => {
     const std = normalizeImportStage(v.importStage);
@@ -47,21 +59,19 @@ export function IncomingManagerClient({
     return true;
   });
 
-  const countPurchased = incomingVehicles.filter(
+  const countPurchased = activeIncomingVehicles.filter(
     (v) => normalizeImportStage(v.importStage) === "purchased"
   ).length;
-  const countShipped = incomingVehicles.filter(
+  const countShipped = activeIncomingVehicles.filter(
     (v) => normalizeImportStage(v.importStage) === "shipped"
   ).length;
-  const countAtPort = incomingVehicles.filter(
+  const countAtPort = activeIncomingVehicles.filter(
     (v) => normalizeImportStage(v.importStage) === "at_port"
   ).length;
-  const countClearing = incomingVehicles.filter(
+  const countClearing = activeIncomingVehicles.filter(
     (v) => normalizeImportStage(v.importStage) === "clearing"
   ).length;
-  const countReady = incomingVehicles.filter(
-    (v) => normalizeImportStage(v.importStage) === "ready"
-  ).length;
+  const countReady = readyVehicles.length;
 
   async function handleSetStage(vehicle: Vehicle, nextStage: StandardImportStage) {
     setLoadingId(vehicle.id);
@@ -205,14 +215,14 @@ export function IncomingManagerClient({
           <select
             value={filterStage}
             onChange={(e) => setFilterStage(e.target.value)}
-            className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
+            className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] cursor-pointer"
           >
-            <option value="all">All Stages ({incomingVehicles.length})</option>
+            <option value="all">Active Shipments ({activeIncomingVehicles.length})</option>
             <option value="purchased">1. Purchased ({countPurchased})</option>
             <option value="shipped">2. Shipped ({countShipped})</option>
             <option value="at_port">3. At Port ({countAtPort})</option>
             <option value="clearing">4. Clearing ({countClearing})</option>
-            <option value="ready">5. Ready ({countReady})</option>
+            <option value="ready">5. Arrived Showroom Stock ({countReady})</option>
           </select>
         </div>
       </div>

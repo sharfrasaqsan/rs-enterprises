@@ -107,6 +107,8 @@ export async function updateVehicleStatusAction(
     };
     if (importStage !== undefined) {
       updatePayload.importStage = importStage;
+    } else if (status === "available" || status === "sold") {
+      updatePayload.importStage = "ready";
     }
     if (status !== "reserved") {
       updatePayload.reservation = null;
@@ -121,7 +123,12 @@ export async function updateVehicleStatusAction(
               ...v,
               status,
               reservation: status !== "reserved" ? null : v.reservation,
-              importStage: importStage !== undefined ? importStage : v.importStage,
+              importStage:
+                importStage !== undefined
+                  ? importStage
+                  : status === "available" || status === "sold"
+                  ? "ready"
+                  : v.importStage,
               updatedAt: now,
               updatedBy,
             }
@@ -132,6 +139,7 @@ export async function updateVehicleStatusAction(
     revalidateTag("admin-vehicles", "max");
     revalidatePath("/admin");
     revalidatePath("/admin/vehicles");
+    revalidatePath("/admin/incoming");
     revalidatePath("/vehicles");
     revalidatePath("/incoming");
     revalidatePath("/");
@@ -610,6 +618,9 @@ export async function saveVehicleAction(
 
     revalidateTag("vehicles", "max");
     revalidateTag("admin-vehicles", "max");
+    revalidatePath("/admin");
+    revalidatePath("/admin/vehicles");
+    revalidatePath("/admin/incoming");
     revalidatePath("/vehicles");
     revalidatePath("/incoming");
     revalidatePath("/");

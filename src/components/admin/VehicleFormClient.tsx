@@ -41,14 +41,16 @@ export function VehicleFormClient({
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [archiveConfirm, setArchiveConfirm] = useState(false);
 
-  // Form States
-  const [make, setMake] = useState(initialVehicle?.make || "Toyota");
+  // Form States - Start completely blank for new vehicles (no mock data pre-fill)
+  const [make, setMake] = useState(initialVehicle?.make || "");
   const [model, setModel] = useState(initialVehicle?.model || "");
-  const [year, setYear] = useState(initialVehicle?.year || 2024);
-  const [grade, setGrade] = useState(initialVehicle?.grade || "Standard");
+  const [year, setYear] = useState<number | string>(
+    initialVehicle?.year || new Date().getFullYear()
+  );
+  const [grade, setGrade] = useState(initialVehicle?.grade || "");
   const [slug, setSlug] = useState(initialVehicle?.slug || "");
   const [isSlugManual, setIsSlugManual] = useState(Boolean(initialVehicle?.slug));
-  const [color, setColor] = useState(initialVehicle?.color || "Pearl White");
+  const [color, setColor] = useState(initialVehicle?.color || "");
   const [price, setPrice] = useState(
     initialVehicle?.price ? String(initialVehicle.price) : ""
   );
@@ -56,14 +58,14 @@ export function VehicleFormClient({
     initialVehicle?.costPrice ? String(initialVehicle.costPrice) : ""
   );
   const [mileage, setMileage] = useState(
-    initialVehicle?.mileage !== undefined ? String(initialVehicle.mileage) : "0"
+    initialVehicle?.mileage !== undefined ? String(initialVehicle.mileage) : ""
   );
   const [fuel, setFuel] = useState<FuelType>(initialVehicle?.fuel || "petrol");
   const [transmission, setTransmission] = useState<TransmissionType>(
     initialVehicle?.transmission || "automatic"
   );
   const [engineCC, setEngineCC] = useState(
-    initialVehicle?.engineCC ? String(initialVehicle.engineCC) : "1500"
+    initialVehicle?.engineCC ? String(initialVehicle.engineCC) : ""
   );
   const [status, setStatus] = useState<VehicleStatus>(
     initialVehicle?.status || "available"
@@ -71,15 +73,17 @@ export function VehicleFormClient({
   // Rich Vehicle Specifications
   const [bodyType, setBodyType] = useState<BodyType>(initialVehicle?.bodyType || "suv");
   const [driveType, setDriveType] = useState<DriveType>(initialVehicle?.driveType || "2WD");
-  const [seats, setSeats] = useState<number>(initialVehicle?.seats || 5);
+  const [seats, setSeats] = useState<number | string>(
+    initialVehicle?.seats !== undefined ? initialVehicle.seats : 5
+  );
   const [registrationStatus, setRegistrationStatus] = useState<RegistrationStatus>(
     initialVehicle?.registrationStatus || "unregistered"
   );
-  const [owners, setOwners] = useState<number>(
+  const [owners, setOwners] = useState<number | string>(
     initialVehicle?.owners !== undefined ? initialVehicle.owners : 0
   );
-  const [auctionGrade, setAuctionGrade] = useState(initialVehicle?.auctionGrade || "4.5");
-  const [auctionScore, setAuctionScore] = useState(initialVehicle?.auctionScore || "A");
+  const [auctionGrade, setAuctionGrade] = useState(initialVehicle?.auctionGrade || "");
+  const [auctionScore, setAuctionScore] = useState(initialVehicle?.auctionScore || "");
   const [chassisNumber, setChassisNumber] = useState(initialVehicle?.chassisNumber || "");
   const [branch, setBranch] = useState<DealershipBranch>(initialVehicle?.branch || "polonnaruwa");
 
@@ -121,20 +125,17 @@ export function VehicleFormClient({
     initialVehicle?.published !== undefined ? initialVehicle.published : true
   );
   const [features, setFeatures] = useState(
-    initialVehicle?.features
-      ? initialVehicle.features.join(", ")
-      : "Sunroof, 360 Camera, Leather Interior, Apple CarPlay, Push Start"
+    initialVehicle?.features ? initialVehicle.features.join(", ") : ""
   );
   const [description, setDescription] = useState(
-    initialVehicle?.description ||
-      "Verified Japanese auction unit with certified mileage and JEVIC / JAAI inspection certificate."
+    initialVehicle?.description || ""
   );
 
-  // Multi-image list
+  // Multi-image list (starts empty for new vehicles, zero placeholder injection)
   const [images, setImages] = useState<string[]>(
     initialVehicle?.images && initialVehicle.images.length > 0
       ? initialVehicle.images
-      : ["/images/vehicles/sample-prado.svg"]
+      : []
   );
   const [newImageUrl, setNewImageUrl] = useState("");
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -155,7 +156,16 @@ export function VehicleFormClient({
   useEffect(() => {
     if (!isSlugManual) {
       const timer = setTimeout(() => {
-        const generated = `${year} ${make} ${model} ${grade}`
+        const trimmedMake = make.trim();
+        const trimmedModel = model.trim();
+        const trimmedGrade = grade.trim();
+        if (!trimmedMake && !trimmedModel) {
+          setSlug("");
+          return;
+        }
+        const parts = [year, trimmedMake, trimmedModel, trimmedGrade].filter(Boolean);
+        const generated = parts
+          .join(" ")
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/^-+|-+$/g, "");
@@ -367,23 +377,23 @@ export function VehicleFormClient({
       slug: cleanSlug,
       make: make.trim(),
       model: model.trim(),
-      year: Number(year),
+      year: Number(year) || new Date().getFullYear(),
       grade: grade.trim() || "Standard",
-      color: color.trim() || "Pearl White",
+      color: color.trim() || "Unspecified",
       price: price.trim() ? Number(price) : null,
       costPrice: costPrice.trim() ? Number(costPrice) : null,
-      mileage: Number(mileage) || 0,
+      mileage: mileage.trim() ? Number(mileage) : 0,
       fuel,
       transmission,
-      engineCC: Number(engineCC) || 1500,
+      engineCC: engineCC.trim() ? Number(engineCC) : 1500,
       status,
       bodyType,
       driveType,
       seats: Number(seats) || 5,
       registrationStatus,
       owners: Number(owners) || 0,
-      auctionGrade: auctionGrade.trim() || "4.5",
-      auctionScore: auctionScore.trim() || "A",
+      auctionGrade: auctionGrade.trim() || undefined,
+      auctionScore: auctionScore.trim() || undefined,
       chassisNumber: chassisNumber.trim(),
       branch,
       reservation: status === "reserved" ? {
@@ -401,7 +411,7 @@ export function VehicleFormClient({
       published,
       features: featureList,
       description: description.trim(),
-      images: images.length > 0 ? images : ["/images/vehicles/sample-prado.svg"],
+      images: images.length > 0 ? images : ["/images/vehicles/placeholder-coming-soon.webp"],
       updatedBy: user?.displayName || "Showroom Staff",
       createdAt: initialVehicle?.createdAt,
     };
@@ -1034,89 +1044,108 @@ export function VehicleFormClient({
               Gallery Images ({images.length} photos &bull; First photo is Primary Cover):
             </span>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {images.map((imgUrl, idx) => (
-                <div
-                  key={`${imgUrl}-${idx}`}
-                  draggable
-                  onDragStart={() => handleDragStart(idx)}
-                  onDragOver={handleDragOver}
-                  onDrop={() => handleDrop(idx)}
-                  className={`group relative p-1.5 bg-[var(--bg-base)] border rounded-[2px] transition-all cursor-move ${
-                    idx === 0
-                      ? "border-[var(--accent)] ring-1 ring-[var(--accent)]"
-                      : "border-[var(--border-subtle)] hover:border-[var(--accent)]"
-                  }`}
-                >
-                  {/* Badge */}
-                  <div className="absolute top-2 left-2 z-10 flex items-center gap-1">
-                    <span
-                      className={`text-[9px] font-mono px-1.5 py-0.5 uppercase rounded-[1px] shadow ${
-                        idx === 0
-                          ? "bg-[var(--accent)] text-white font-bold"
-                          : "bg-black/70 text-white"
-                      }`}
-                    >
-                      {idx === 0 ? "01. Hero Cover" : `0${idx + 1}`}
-                    </span>
-                  </div>
-
-                  {/* Thumbnail Image */}
-                  <div className="aspect-[4/3] bg-neutral-900 rounded-[1px] overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={imgUrl}
-                      alt={`Photo ${idx + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-
-                  {/* Controls below thumbnail */}
-                  <div className="flex items-center justify-between pt-1.5 px-0.5 text-[10px]">
-                    <div className="flex items-center gap-1">
-                      {idx > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => moveImage(idx, idx - 1)}
-                          className="min-h-[32px] px-1.5 bg-[var(--bg-surface)] hover:text-[var(--accent)] text-[var(--text-secondary)] border border-[var(--border-hairline)]"
-                          title="Move left"
-                        >
-                          &larr;
-                        </button>
-                      )}
-                      {idx < images.length - 1 && (
-                        <button
-                          type="button"
-                          onClick={() => moveImage(idx, idx + 1)}
-                          className="min-h-[32px] px-1.5 bg-[var(--bg-surface)] hover:text-[var(--accent)] text-[var(--text-secondary)] border border-[var(--border-hairline)]"
-                          title="Move right"
-                        >
-                          &rarr;
-                        </button>
-                      )}
-                      {idx !== 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setAsHero(idx)}
-                          className="min-h-[32px] px-1.5 text-[9px] font-sans uppercase tracking-wider text-[var(--accent)] hover:underline"
-                        >
-                          Set Hero
-                        </button>
-                      )}
+            {images.length === 0 ? (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="p-8 text-center border border-dashed border-[var(--border-subtle)] hover:border-[var(--accent)] bg-[var(--bg-base)]/50 rounded-[2px] cursor-pointer transition-colors space-y-2"
+              >
+                <div className="w-10 h-10 mx-auto rounded-full bg-[var(--accent)]/10 text-[var(--accent)] flex items-center justify-center">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                </div>
+                <p className="text-xs text-[var(--text-primary)] font-medium">
+                  No vehicle photos uploaded yet
+                </p>
+                <p className="text-[11px] text-[var(--text-secondary)] font-light max-w-md mx-auto">
+                  Click &quot;+ Upload Vehicle Photos&quot; or paste an image URL below. If omitted, the official branded &quot;Photos Coming Soon&quot; placeholder will automatically be shown on the website.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {images.map((imgUrl, idx) => (
+                  <div
+                    key={`${imgUrl}-${idx}`}
+                    draggable
+                    onDragStart={() => handleDragStart(idx)}
+                    onDragOver={handleDragOver}
+                    onDrop={() => handleDrop(idx)}
+                    className={`group relative p-1.5 bg-[var(--bg-base)] border rounded-[2px] transition-all cursor-move ${
+                      idx === 0
+                        ? "border-[var(--accent)] ring-1 ring-[var(--accent)]"
+                        : "border-[var(--border-subtle)] hover:border-[var(--accent)]"
+                    }`}
+                  >
+                    {/* Badge */}
+                    <div className="absolute top-2 left-2 z-10 flex items-center gap-1">
+                      <span
+                        className={`text-[9px] font-mono px-1.5 py-0.5 uppercase rounded-[1px] shadow ${
+                          idx === 0
+                            ? "bg-[var(--accent)] text-white font-bold"
+                            : "bg-black/70 text-white"
+                        }`}
+                      >
+                        {idx === 0 ? "01. Hero Cover" : `0${idx + 1}`}
+                      </span>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => removeImage(idx)}
-                      className="min-h-[32px] px-1.5 text-status-danger hover:opacity-80 font-bold"
-                      title="Remove image"
-                    >
-                      &times;
-                    </button>
+                    {/* Thumbnail Image */}
+                    <div className="aspect-[4/3] bg-neutral-900 rounded-[1px] overflow-hidden">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={imgUrl}
+                        alt={`Photo ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    {/* Controls below thumbnail */}
+                    <div className="flex items-center justify-between pt-1.5 px-0.5 text-[10px]">
+                      <div className="flex items-center gap-1">
+                        {idx > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => moveImage(idx, idx - 1)}
+                            className="min-h-[32px] px-1.5 bg-[var(--bg-surface)] hover:text-[var(--accent)] text-[var(--text-secondary)] border border-[var(--border-hairline)]"
+                            title="Move left"
+                          >
+                            &larr;
+                          </button>
+                        )}
+                        {idx < images.length - 1 && (
+                          <button
+                            type="button"
+                            onClick={() => moveImage(idx, idx + 1)}
+                            className="min-h-[32px] px-1.5 bg-[var(--bg-surface)] hover:text-[var(--accent)] text-[var(--text-secondary)] border border-[var(--border-hairline)]"
+                            title="Move right"
+                          >
+                            &rarr;
+                          </button>
+                        )}
+                        {idx !== 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setAsHero(idx)}
+                            className="min-h-[32px] px-1.5 text-[9px] font-sans uppercase tracking-wider text-[var(--accent)] hover:underline"
+                          >
+                            Set Hero
+                          </button>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => removeImage(idx)}
+                        className="min-h-[32px] px-1.5 text-status-danger hover:opacity-80 font-bold"
+                        title="Remove image"
+                      >
+                        &times;
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             {/* Quick URL Input */}
             <div className="flex items-center gap-2 pt-2">
@@ -1441,6 +1470,7 @@ export function VehicleFormClient({
               rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe vehicle condition, auction notes, factory optional packages, and inspection details..."
               className="w-full p-3 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] leading-relaxed"
             />
           </div>

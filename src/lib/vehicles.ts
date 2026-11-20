@@ -212,21 +212,23 @@ export async function getVehicleBySlug(slug: string): Promise<Vehicle | null> {
   if (cached) return cached;
 
   // Direct database lookup (for drafts / newly published units)
-  try {
-    const snapshot = await adminDb
-      .collection("vehicles")
-      .withConverter(vehicleConverter)
-      .where("slug", "==", slug)
-      .limit(1)
-      .get();
+  if (hasAdminCredentials()) {
+    try {
+      const snapshot = await adminDb
+        .collection("vehicles")
+        .withConverter(vehicleConverter)
+        .where("slug", "==", slug)
+        .limit(1)
+        .get();
 
-    if (!snapshot.empty && snapshot.docs[0]) {
-      const data = snapshot.docs[0].data();
-      if (data.archived) return null;
-      return data;
+      if (!snapshot.empty && snapshot.docs[0]) {
+        const data = snapshot.docs[0].data();
+        if (data.archived) return null;
+        return data;
+      }
+    } catch (error) {
+      console.warn(`Direct vehicle lookup failed for slug ${slug}:`, error);
     }
-  } catch (error) {
-    console.warn(`Direct vehicle lookup failed for slug ${slug}:`, error);
   }
 
   // Check seed vehicles fallback
