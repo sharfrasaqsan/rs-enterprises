@@ -36,6 +36,7 @@ import {
   deleteSavedSearchAction,
 } from "@/app/actions/saved-searches";
 import { SavedSearchesManager } from "./SavedSearchesManager";
+import { AdminPagination } from "./AdminPagination";
 
 const BOARD_COLUMNS: { key: "new" | "contacted" | "viewing" | "negotiating" | "closed"; label: string }[] = [
   { key: "new", label: "New Enquiries" },
@@ -77,6 +78,10 @@ export function LeadsPipelineClient({
   // Table view sorting
   const [tableSortField, setTableSortField] = useState<"date" | "name" | "followup" | "stage">("date");
   const [tableSortOrder, setTableSortOrder] = useState<"asc" | "desc">("desc");
+
+  // Table pagination
+  const [tablePage, setTablePage] = useState<number>(1);
+  const [tablePageSize, setTablePageSize] = useState<number>(15);
 
   // Monthly Customers Filter: "all" | "this_month" | "last_month" | "YYYY-MM"
   const [filterMonth, setFilterMonth] = useState<string>("all");
@@ -356,6 +361,14 @@ export function LeadsPipelineClient({
     }
     return tableSortOrder === "asc" ? -comparison : comparison;
   });
+
+  // Table Pagination
+  const totalTableItems = sortedTableLeads.length;
+  const totalTablePages = Math.max(1, Math.ceil(totalTableItems / tablePageSize));
+  const safeTablePage = Math.min(Math.max(1, tablePage), totalTablePages);
+  const tableStartIndex = (safeTablePage - 1) * tablePageSize;
+  const tableEndIndex = Math.min(tableStartIndex + tablePageSize, totalTableItems);
+  const paginatedTableLeads = sortedTableLeads.slice(tableStartIndex, tableEndIndex);
 
   const toggleTableSort = (field: "date" | "name" | "followup" | "stage") => {
     if (tableSortField === field) {
@@ -1587,7 +1600,7 @@ export function LeadsPipelineClient({
                   </td>
                 </tr>
               ) : (
-                sortedTableLeads.map((lead) => {
+                paginatedTableLeads.map((lead) => {
                   const waUrl = getWhatsAppUrl(lead.phone, lead.name, lead.vehicleTitle);
                   const isClosed = lead.stage === "won" || lead.stage === "lost";
 
@@ -1796,7 +1809,7 @@ export function LeadsPipelineClient({
             )}
           </div>
         ) : (
-          sortedTableLeads.map((lead) => {
+          paginatedTableLeads.map((lead) => {
             const waUrl = getWhatsAppUrl(lead.phone, lead.name, lead.vehicleTitle);
 
             return (
@@ -1892,6 +1905,21 @@ export function LeadsPipelineClient({
           })
         )}
       </div>
+
+      {/* Table & Mobile Leads Pagination */}
+      <AdminPagination
+        currentPage={safeTablePage}
+        totalItems={totalTableItems}
+        pageSize={tablePageSize}
+        onPageChange={(p) => setTablePage(p)}
+        onPageSizeChange={(sz) => {
+          setTablePageSize(sz);
+          setTablePage(1);
+        }}
+        pageSizeOptions={[10, 15, 25, 50]}
+        itemName="inquiries"
+        className="mt-4"
+      />
     </div>
   )}
 </>

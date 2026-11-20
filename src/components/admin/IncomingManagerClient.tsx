@@ -13,6 +13,7 @@ import { useAdminAuth } from "@/app/admin/AdminAuthContext";
 import { Heading } from "@/components/ui/Heading";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { VehicleImage } from "@/components/ui/VehicleImage";
+import { AdminPagination } from "./AdminPagination";
 
 export function IncomingManagerClient({
   initialVehicles,
@@ -23,6 +24,8 @@ export function IncomingManagerClient({
   const [vehicles, setVehicles] = useState<Vehicle[]>(initialVehicles);
   const [filterStage, setFilterStage] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [editingEtaId, setEditingEtaId] = useState<string | null>(null);
   const [tempEta, setTempEta] = useState("");
@@ -58,6 +61,14 @@ export function IncomingManagerClient({
     }
     return true;
   });
+
+  // Pagination calculations
+  const totalItems = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalItems);
+  const paginatedVehicles = filtered.slice(startIndex, endIndex);
 
   const countPurchased = activeIncomingVehicles.filter(
     (v) => normalizeImportStage(v.importStage) === "purchased"
@@ -205,7 +216,10 @@ export function IncomingManagerClient({
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="Search incoming units by make, model, year, or vessel ETA..."
             className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
           />
@@ -214,7 +228,10 @@ export function IncomingManagerClient({
         <div className="sm:col-span-4">
           <select
             value={filterStage}
-            onChange={(e) => setFilterStage(e.target.value)}
+            onChange={(e) => {
+              setFilterStage(e.target.value);
+              setCurrentPage(1);
+            }}
             className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] cursor-pointer"
           >
             <option value="all">Active Shipments ({activeIncomingVehicles.length})</option>
@@ -239,7 +256,7 @@ export function IncomingManagerClient({
         </div>
       ) : (
         <div className="space-y-4">
-          {filtered.map((vehicle) => {
+          {paginatedVehicles.map((vehicle) => {
             const isUpdating = loadingId === vehicle.id;
             const currentStage = normalizeImportStage(vehicle.importStage) || "purchased";
 
@@ -390,6 +407,20 @@ export function IncomingManagerClient({
           })}
         </div>
       )}
+
+      {/* Shipments Pagination Controls */}
+      <AdminPagination
+        currentPage={safePage}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        onPageChange={(p) => setCurrentPage(p)}
+        onPageSizeChange={(sz) => {
+          setPageSize(sz);
+          setCurrentPage(1);
+        }}
+        pageSizeOptions={[5, 10, 20]}
+        itemName="shipments"
+      />
     </div>
   );
 }

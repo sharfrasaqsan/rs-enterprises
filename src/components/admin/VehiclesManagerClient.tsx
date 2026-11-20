@@ -15,6 +15,7 @@ import { Heading } from "@/components/ui/Heading";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { VehicleImage } from "@/components/ui/VehicleImage";
 import { ReserveVehicleModal } from "./ReserveVehicleModal";
+import { AdminPagination } from "./AdminPagination";
 import { formatPhoneDisplay } from "@/lib/phone";
 
 export function VehiclesManagerClient({
@@ -24,17 +25,22 @@ export function VehiclesManagerClient({
 }) {
   const { user } = useAdminAuth();
   const [vehicles, setVehicles] = useState<Vehicle[]>(initialVehicles);
-  const [viewTab, setViewTab] = useState<"active" | "archived">("active");
+  const [viewTab, setViewTab] = useState<"active" | "sold" | "archived">("active");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [branchFilter, setBranchFilter] = useState<string>("all");
   const [bodyFilter, setBodyFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [archiveConfirmId, setArchiveConfirmId] = useState<string | null>(null);
   const [reserveModalVehicle, setReserveModalVehicle] = useState<Vehicle | null>(null);
   const [releaseConfirmId, setReleaseConfirmId] = useState<string | null>(null);
 
-  const activeVehicles = vehicles.filter((v) => !v.archived);
+  // Split inventory strictly: Active Fleet (Available/Incoming/Reserved) vs Sold vs Archived
+  const activeVehicles = vehicles.filter((v) => !v.archived && v.status !== "sold");
+  const soldVehicles = vehicles.filter((v) => !v.archived && v.status === "sold");
   const archivedVehicles = vehicles.filter((v) => Boolean(v.archived));
 
   // Hold expiry alerts across fleet
@@ -48,14 +54,23 @@ export function VehiclesManagerClient({
   const expiredHolds = reservedWithHolds.filter((item) => item.holdStatus?.isExpired);
   const expiringSoonHolds = reservedWithHolds.filter((item) => item.holdStatus?.isExpiringSoon);
 
-  const targetList = viewTab === "active" ? activeVehicles : archivedVehicles;
+  const targetList =
+    viewTab === "active"
+      ? activeVehicles
+      : viewTab === "sold"
+      ? soldVehicles
+      : archivedVehicles;
+
+  function switchTab(newTab: "active" | "sold" | "archived") {
+    setViewTab(newTab);
+    setStatusFilter("all");
+    setCurrentPage(1);
+  }
 
   // In-memory filter
   const filteredVehicles = targetList.filter((v) => {
-    if (statusFilter === "active_stock") {
-      if (v.status === "sold") return false;
-    } else if (statusFilter !== "all" && v.status !== statusFilter) {
-      return false;
+    if (viewTab === "active") {
+      if (statusFilter !== "all" && v.status !== statusFilter) return false;
     }
     if (branchFilter !== "all" && v.branch !== branchFilter) return false;
     if (bodyFilter !== "all" && v.bodyType !== bodyFilter) return false;
@@ -74,6 +89,14 @@ export function VehiclesManagerClient({
     }
     return true;
   });
+
+  // Pagination calculation
+  const totalItems = filteredVehicles.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalItems);
+  const paginatedVehicles = filteredVehicles.slice(startIndex, endIndex);
 
   async function handleTogglePublished(vehicleId: string, current: boolean) {
     setLoadingId(vehicleId);
@@ -111,6 +134,13 @@ export function VehiclesManagerClient({
     );
     setLoadingId(null);
     if (res.success) {
+      if (newStatus === "sold" && viewTab === "active") {
+        setStatusMessage("Vehicle marked as Sold and moved to the 'Sold Units' section.");
+        setTimeout(() => setStatusMessage(null), 6000);
+      } else if (newStatus !== "sold" && viewTab === "sold") {
+        setStatusMessage("Vehicle status updated and returned to Active Showroom Fleet.");
+        setTimeout(() => setStatusMessage(null), 6000);
+      }
       setVehicles((prev) =>
         prev.map((v) =>
           v.id === vehicleId
@@ -253,12 +283,12 @@ export function VehiclesManagerClient({
         </div>
       )}
 
-      {/* Tabs: Active vs Archived */}
-      <div className="flex items-center gap-4 border-b border-[var(--border-hairline)] pb-2">
+      {/* Tabs: Active Fleet vs Sold vs Archived */}
+      <div className="flex items-center gap-2 sm:gap-4 border-b border-[var(--border-hairline)] pb-2 overflow-x-auto">
         <button
           type="button"
-          onClick={() => setViewTab("active")}
-          className={`min-h-[44px] px-4 text-xs font-sans uppercase font-medium tracking-wider transition-colors border-b-2 cursor-pointer ${
+          onClick={() => switchTab("active")}
+          className={`min-h-[44px] px-4 text-xs font-sans uppercase font-medium tracking-wider transition-colors border-b-2 cursor-pointer shrink-0 ${
             viewTab === "active"
               ? "border-[var(--accent)] text-[var(--text-primary)]"
               : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
@@ -269,8 +299,20 @@ export function VehiclesManagerClient({
 
         <button
           type="button"
-          onClick={() => setViewTab("archived")}
-          className={`min-h-[44px] px-4 text-xs font-sans uppercase font-medium tracking-wider transition-colors border-b-2 cursor-pointer ${
+          onClick={() => switchTab("sold")}
+          className={`min-h-[44px] px-4 text-xs font-sans uppercase font-medium tracking-wider transition-colors border-b-2 cursor-pointer shrink-0 ${
+            viewTab === "sold"
+              ? "border-red-500 text-[var(--text-primary)]"
+              : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          }`}
+        >
+          Sold Units ({soldVehicles.length})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => switchTab("archived")}
+          className={`min-h-[44px] px-4 text-xs font-sans uppercase font-medium tracking-wider transition-colors border-b-2 cursor-pointer shrink-0 ${
             viewTab === "archived"
               ? "border-[var(--accent)] text-[var(--text-primary)]"
               : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
@@ -280,13 +322,44 @@ export function VehiclesManagerClient({
         </button>
       </div>
 
+      {/* Real-time Status Movement Toast */}
+      {statusMessage && (
+        <div className="p-3.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[2px] flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2 text-[var(--text-primary)]">
+            <span className="w-2 h-2 rounded-full bg-[var(--accent)]" />
+            <span>{statusMessage}</span>
+          </div>
+          {viewTab === "active" && (
+            <button
+              type="button"
+              onClick={() => switchTab("sold")}
+              className="text-[var(--accent)] hover:underline uppercase font-medium tracking-wider text-[11px] cursor-pointer"
+            >
+              View in Sold Units &rarr;
+            </button>
+          )}
+          {viewTab === "sold" && (
+            <button
+              type="button"
+              onClick={() => switchTab("active")}
+              className="text-[var(--accent)] hover:underline uppercase font-medium tracking-wider text-[11px] cursor-pointer"
+            >
+              Back to Active Fleet &rarr;
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Filter and Search Bar */}
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-        <div className="sm:col-span-4">
+        <div className={viewTab === "active" ? "sm:col-span-4" : "sm:col-span-6"}>
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="Search by make, model, VIN / chassis, color..."
             className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
           />
@@ -295,7 +368,10 @@ export function VehiclesManagerClient({
         <div className="sm:col-span-3">
           <select
             value={branchFilter}
-            onChange={(e) => setBranchFilter(e.target.value)}
+            onChange={(e) => {
+              setBranchFilter(e.target.value);
+              setCurrentPage(1);
+            }}
             className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
           >
             <option value="all">All Showroom Branches</option>
@@ -307,7 +383,10 @@ export function VehiclesManagerClient({
         <div className="sm:col-span-2">
           <select
             value={bodyFilter}
-            onChange={(e) => setBodyFilter(e.target.value)}
+            onChange={(e) => {
+              setBodyFilter(e.target.value);
+              setCurrentPage(1);
+            }}
             className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
           >
             <option value="all">All Bodies</option>
@@ -321,37 +400,36 @@ export function VehiclesManagerClient({
           </select>
         </div>
 
-        <div className="sm:col-span-3">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
-          >
-            <option value="all">All Statuses ({targetList.length})</option>
-            <option value="active_stock">
-              Active Fleet (Available, Incoming, Reserved) ({targetList.filter((v) => v.status !== "sold").length})
-            </option>
-            <option value="available">
-              Available ({targetList.filter((v) => v.status === "available").length})
-            </option>
-            <option value="incoming">
-              Incoming ({targetList.filter((v) => v.status === "incoming").length})
-            </option>
-            <option value="reserved">
-              Reserved ({targetList.filter((v) => v.status === "reserved").length})
-            </option>
-            <option value="sold">
-              Sold ({targetList.filter((v) => v.status === "sold").length})
-            </option>
-          </select>
-        </div>
+        {viewTab === "active" && (
+          <div className="sm:col-span-3">
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
+            >
+              <option value="all">All Active Statuses ({activeVehicles.length})</option>
+              <option value="available">
+                Available ({activeVehicles.filter((v) => v.status === "available").length})
+              </option>
+              <option value="incoming">
+                Incoming ({activeVehicles.filter((v) => v.status === "incoming").length})
+              </option>
+              <option value="reserved">
+                Reserved ({activeVehicles.filter((v) => v.status === "reserved").length})
+              </option>
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Vehicles Inventory List */}
       {filteredVehicles.length === 0 ? (
         <div className="p-12 text-center bg-[var(--bg-surface)] border border-[var(--border-hairline)] space-y-3">
           <p className="font-serif text-xl text-[var(--text-primary)]">
-            No {viewTab === "active" ? "active" : "archived"} vehicles match your search
+            No {viewTab === "active" ? "active" : viewTab === "sold" ? "sold" : "archived"} vehicles match your search
           </p>
           <p className="text-xs text-[var(--text-secondary)] font-light">
             Try adjusting your keyword filter or adding a new vehicle to the showroom fleet.
@@ -359,7 +437,7 @@ export function VehiclesManagerClient({
         </div>
       ) : (
         <div className="divide-y divide-[var(--border-hairline)] border border-[var(--border-hairline)] bg-[var(--bg-surface)]">
-          {filteredVehicles.map((vehicle) => {
+          {paginatedVehicles.map((vehicle) => {
             const isUpdating = loadingId === vehicle.id;
             const formattedPrice = vehicle.price
               ? `LKR ${vehicle.price.toLocaleString("en-US")}`
@@ -733,6 +811,26 @@ export function VehiclesManagerClient({
           })}
         </div>
       )}
+
+      {/* Fleet Pagination Controls */}
+      <AdminPagination
+        currentPage={safePage}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        onPageChange={(p) => setCurrentPage(p)}
+        onPageSizeChange={(sz) => {
+          setPageSize(sz);
+          setCurrentPage(1);
+        }}
+        pageSizeOptions={[5, 10, 20, 50]}
+        itemName={
+          viewTab === "active"
+            ? "active showroom cars"
+            : viewTab === "sold"
+            ? "sold cars"
+            : "archived cars"
+        }
+      />
 
       {/* Reserve Vehicle & Deposit Note Modal */}
       <ReserveVehicleModal
