@@ -52,7 +52,11 @@ export function VehiclesManagerClient({
 
   // In-memory filter
   const filteredVehicles = targetList.filter((v) => {
-    if (statusFilter !== "all" && v.status !== statusFilter) return false;
+    if (statusFilter === "active_stock") {
+      if (v.status === "sold") return false;
+    } else if (statusFilter !== "all" && v.status !== statusFilter) {
+      return false;
+    }
     if (branchFilter !== "all" && v.branch !== branchFilter) return false;
     if (bodyFilter !== "all" && v.bodyType !== bodyFilter) return false;
     if (searchQuery.trim()) {
@@ -324,6 +328,9 @@ export function VehiclesManagerClient({
             className="w-full h-11 px-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)]"
           >
             <option value="all">All Statuses ({targetList.length})</option>
+            <option value="active_stock">
+              Active Fleet (Available, Incoming, Reserved) ({targetList.filter((v) => v.status !== "sold").length})
+            </option>
             <option value="available">
               Available ({targetList.filter((v) => v.status === "available").length})
             </option>
@@ -367,12 +374,19 @@ export function VehiclesManagerClient({
               >
                 {/* Vehicle Thumbnail + Info */}
                 <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
-                  <div className="w-28 sm:w-36 md:w-44 shrink-0 overflow-hidden rounded-[2px] border border-[var(--border-hairline)] bg-[var(--bg-base)]">
+                  <div className="w-28 sm:w-36 md:w-44 shrink-0 overflow-hidden rounded-[2px] border border-[var(--border-hairline)] bg-[var(--bg-base)] relative">
                     <VehicleImage
                       src={vehicle.images[0] || "/images/vehicles/placeholder-coming-soon.webp"}
                       alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
                       aspectRatio="16/10"
                     />
+                    {vehicle.status === "sold" && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-red-400 border border-red-500/70 bg-black/85 px-2 py-0.5 rounded-[1px]">
+                          Sold
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2 flex-1 min-w-0">
@@ -395,15 +409,22 @@ export function VehiclesManagerClient({
                           Archived
                         </span>
                       ) : (
-                        <span
-                          className={`text-[9px] font-mono px-2 py-0.5 uppercase rounded-[2px] font-semibold ${
-                            vehicle.published
-                              ? "badge-status-success"
-                              : "badge-status-warning"
-                          }`}
-                        >
-                          {vehicle.published ? "Live on Site" : "Hidden Draft"}
-                        </span>
+                        <>
+                          {vehicle.status === "sold" && (
+                            <span className="text-[9px] font-mono px-2 py-0.5 uppercase rounded-[2px] bg-red-950/60 text-red-300 border border-red-800 font-bold">
+                              Sold
+                            </span>
+                          )}
+                          <span
+                            className={`text-[9px] font-mono px-2 py-0.5 uppercase rounded-[2px] font-semibold ${
+                              vehicle.published
+                                ? "badge-status-success"
+                                : "badge-status-warning"
+                            }`}
+                          >
+                            {vehicle.published ? "Live on Site" : "Hidden Draft"}
+                          </span>
+                        </>
                       )}
                     </div>
 
@@ -602,6 +623,13 @@ export function VehiclesManagerClient({
                               </button>
                             )}
                           </div>
+                        ) : vehicle.status === "sold" ? (
+                          <div className="flex items-center gap-2">
+                            <span className="min-h-[40px] px-3.5 inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider bg-red-950/40 text-red-400 border border-red-800/50 rounded-[2px] font-semibold select-none">
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                              <span>Sold / Delivered</span>
+                            </span>
+                          </div>
                         ) : (
                           <button
                             type="button"
@@ -672,10 +700,14 @@ export function VehiclesManagerClient({
                           <button
                             type="button"
                             onClick={() => setArchiveConfirmId(vehicle.id)}
-                            className="min-h-[40px] px-2.5 text-xs uppercase tracking-wider text-[var(--text-secondary)] hover:text-status-warning transition-colors cursor-pointer"
-                            title="Archive vehicle (unlists from website, preserves CRM records)"
+                            className={`min-h-[40px] px-2.5 text-xs uppercase tracking-wider transition-colors cursor-pointer ${
+                              vehicle.status === "sold"
+                                ? "text-amber-500 hover:text-amber-400 font-semibold"
+                                : "text-[var(--text-secondary)] hover:text-status-warning"
+                            }`}
+                            title="Archive vehicle (unlists from website, preserves CRM records and profit analytics)"
                           >
-                            Archive
+                            {vehicle.status === "sold" ? "Archive Sold" : "Archive"}
                           </button>
                         )}
                       </div>
