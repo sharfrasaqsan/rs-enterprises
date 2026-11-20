@@ -29,6 +29,17 @@ export function IncomingManagerClient({
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [editingEtaId, setEditingEtaId] = useState<string | null>(null);
   const [tempEta, setTempEta] = useState("");
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  // Helper to ensure an active incoming shipment never displays as "ready" stage
+  function getEffectiveStage(v: Vehicle): StandardImportStage {
+    const std = normalizeImportStage(v.importStage);
+    if (v.status === "incoming") {
+      if (!std || std === "ready") return "shipped";
+      return std;
+    }
+    return std || "ready";
+  }
 
   // Active Japanese shipments: strictly vehicles with status === "incoming"
   // Vehicles with status === "available", "reserved", or "sold" have arrived and are removed from shipments
@@ -48,7 +59,7 @@ export function IncomingManagerClient({
     filterStage === "ready" ? readyVehicles : activeIncomingVehicles;
 
   const filtered = incomingVehicles.filter((v) => {
-    const std = normalizeImportStage(v.importStage);
+    const std = getEffectiveStage(v);
     if (filterStage !== "all" && std !== filterStage) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
@@ -71,16 +82,16 @@ export function IncomingManagerClient({
   const paginatedVehicles = filtered.slice(startIndex, endIndex);
 
   const countPurchased = activeIncomingVehicles.filter(
-    (v) => normalizeImportStage(v.importStage) === "purchased"
+    (v) => getEffectiveStage(v) === "purchased"
   ).length;
   const countShipped = activeIncomingVehicles.filter(
-    (v) => normalizeImportStage(v.importStage) === "shipped"
+    (v) => getEffectiveStage(v) === "shipped"
   ).length;
   const countAtPort = activeIncomingVehicles.filter(
-    (v) => normalizeImportStage(v.importStage) === "at_port"
+    (v) => getEffectiveStage(v) === "at_port"
   ).length;
   const countClearing = activeIncomingVehicles.filter(
-    (v) => normalizeImportStage(v.importStage) === "clearing"
+    (v) => getEffectiveStage(v) === "clearing"
   ).length;
   const countReady = readyVehicles.length;
 
@@ -96,13 +107,19 @@ export function IncomingManagerClient({
     setLoadingId(null);
 
     if (res.success) {
+      if (nextStage === "ready") {
+        setStatusMessage(
+          `"${vehicle.year} ${vehicle.make} ${vehicle.model}" marked as Ready! It has arrived at the showroom and moved to Active Showroom Fleet.`
+        );
+        setTimeout(() => setStatusMessage(null), 7000);
+      }
       setVehicles((prev) =>
         prev.map((v) =>
           v.id === vehicle.id
             ? {
                 ...v,
                 importStage: nextStage,
-                status: nextStage === "ready" ? "available" : v.status,
+                status: nextStage === "ready" ? "available" : "incoming",
                 updatedAt: new Date().toISOString(),
                 updatedBy,
               }
@@ -161,6 +178,23 @@ export function IncomingManagerClient({
           + Register Incoming Unit
         </Link>
       </div>
+
+      {/* Success / Status Message Notification */}
+      {statusMessage && (
+        <div className="p-3.5 bg-emerald-950/40 border border-emerald-500/40 rounded-[2px] text-xs font-mono text-emerald-300 flex items-center justify-between animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <span>✓</span>
+            <span>{statusMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setStatusMessage(null)}
+            className="text-emerald-400 hover:text-emerald-200 text-sm cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* KPI Metric Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -258,7 +292,7 @@ export function IncomingManagerClient({
         <div className="space-y-4">
           {paginatedVehicles.map((vehicle) => {
             const isUpdating = loadingId === vehicle.id;
-            const currentStage = normalizeImportStage(vehicle.importStage) || "purchased";
+            const currentStage = getEffectiveStage(vehicle);
 
             return (
               <div

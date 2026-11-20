@@ -128,10 +128,17 @@ export function VehiclesManagerClient({
 
     setLoadingId(vehicleId);
     const updatedBy = user?.displayName || "Showroom Staff";
+    const nextImportStage =
+      newStatus === "available"
+        ? "ready"
+        : newStatus === "incoming"
+        ? "shipped"
+        : undefined;
+
     const res = await updateVehicleStatusAction(
       vehicleId,
       newStatus,
-      newStatus === "available" ? "ready" : undefined,
+      nextImportStage,
       updatedBy
     );
     setLoadingId(null);
@@ -142,6 +149,9 @@ export function VehiclesManagerClient({
       } else if (newStatus !== "sold" && viewTab === "sold") {
         setStatusMessage("Vehicle status updated and returned to Active Showroom Fleet.");
         setTimeout(() => setStatusMessage(null), 6000);
+      } else if (newStatus === "incoming") {
+        setStatusMessage("Vehicle marked as Incoming (In-Transit) and added to Shipments under '2. Shipped'.");
+        setTimeout(() => setStatusMessage(null), 6000);
       }
       setVehicles((prev) =>
         prev.map((v) =>
@@ -149,7 +159,7 @@ export function VehiclesManagerClient({
             ? {
                 ...v,
                 status: newStatus,
-                importStage: newStatus === "available" ? "ready" : v.importStage,
+                importStage: nextImportStage !== undefined ? nextImportStage : v.importStage,
                 reservation: newStatus !== "reserved" ? null : v.reservation,
                 updatedAt: new Date().toISOString(),
                 updatedBy,

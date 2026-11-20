@@ -106,6 +106,8 @@ export async function updateVehicleStatusAction(
       updatePayload.importStage = importStage;
     } else if (status === "available" || status === "sold") {
       updatePayload.importStage = "ready";
+    } else if (status === "incoming") {
+      updatePayload.importStage = "shipped";
     }
     if (status !== "reserved") {
       updatePayload.reservation = null;
@@ -125,6 +127,8 @@ export async function updateVehicleStatusAction(
                   ? importStage
                   : status === "available" || status === "sold"
                   ? "ready"
+                  : status === "incoming"
+                  ? "shipped"
                   : v.importStage,
               updatedAt: now,
               updatedBy,
@@ -416,10 +420,10 @@ export async function updateIncomingStageAction(
       updatePayload.expectedArrival = expectedArrival;
     }
 
-    // If unit has arrived in showroom stock, promote status to available
-    if (importStage === "ready" || importStage === "in_stock") {
-      updatePayload.status = "available";
-    }
+    // If unit has arrived in showroom stock, promote status to available; otherwise ensure it is marked as incoming shipment
+    const resolvedStatus: VehicleStatus =
+      importStage === "ready" || importStage === "in_stock" ? "available" : "incoming";
+    updatePayload.status = resolvedStatus;
 
     let vehicleSlug = "";
 
@@ -437,7 +441,7 @@ export async function updateIncomingStageAction(
           return {
             ...v,
             importStage,
-            status: importStage === "ready" || importStage === "in_stock" ? "available" : v.status,
+            status: resolvedStatus,
             expectedArrival: expectedArrival !== undefined ? expectedArrival : v.expectedArrival,
             updatedAt: now,
             updatedBy,
@@ -449,6 +453,9 @@ export async function updateIncomingStageAction(
 
     revalidateTag("vehicles", "max");
     revalidateTag("admin-vehicles", "max");
+    revalidatePath("/admin");
+    revalidatePath("/admin/incoming");
+    revalidatePath("/admin/vehicles");
     revalidatePath("/incoming");
     revalidatePath("/vehicles");
     if (vehicleSlug) {
