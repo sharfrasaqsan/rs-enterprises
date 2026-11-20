@@ -72,6 +72,7 @@ export const createSavedSearchInputSchema = z.object({
   maxPrice: z.number().positive().optional().nullable(),
   minPrice: z.number().positive().optional().nullable(),
   minYear: z.number().int().optional().nullable(),
+  maxYear: z.number().int().optional().nullable(),
   bodyType: z.string().optional(),
   fuel: z.string().optional(),
   branch: z.string().optional(),

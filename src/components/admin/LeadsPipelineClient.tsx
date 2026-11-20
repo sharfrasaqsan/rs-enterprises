@@ -29,6 +29,7 @@ import {
 } from "@/lib/phone";
 import {
   SavedSearch,
+  matchVehicleWithSavedSearch,
 } from "@/types/saved-search";
 import {
   triggerManualSavedSearchAlertAction,
@@ -62,6 +63,20 @@ export function LeadsPipelineClient({
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>(initialSavedSearches);
   const [activeTab, setActiveTab] = useState<"pipeline" | "saved_searches">("pipeline");
+
+  // Count saved searches with live matching inventory
+  const readyAlertsCount = useMemo(() => {
+    return savedSearches.filter((s) => {
+      if (s.status !== "active") return false;
+      return vehicles.some(
+        (v) =>
+          v.published &&
+          v.status !== "sold" &&
+          !v.archived &&
+          matchVehicleWithSavedSearch(v, s)
+      );
+    }).length;
+  }, [savedSearches, vehicles]);
 
   // View Mode: Default to Table View for clean non-technical showroom operation
   const [viewMode, setViewMode] = useState<"board" | "table">("table");
@@ -859,19 +874,25 @@ export function LeadsPipelineClient({
       </div>
 
       {/* View Switcher: Pipeline vs Back-in-Stock & Saved Searches */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[var(--border-hairline)] gap-4 pb-2">
-        <div className="flex space-x-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[var(--border-hairline)] gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto">
           <button
             type="button"
             onClick={() => setActiveTab("pipeline")}
-            className={`pb-3 text-xs font-sans uppercase tracking-[0.14em] font-medium transition-colors relative cursor-pointer ${
+            className={`pb-3.5 px-3 text-xs font-sans uppercase tracking-[0.14em] font-medium transition-all relative cursor-pointer flex items-center gap-2.5 border-b-2 shrink-0 ${
               activeTab === "pipeline"
-                ? "text-[var(--accent)] border-b-2 border-[var(--accent)]"
-                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                ? "text-[var(--accent)] border-[var(--accent)]"
+                : "text-[var(--text-secondary)] border-transparent hover:text-[var(--text-primary)]"
             }`}
           >
             <span>Enquiry Pipeline</span>
-            <span className="ml-2 px-1.5 py-0.5 text-[10px] font-mono bg-[var(--bg-surface)] border border-[var(--border-hairline)] rounded-full">
+            <span
+              className={`px-2 py-0.5 text-[10px] font-mono rounded-full border transition-colors ${
+                activeTab === "pipeline"
+                  ? "bg-[var(--accent)]/15 text-[var(--accent)] border-[var(--accent)]/30 font-semibold"
+                  : "bg-[var(--bg-surface)] text-[var(--text-secondary)] border-[var(--border-hairline)]"
+              }`}
+            >
               {leads.length}
             </span>
           </button>
@@ -879,16 +900,30 @@ export function LeadsPipelineClient({
           <button
             type="button"
             onClick={() => setActiveTab("saved_searches")}
-            className={`pb-3 text-xs font-sans uppercase tracking-[0.14em] font-medium transition-colors relative cursor-pointer ${
+            className={`pb-3.5 px-3 text-xs font-sans uppercase tracking-[0.14em] font-medium transition-all relative cursor-pointer flex items-center gap-2.5 border-b-2 shrink-0 ${
               activeTab === "saved_searches"
-                ? "text-[var(--accent)] border-b-2 border-[var(--accent)]"
-                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                ? "text-[var(--accent)] border-[var(--accent)]"
+                : "text-[var(--text-secondary)] border-transparent hover:text-[var(--text-primary)]"
             }`}
           >
             <span>Saved Searches &amp; Stock Alerts</span>
-            <span className="ml-2 px-1.5 py-0.5 text-[10px] font-mono bg-[var(--accent)] text-white rounded-full">
-              {savedSearches.length}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span
+                className={`px-2 py-0.5 text-[10px] font-mono rounded-full border transition-colors ${
+                  activeTab === "saved_searches"
+                    ? "bg-[var(--accent)]/15 text-[var(--accent)] border-[var(--accent)]/30 font-semibold"
+                    : "bg-[var(--bg-surface)] text-[var(--text-secondary)] border-[var(--border-hairline)]"
+                }`}
+              >
+                {savedSearches.length}
+              </span>
+              {readyAlertsCount > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-mono uppercase bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-full font-bold animate-pulse">
+                  <span>⚡</span>
+                  <span>{readyAlertsCount} Ready</span>
+                </span>
+              )}
+            </div>
           </button>
         </div>
 
@@ -1930,6 +1965,7 @@ export function LeadsPipelineClient({
           onSendAlert={handleSendSavedSearchAlert}
           onFulfill={handleFulfillSavedSearch}
           onDelete={handleDeleteSavedSearch}
+          onCreatedSearch={(newSearch) => setSavedSearches((prev) => [newSearch, ...prev])}
         />
       )}
 

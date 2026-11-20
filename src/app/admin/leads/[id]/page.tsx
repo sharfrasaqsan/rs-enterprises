@@ -1,14 +1,9 @@
 import React from "react";
 import { notFound } from "next/navigation";
 import { getAdminLeadsAction, getAdminVehiclesAction } from "@/app/actions/admin";
+import { adminDb, hasAdminCredentials } from "@/lib/firebase-admin";
+import { leadConverter } from "@/types/lead";
 import { LeadDossierClient } from "@/components/admin/LeadDossierClient";
-
-export const instant = false;
-
-export async function generateStaticParams() {
-  const leads = await getAdminLeadsAction();
-  return leads.map((l) => ({ id: l.id }));
-}
 
 export default async function AdminLeadDetailPage({
   params,
@@ -20,7 +15,22 @@ export default async function AdminLeadDetailPage({
     getAdminLeadsAction(),
     getAdminVehiclesAction(),
   ]);
-  const lead = leads.find((l) => l.id === id);
+  let lead = leads.find((l) => l.id === id);
+
+  if (!lead && hasAdminCredentials()) {
+    try {
+      const snap = await adminDb
+        .collection("leads")
+        .doc(id)
+        .withConverter(leadConverter)
+        .get();
+      if (snap.exists) {
+        lead = snap.data();
+      }
+    } catch {
+      // not found
+    }
+  }
 
   if (!lead) {
     notFound();

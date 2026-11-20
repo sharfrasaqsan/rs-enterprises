@@ -729,6 +729,10 @@ export async function updateLeadStageAction(
       );
     }
     revalidateTag("admin-leads", "max");
+    revalidatePath("/admin/leads");
+    revalidatePath(`/admin/leads/${leadId}`);
+    revalidatePath("/admin");
+    revalidatePath("/admin/analytics");
     return { success: true };
   } catch (err) {
     console.error("updateLeadStageAction failed:", err);
@@ -777,6 +781,10 @@ export async function addLeadNoteAction(
       );
     }
     revalidateTag("admin-leads", "max");
+    revalidatePath("/admin/leads");
+    revalidatePath(`/admin/leads/${leadId}`);
+    revalidatePath("/admin");
+    revalidatePath("/admin/analytics");
     return { success: true };
   } catch (err) {
     console.error("addLeadNoteAction failed:", err);
@@ -806,6 +814,10 @@ export async function setLeadFollowUpAction(
       );
     }
     revalidateTag("admin-leads", "max");
+    revalidatePath("/admin/leads");
+    revalidatePath(`/admin/leads/${leadId}`);
+    revalidatePath("/admin");
+    revalidatePath("/admin/analytics");
     return { success: true };
   } catch (err) {
     console.error("setLeadFollowUpAction failed:", err);
@@ -1199,6 +1211,10 @@ export async function markLeadWonWithVehicleAction(
     }
 
     revalidateTag("admin-leads", "max");
+    revalidatePath("/admin/leads");
+    revalidatePath(`/admin/leads/${leadId}`);
+    revalidatePath("/admin");
+    revalidatePath("/admin/analytics");
     return { success: true };
   } catch (err) {
     console.error("markLeadWonWithVehicleAction failed:", err);
@@ -1228,6 +1244,10 @@ export async function reassignLeadAction(
       );
     }
     revalidateTag("admin-leads", "max");
+    revalidatePath("/admin/leads");
+    revalidatePath(`/admin/leads/${leadId}`);
+    revalidatePath("/admin");
+    revalidatePath("/admin/analytics");
     return { success: true };
   } catch (err) {
     console.error("reassignLeadAction failed:", err);
@@ -1248,6 +1268,10 @@ export async function deleteLeadAction(
       inMemoryLeads = inMemoryLeads.filter((l) => l.id !== leadId);
     }
     revalidateTag("admin-leads", "max");
+    revalidatePath("/admin/leads");
+    revalidatePath(`/admin/leads/${leadId}`);
+    revalidatePath("/admin");
+    revalidatePath("/admin/analytics");
     return { success: true };
   } catch (err) {
     console.error("deleteLeadAction failed:", err);

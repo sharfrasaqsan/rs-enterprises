@@ -2,14 +2,9 @@ import React from "react";
 import { notFound } from "next/navigation";
 import { getAdminVehiclesAction } from "@/app/actions/admin";
 import { getCompanySettings } from "@/lib/settings";
+import { adminDb, hasAdminCredentials } from "@/lib/firebase-admin";
+import { vehicleConverter } from "@/types/vehicle";
 import { VehicleFormClient } from "@/components/admin/VehicleFormClient";
-
-export const instant = false;
-
-export async function generateStaticParams() {
-  const vehicles = await getAdminVehiclesAction();
-  return vehicles.map((v) => ({ id: v.id }));
-}
 
 export default async function AdminEditVehiclePage({
   params,
@@ -21,7 +16,22 @@ export default async function AdminEditVehiclePage({
     getAdminVehiclesAction(),
     getCompanySettings(),
   ]);
-  const vehicle = vehicles.find((v) => v.id === id);
+  let vehicle = vehicles.find((v) => v.id === id);
+
+  if (!vehicle && hasAdminCredentials()) {
+    try {
+      const snap = await adminDb
+        .collection("vehicles")
+        .doc(id)
+        .withConverter(vehicleConverter)
+        .get();
+      if (snap.exists) {
+        vehicle = snap.data();
+      }
+    } catch {
+      // not found
+    }
+  }
 
   if (!vehicle) {
     notFound();

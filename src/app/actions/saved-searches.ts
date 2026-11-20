@@ -128,7 +128,7 @@ export async function createSavedSearchAction(
         maxPrice: input.maxPrice || null,
         minPrice: input.minPrice || null,
         minYear: input.minYear || 2015,
-        maxYear: 2030,
+        maxYear: input.maxYear || 2030,
         bodyType: input.bodyType || "all",
         fuel: input.fuel || "all",
         transmission: "all",
