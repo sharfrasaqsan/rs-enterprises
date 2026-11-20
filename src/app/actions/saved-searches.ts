@@ -38,11 +38,7 @@ export const getSavedSearchesAction = unstable_cache(
           .withConverter(savedSearchConverter)
           .orderBy("createdAt", "desc")
           .get();
-        if (!snap.empty) {
-          searches = snap.docs.map((doc) => doc.data());
-        } else {
-          searches = inMemorySavedSearches;
-        }
+        searches = snap.docs.map((doc) => doc.data());
       } else {
         searches = [...inMemorySavedSearches];
       }

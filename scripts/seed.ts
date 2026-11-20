@@ -2,10 +2,15 @@ import * as fs from "fs";
 import * as path from "path";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
-import { SEED_VEHICLES, SEED_LEADS, SEED_SETTINGS } from "../src/lib/seed-data";
+import { SEED_VEHICLES, SEED_LEADS, SEED_SETTINGS, SEED_SAVED_SEARCHES } from "../src/lib/seed-data";
 import { vehicleConverter } from "../src/types/vehicle";
 import { leadConverter } from "../src/types/lead";
 import { settingsConverter } from "../src/types/settings";
+import { savedSearchConverter } from "../src/types/saved-search";
+
+if (!process.env.GRPC_DNS_RESOLVER) {
+  process.env.GRPC_DNS_RESOLVER = "native";
+}
 
 function getDatabase() {
   const existingApps = getApps();
@@ -107,13 +112,21 @@ async function seedDatabase() {
     );
   }
 
-  // 3. Seed Settings
+  // 3. Seed Settings (both company_profile and general)
   console.log("\n⚙️ Staging company profile & branch settings...");
   const settingsCol = db.collection("settings").withConverter(settingsConverter);
-  const settingsDocRef = settingsCol.doc("company_profile");
-  batch.set(settingsDocRef, SEED_SETTINGS);
+  batch.set(settingsCol.doc("company_profile"), SEED_SETTINGS);
+  batch.set(settingsCol.doc("general"), SEED_SETTINGS);
   console.log(`  • Main Branch: ${SEED_SETTINGS.mainBranch.name} (${SEED_SETTINGS.mainBranch.address})`);
   console.log(`  • Coastal Showroom: ${SEED_SETTINGS.coastalBranch.name} (${SEED_SETTINGS.coastalBranch.status})`);
+
+  // 4. Seed Saved Searches
+  console.log(`\n🔍 Staging ${SEED_SAVED_SEARCHES.length} saved searches & stock alerts...`);
+  const savedSearchesCol = db.collection("saved_searches").withConverter(savedSearchConverter);
+  for (const ss of SEED_SAVED_SEARCHES) {
+    batch.set(savedSearchesCol.doc(ss.id), ss);
+    console.log(`  • Alert [${ss.status.toUpperCase()}]: "${ss.queryTitle}" for ${ss.customerName} (${ss.customerPhone})`);
+  }
 
   // Commit all writes atomically
   console.log("\n⏳ Committing batch transaction to Firestore...");

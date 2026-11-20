@@ -179,7 +179,7 @@ function escapeHtml(str: string | null | undefined): string {
  */
 export function exportLeadsToPDF(
   leads: Lead[],
-  options?: { title?: string; filterSummary?: string }
+  options?: { title?: string; filterSummary?: string; companyPhone?: string; regNo?: string }
 ): void {
   if (typeof window === "undefined") return;
 
@@ -540,8 +540,8 @@ export function exportLeadsToPDF(
             <div class="brand-tagline">Direct Japanese Automobile Importers &bull; Kaduruwela Main Showroom &bull; Trincomalee Branch</div>
           </div>
           <div class="meta-col">
-            <div><strong>Business Reg:</strong> TH/DS/ACCT/BR/38/2018</div>
-            <div><strong>Direct Inquiries:</strong> +94 77 758 7919 / 027 222 2345</div>
+            <div><strong>Business Reg:</strong> ${escapeHtml(options?.regNo || "TH/DS/ACCT/BR/38/2018")}</div>
+            <div><strong>Direct Inquiries:</strong> ${escapeHtml(options?.companyPhone || "+94 77 123 4567 / 027 222 0000")}</div>
             <div><strong>Generated:</strong> ${escapeHtml(formattedDate)} at ${escapeHtml(formattedTime)}</div>
             <div><strong>System:</strong> RS Prestige CRM Admin Console</div>
           </div>

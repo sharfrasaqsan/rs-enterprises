@@ -125,11 +125,11 @@ export default async function AboutPage() {
               <div>
                 <Eyebrow>Corporate Identity &amp; Governance</Eyebrow>
                 <h3 className="font-serif text-2xl text-[var(--text-primary)] mt-1">
-                  RS Enterprises Company Pvt Ltd
+                  {settings.companyName}
                 </h3>
                 <div className="space-y-1 mt-2">
                   <p className="text-xs font-mono text-[var(--accent)] tracking-wider">
-                    Registration No: <strong>TH/DS/ACCT/BR/38/2018</strong>
+                    Registration No: <strong>{settings.registrationNumber}</strong>
                   </p>
                   <p className="text-xs font-sans text-[var(--text-secondary)]">
                     Proprietor: <strong className="text-[var(--text-primary)]">S.M. Fajith</strong>

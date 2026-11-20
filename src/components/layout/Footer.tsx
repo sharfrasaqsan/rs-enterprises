@@ -9,7 +9,7 @@ import { Logo } from "@/components/ui/Logo";
 import { CompanySettings } from "@/types/settings";
 
 export function Footer({ settings }: { settings: CompanySettings }) {
-  const currentYear = 2026;
+  const currentYear = settings.updatedAt ? Number(settings.updatedAt.slice(0, 4)) : 2026;
 
   return (
     <footer className="w-full bg-[var(--bg-surface)] border-t border-[var(--border-hairline)] pt-16 pb-24 md:pb-16 text-[var(--text-secondary)]">

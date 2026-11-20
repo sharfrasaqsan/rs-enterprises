@@ -6,6 +6,11 @@ import { getFirestore, Firestore } from "firebase-admin/firestore";
 import { getAuth, Auth } from "firebase-admin/auth";
 import { getStorage, Storage } from "firebase-admin/storage";
 
+// Ensure native DNS resolution for gRPC on Node.js/Windows environments
+if (typeof process !== "undefined" && !process.env.GRPC_DNS_RESOLVER) {
+  process.env.GRPC_DNS_RESOLVER = "native";
+}
+
 let app: App | null = null;
 let db: Firestore | null = null;
 let auth: Auth | null = null;

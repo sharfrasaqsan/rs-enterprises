@@ -40,10 +40,7 @@ export const getAdminVehiclesAction = unstable_cache(
         .withConverter(vehicleConverter)
         .orderBy("createdAt", "desc")
         .get();
-      if (!snap.empty) {
-        return snap.docs.map((d) => d.data());
-      }
-      return inMemoryVehicles;
+      return snap.docs.map((d) => d.data());
     } catch (err) {
       console.warn("getAdminVehiclesAction fallback:", err);
       return inMemoryVehicles;
@@ -683,10 +680,7 @@ export const getAdminLeadsAction = unstable_cache(
         .withConverter(leadConverter)
         .orderBy("createdAt", "desc")
         .get();
-      if (!snap.empty) {
-        return snap.docs.map((d) => d.data());
-      }
-      return inMemoryLeads;
+      return snap.docs.map((d) => d.data());
     } catch (err) {
       console.warn("getAdminLeadsAction fallback:", err);
       return inMemoryLeads;
@@ -1273,16 +1267,30 @@ export async function updateCompanySettingsAction(
     const payload = { ...updated, updatedAt: now };
 
     if (hasAdminCredentials()) {
-      await adminDb
+      const batch = adminDb.batch();
+      const genRef = adminDb
         .collection("settings")
         .doc("general")
-        .withConverter(settingsConverter)
-        .set(payload, { merge: true });
+        .withConverter(settingsConverter);
+      const profRef = adminDb
+        .collection("settings")
+        .doc("company_profile")
+        .withConverter(settingsConverter);
+      batch.set(genRef, payload, { merge: true });
+      batch.set(profRef, payload, { merge: true });
+      await batch.commit();
     }
 
-    // Revalidate settings tag and entire public site root layout
+    // Revalidate settings tags and entire public site root layout
     revalidateTag("company-settings", "max");
+    revalidateTag("settings", "max");
     revalidatePath("/", "layout");
+    revalidatePath("/contact");
+    revalidatePath("/about");
+    revalidatePath("/services");
+    revalidatePath("/spare-parts");
+    revalidatePath("/incoming");
+    revalidatePath("/vehicles");
     return { success: true };
   } catch (err) {
     console.error("updateCompanySettingsAction failed:", err);

@@ -32,8 +32,8 @@ export const getAllPublishedVehicles = unstable_cache(
           .filter((v) => !v.archived);
       }
       
-      // Fallback to seed vehicles if the database collection is empty
-      return SEED_VEHICLES.filter((v) => v.published && !v.archived);
+      // If collection is empty in Firestore, return empty list
+      return [];
     } catch (error) {
       console.warn("Firestore read failed or credentials missing; using seed data fallback:", error);
       return SEED_VEHICLES.filter((v) => v.published && !v.archived);
@@ -211,15 +211,7 @@ export async function getVehicleBySlug(slug: string): Promise<Vehicle | null> {
   const cached = allVehicles.find((v) => v.slug === slug);
   if (cached) return cached;
 
-  // Check seed vehicles fallback
-  const seedFallback = SEED_VEHICLES.find(
-    (v) => v.slug === slug || (slug.startsWith("2023-nissan-x-trail") && v.slug.startsWith("2023-nissan-x-trail"))
-  );
-  if (seedFallback && !seedFallback.archived) {
-    return seedFallback;
-  }
-
-  // Direct database lookup (for drafts / newly published units during runtime)
+  // 1. Direct database lookup (for drafts / newly published units during runtime)
   if (hasAdminCredentials() && process.env.NEXT_PHASE !== "phase-production-build") {
     try {
       const snapshot = await adminDb
@@ -237,6 +229,14 @@ export async function getVehicleBySlug(slug: string): Promise<Vehicle | null> {
     } catch (error) {
       console.warn(`Direct vehicle lookup failed for slug ${slug}:`, error);
     }
+  }
+
+  // 2. Offline / build-phase fallback to seed data only if not found in database
+  const seedFallback = SEED_VEHICLES.find(
+    (v) => v.slug === slug || (slug.startsWith("2023-nissan-x-trail") && v.slug.startsWith("2023-nissan-x-trail"))
+  );
+  if (seedFallback && !seedFallback.archived) {
+    return seedFallback;
   }
 
   return null;

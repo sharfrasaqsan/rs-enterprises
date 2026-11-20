@@ -34,7 +34,9 @@ export function SocialPosterGenerator({
 
   const phone = settings?.mainBranch.phone || "+94 27 222 0000";
   const mobile = settings?.mainBranch.mobile || "+94 77 123 4567";
-  const whatsappDigits = settings?.mainBranch.whatsapp || "94771234567";
+  const whatsappDigits = (settings?.mainBranch.whatsapp || "94771234567").replace(/[^0-9]/g, "");
+  const address = settings?.mainBranch.address || "No. 37/1, Kaduruwela, Polonnaruwa";
+  const companyName = settings?.companyName || "RS Enterprises Company (Pvt) Ltd";
   const vehicleUrl = `https://rsenterprises.lk/vehicles/${vehicle.slug}`;
   const priceDisplay = vehicle.price
     ? `LKR ${vehicle.price.toLocaleString("en-US")}`
@@ -80,8 +82,8 @@ ${vehicle.price && activeTemplate !== "sold" ? `• Showroom Valuation: ${priceD
 ${vehicle.features.length > 0 ? `EQUIPMENT HIGHLIGHTS:\n${vehicle.features.slice(0, 6).map((f) => `• ${f}`).join("\n")}\n` : ""}
 🛡️ Certified Japanese export certificate, verified auction inspection sheet, and authentic mileage documentation included.
 
-📍 RS ENTERPRISES COMPANY (PVT) LTD
-Main Showroom & Head Office: No. 37/1, Kaduruwela, Polonnaruwa
+📍 ${companyName.toUpperCase()}
+Main Showroom & Head Office: ${address}
 📞 Hotline: ${phone} | Mobile: ${mobile}
 📲 WhatsApp: +${whatsappDigits}
 🔗 Full specs & inspection sheet:
@@ -90,7 +92,7 @@ ${vehicleUrl}
 #RSEnterprises #JapaneseCarsSriLanka #${vehicle.make} #${vehicle.model.replace(/[\s-]+/g, "")} #Kaduruwela #Polonnaruwa #DirectImport #QualityAutomobiles`;
 
   // 2. WhatsApp Status / Broadcast
-  const whatsappCaption = `🔥 *RS ENTERPRISES | DIRECT JAPAN IMPORT*
+  const whatsappCaption = `🔥 *${companyName.toUpperCase()} | DIRECT JAPAN IMPORT*
 🚗 *${vehicle.year} ${vehicle.make} ${vehicle.model}* ${vehicle.grade ? `(${vehicle.grade})` : ""}
 
 ${
@@ -104,7 +106,7 @@ ${
 }
 📊 *Mileage:* ${vehicle.mileage.toLocaleString()} KM Genuine
 ⚙️ *Specs:* ${vehicle.engineCC} CC | ${vehicle.fuel.toUpperCase()} | ${vehicle.transmission.toUpperCase()}
-📍 *Location:* Kaduruwela Showroom, Polonnaruwa
+📍 *Location:* ${address}
 🛡️ *Auction Grade:* ${vehicle.auctionGrade} (${vehicle.auctionScore})
 
 📲 *Direct Call / WhatsApp:*
@@ -120,11 +122,11 @@ Another pristine Japanese unit officially delivered from our Kaduruwela Showroom
 🚗 *${vehicle.year} ${vehicle.make} ${vehicle.model}* ${vehicle.grade ? `(${vehicle.grade})` : ""}
 ✨ Certified Auction Grade ${vehicle.auctionGrade} (${vehicle.auctionScore}) • ${vehicle.mileage.toLocaleString()} KM Genuine
 
-We sincerely thank our valued customer for placing their trust in RS Enterprises Company Pvt Ltd. Wishing you safe, joyful miles ahead!
+We sincerely thank our valued customer for placing their trust in ${companyName}. Wishing you safe, joyful miles ahead!
 
 Looking for an identical specification directly from Tokyo auctions? We import on order with transparent CIF valuations and duty clearance.
 
-📍 RS Enterprises | No. 37/1, Kaduruwela, Polonnaruwa
+📍 ${companyName} | ${address}
 📞 Hotline: ${phone} | WhatsApp: +${whatsappDigits}
 🌐 rsenterprises.lk`;
 
