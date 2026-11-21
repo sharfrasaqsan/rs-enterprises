@@ -1,8 +1,7 @@
 "use server";
 
-import { adminDb, hasAdminCredentials } from "@/lib/firebase-admin";
+import { adminDb } from "@/lib/firebase-admin";
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
-import { SEED_SAVED_SEARCHES } from "@/lib/seed-data";
 import {
   SavedSearch,
   CreateSavedSearchInput,
@@ -19,11 +18,8 @@ import { normalizePhoneNumber } from "@/lib/phone";
 import { getAllPublishedVehicles } from "@/lib/vehicles";
 import { registerOrMergeLeadCoreAction } from "@/app/actions/admin";
 
-// In-memory persistent cache for environments without Firestore service account
-let inMemorySavedSearches: SavedSearch[] = [...SEED_SAVED_SEARCHES];
-
 /**
- * Retrieve all saved searches / back-in-stock alerts.
+ * Retrieve all saved searches / back-in-stock alerts directly from Firestore.
  */
 export const getSavedSearchesAction = unstable_cache(
   async (filter?: {
@@ -31,17 +27,12 @@ export const getSavedSearchesAction = unstable_cache(
     phone?: string;
   }): Promise<SavedSearch[]> => {
     try {
-      let searches: SavedSearch[] = [];
-      if (hasAdminCredentials()) {
-        const snap = await adminDb
-          .collection("saved_searches")
-          .withConverter(savedSearchConverter)
-          .orderBy("createdAt", "desc")
-          .get();
-        searches = snap.docs.map((doc) => doc.data());
-      } else {
-        searches = [...inMemorySavedSearches];
-      }
+      const snap = await adminDb
+        .collection("saved_searches")
+        .withConverter(savedSearchConverter)
+        .orderBy("createdAt", "desc")
+        .get();
+      let searches = snap.docs.map((doc) => doc.data());
 
       if (filter?.status && filter.status !== "all") {
         searches = searches.filter((s) => s.status === filter.status);
@@ -53,8 +44,8 @@ export const getSavedSearchesAction = unstable_cache(
 
       return searches;
     } catch (err) {
-      console.warn("getSavedSearchesAction fallback:", err);
-      return inMemorySavedSearches;
+      console.error("getSavedSearchesAction failed:", err);
+      return [];
     }
   },
   ["admin-saved-searches-cache"],
@@ -154,16 +145,12 @@ export async function createSavedSearchAction(
       matchedVehicleIds: existingMatches.map((v) => v.id),
     };
 
-    // Save to Firestore or in-memory
-    if (hasAdminCredentials()) {
-      await adminDb
-        .collection("saved_searches")
-        .doc(id)
-        .withConverter(savedSearchConverter)
-        .set(newSearch);
-    } else {
-      inMemorySavedSearches.unshift(newSearch);
-    }
+    // Save to Firestore
+    await adminDb
+      .collection("saved_searches")
+      .doc(id)
+      .withConverter(savedSearchConverter)
+      .set(newSearch);
 
     // Auto-create or merge lead into CRM pipeline
     try {
@@ -216,17 +203,12 @@ export async function checkAndNotifySavedSearchesAction(
   }
 
   try {
-    let allSearches: SavedSearch[] = [];
-    if (hasAdminCredentials()) {
-      const snap = await adminDb
-        .collection("saved_searches")
-        .withConverter(savedSearchConverter)
-        .where("status", "==", "active")
-        .get();
-      allSearches = snap.docs.map((d) => d.data());
-    } else {
-      allSearches = inMemorySavedSearches.filter((s) => s.status === "active");
-    }
+    const snap = await adminDb
+      .collection("saved_searches")
+      .withConverter(savedSearchConverter)
+      .where("status", "==", "active")
+      .get();
+    const allSearches: SavedSearch[] = snap.docs.map((d) => d.data());
 
     const matchedAlerts: {
       search: SavedSearch;
@@ -266,18 +248,11 @@ export async function checkAndNotifySavedSearchesAction(
           updatedAt: now,
         };
 
-        if (hasAdminCredentials()) {
-          await adminDb
-            .collection("saved_searches")
-            .doc(search.id)
-            .withConverter(savedSearchConverter)
-            .set(updatedSearch, { merge: true });
-        } else {
-          const idx = inMemorySavedSearches.findIndex((s) => s.id === search.id);
-          if (idx >= 0) {
-            inMemorySavedSearches[idx] = updatedSearch;
-          }
-        }
+        await adminDb
+          .collection("saved_searches")
+          .doc(search.id)
+          .withConverter(savedSearchConverter)
+          .set(updatedSearch, { merge: true });
 
         matchedAlerts.push({
           search: updatedSearch,
@@ -372,18 +347,11 @@ export async function triggerManualSavedSearchAlertAction(
       updatedAt: now,
     };
 
-    if (hasAdminCredentials()) {
-      await adminDb
-        .collection("saved_searches")
-        .doc(search.id)
-        .withConverter(savedSearchConverter)
-        .set(updatedSearch, { merge: true });
-    } else {
-      const idx = inMemorySavedSearches.findIndex((s) => s.id === search.id);
-      if (idx >= 0) {
-        inMemorySavedSearches[idx] = updatedSearch;
-      }
-    }
+    await adminDb
+      .collection("saved_searches")
+      .doc(search.id)
+      .withConverter(savedSearchConverter)
+      .set(updatedSearch, { merge: true });
 
     revalidateTag("saved-searches", "max");
     revalidateTag("admin-saved-searches", "max");
@@ -410,21 +378,11 @@ export async function updateSavedSearchStatusAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const now = new Date().toISOString();
-    if (hasAdminCredentials()) {
-      await adminDb
-        .collection("saved_searches")
-        .doc(id)
-        .update({ status, updatedAt: now });
-    } else {
-      const idx = inMemorySavedSearches.findIndex((s) => s.id === id);
-      if (idx >= 0) {
-        inMemorySavedSearches[idx] = {
-          ...inMemorySavedSearches[idx]!,
-          status,
-          updatedAt: now,
-        };
-      }
-    }
+    await adminDb
+      .collection("saved_searches")
+      .doc(id)
+      .update({ status, updatedAt: now });
+
     revalidateTag("saved-searches", "max");
     revalidateTag("admin-saved-searches", "max");
     revalidatePath("/admin/leads");
@@ -443,11 +401,7 @@ export async function deleteSavedSearchAction(
   id: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    if (hasAdminCredentials()) {
-      await adminDb.collection("saved_searches").doc(id).delete();
-    } else {
-      inMemorySavedSearches = inMemorySavedSearches.filter((s) => s.id !== id);
-    }
+    await adminDb.collection("saved_searches").doc(id).delete();
     revalidateTag("saved-searches", "max");
     revalidateTag("admin-saved-searches", "max");
     revalidatePath("/admin/leads");

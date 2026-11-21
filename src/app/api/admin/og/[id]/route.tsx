@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 import { getAdminVehiclesAction } from "@/app/actions/admin";
 import { getCompanySettings } from "@/lib/settings";
-import { adminDb, hasAdminCredentials } from "@/lib/firebase-admin";
+import { adminDb } from "@/lib/firebase-admin";
 import { vehicleConverter } from "@/types/vehicle";
 import fs from "node:fs";
 import path from "node:path";
@@ -25,7 +25,7 @@ export async function GET(
   ]);
 
   let vehicle = vehicles.find((v) => v.id === id || v.slug === id);
-  if (!vehicle && hasAdminCredentials()) {
+  if (!vehicle) {
     try {
       const snap = await adminDb
         .collection("vehicles")

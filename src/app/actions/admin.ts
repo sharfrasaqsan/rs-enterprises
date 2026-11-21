@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidateTag, revalidatePath, unstable_cache } from "next/cache";
-import { adminDb, hasAdminCredentials } from "@/lib/firebase-admin";
+import { adminDb } from "@/lib/firebase-admin";
 import { Vehicle, vehicleConverter, VehicleStatus, ImportStage, VehicleReservation } from "@/types/vehicle";
 import {
   Lead,
@@ -15,25 +15,17 @@ import {
 import { CompanySettings, settingsConverter } from "@/types/settings";
 import { SavedSearch } from "@/types/saved-search";
 import { checkAndNotifySavedSearchesAction } from "@/app/actions/saved-searches";
-import { SEED_VEHICLES, SEED_LEADS } from "@/lib/seed-data";
 import {
   normalizePhoneNumber,
   formatPhoneDisplay,
   isSamePhoneNumber,
 } from "@/lib/phone";
 
-// In-memory state for development fallback when Firestore credentials aren't active
-let inMemoryVehicles: Vehicle[] = [...SEED_VEHICLES];
-let inMemoryLeads: Lead[] = [...SEED_LEADS];
-
 /**
- * Fetch all vehicles for staff management (including unpublished drafts & archived).
+ * Fetch all vehicles for staff management directly from Firestore (including unpublished drafts & archived).
  */
 export const getAdminVehiclesAction = unstable_cache(
   async (): Promise<Vehicle[]> => {
-    if (!hasAdminCredentials()) {
-      return inMemoryVehicles;
-    }
     try {
       const snap = await adminDb
         .collection("vehicles")
@@ -42,8 +34,8 @@ export const getAdminVehiclesAction = unstable_cache(
         .get();
       return snap.docs.map((d) => d.data());
     } catch (err) {
-      console.warn("getAdminVehiclesAction fallback:", err);
-      return inMemoryVehicles;
+      console.error("getAdminVehiclesAction failed:", err);
+      return [];
     }
   },
   ["admin-vehicles-cache"],
@@ -63,17 +55,11 @@ export async function toggleVehiclePublishedAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const now = new Date().toISOString();
-    if (hasAdminCredentials()) {
-      await adminDb.collection("vehicles").doc(vehicleId).update({
-        published,
-        updatedAt: now,
-        updatedBy,
-      });
-    } else {
-      inMemoryVehicles = inMemoryVehicles.map((v) =>
-        v.id === vehicleId ? { ...v, published, updatedAt: now, updatedBy } : v
-      );
-    }
+    await adminDb.collection("vehicles").doc(vehicleId).update({
+      published,
+      updatedAt: now,
+      updatedBy,
+    });
     revalidateTag("vehicles", "max");
     revalidateTag("admin-vehicles", "max");
     revalidatePath("/vehicles");
@@ -113,29 +99,7 @@ export async function updateVehicleStatusAction(
       updatePayload.reservation = null;
     }
 
-    if (hasAdminCredentials()) {
-      await adminDb.collection("vehicles").doc(vehicleId).update(updatePayload);
-    } else {
-      inMemoryVehicles = inMemoryVehicles.map((v) =>
-        v.id === vehicleId
-          ? {
-              ...v,
-              status,
-              reservation: status !== "reserved" ? null : v.reservation,
-              importStage:
-                importStage !== undefined
-                  ? importStage
-                  : status === "available" || status === "sold"
-                  ? "ready"
-                  : status === "incoming"
-                  ? "shipped"
-                  : v.importStage,
-              updatedAt: now,
-              updatedBy,
-            }
-          : v
-      );
-    }
+    await adminDb.collection("vehicles").doc(vehicleId).update(updatePayload);
     revalidateTag("vehicles", "max");
     revalidateTag("admin-vehicles", "max");
     revalidatePath("/admin");
@@ -203,34 +167,15 @@ export async function reserveVehicleAction(params: {
       reservedAt: now,
     };
 
-    let updatedVehicle: Vehicle | undefined;
-
-    if (hasAdminCredentials()) {
-      const docRef = adminDb.collection("vehicles").doc(vehicleId);
-      await docRef.update({
-        status: "reserved",
-        reservation,
-        updatedAt: now,
-        updatedBy: reservedBy,
-      });
-      const snap = await docRef.withConverter(vehicleConverter).get();
-      updatedVehicle = snap.data();
-    } else {
-      inMemoryVehicles = inMemoryVehicles.map((v) => {
-        if (v.id === vehicleId) {
-          const uv: Vehicle = {
-            ...v,
-            status: "reserved",
-            reservation,
-            updatedAt: now,
-            updatedBy: reservedBy,
-          };
-          updatedVehicle = uv;
-          return uv;
-        }
-        return v;
-      });
-    }
+    const docRef = adminDb.collection("vehicles").doc(vehicleId);
+    await docRef.update({
+      status: "reserved",
+      reservation,
+      updatedAt: now,
+      updatedBy: reservedBy,
+    });
+    const snap = await docRef.withConverter(vehicleConverter).get();
+    const updatedVehicle: Vehicle | undefined = snap.data();
 
     // Auto-create or merge lead dossier if customer contact is provided
     if (normalizedPhone && customerName) {
@@ -281,35 +226,16 @@ export async function releaseVehicleReservationAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const now = new Date().toISOString();
-    let vehicleSlug = "";
+    const docRef = adminDb.collection("vehicles").doc(vehicleId);
+    const snap = await docRef.get();
+    const vehicleSlug = snap.exists ? (snap.data()?.slug || "") : "";
 
-    if (hasAdminCredentials()) {
-      const docRef = adminDb.collection("vehicles").doc(vehicleId);
-      const snap = await docRef.get();
-      if (snap.exists) {
-        vehicleSlug = snap.data()?.slug || "";
-      }
-      await docRef.update({
-        status: "available",
-        reservation: null,
-        updatedAt: now,
-        updatedBy: releasedBy,
-      });
-    } else {
-      inMemoryVehicles = inMemoryVehicles.map((v) => {
-        if (v.id === vehicleId) {
-          vehicleSlug = v.slug;
-          return {
-            ...v,
-            status: "available",
-            reservation: null,
-            updatedAt: now,
-            updatedBy: releasedBy,
-          };
-        }
-        return v;
-      });
-    }
+    await docRef.update({
+      status: "available",
+      reservation: null,
+      updatedAt: now,
+      updatedBy: releasedBy,
+    });
 
     revalidateTag("vehicles", "max");
     revalidateTag("admin-vehicles", "max");
@@ -343,43 +269,22 @@ export async function extendVehicleHoldAction(
     const now = new Date().toISOString();
     let vehicleSlug = "";
 
-    if (hasAdminCredentials()) {
-      const docRef = adminDb.collection("vehicles").doc(vehicleId);
-      const snap = await docRef.get();
-      if (snap.exists) {
-        const data = snap.data();
-        vehicleSlug = data?.slug || "";
-        const currentReservation = data?.reservation || {};
-        await docRef.update({
-          reservation: {
-            ...currentReservation,
-            holdExpiryDate: newHoldExpiryDate,
-            notes: reason
-              ? `${currentReservation.notes || ""} [Hold extended: ${reason}]`.trim()
-              : currentReservation.notes,
-          },
-          updatedAt: now,
-          updatedBy,
-        });
-      }
-    } else {
-      inMemoryVehicles = inMemoryVehicles.map((v) => {
-        if (v.id === vehicleId && v.reservation) {
-          vehicleSlug = v.slug;
-          return {
-            ...v,
-            reservation: {
-              ...v.reservation,
-              holdExpiryDate: newHoldExpiryDate,
-              notes: reason
-                ? `${v.reservation.notes || ""} [Hold extended: ${reason}]`.trim()
-                : v.reservation.notes,
-            },
-            updatedAt: now,
-            updatedBy,
-          };
-        }
-        return v;
+    const docRef = adminDb.collection("vehicles").doc(vehicleId);
+    const snap = await docRef.get();
+    if (snap.exists) {
+      const data = snap.data();
+      vehicleSlug = data?.slug || "";
+      const currentReservation = data?.reservation || {};
+      await docRef.update({
+        reservation: {
+          ...currentReservation,
+          holdExpiryDate: newHoldExpiryDate,
+          notes: reason
+            ? `${currentReservation.notes || ""} [Hold extended: ${reason}]`.trim()
+            : currentReservation.notes,
+        },
+        updatedAt: now,
+        updatedBy,
       });
     }
 
@@ -425,31 +330,11 @@ export async function updateIncomingStageAction(
       importStage === "ready" || importStage === "in_stock" ? "available" : "incoming";
     updatePayload.status = resolvedStatus;
 
-    let vehicleSlug = "";
+    const docRef = adminDb.collection("vehicles").doc(vehicleId);
+    const snap = await docRef.get();
+    const vehicleSlug = snap.exists ? (snap.data()?.slug || "") : "";
 
-    if (hasAdminCredentials()) {
-      const docRef = adminDb.collection("vehicles").doc(vehicleId);
-      const snap = await docRef.get();
-      if (snap.exists) {
-        vehicleSlug = snap.data()?.slug || "";
-      }
-      await docRef.update(updatePayload);
-    } else {
-      inMemoryVehicles = inMemoryVehicles.map((v) => {
-        if (v.id === vehicleId) {
-          vehicleSlug = v.slug;
-          return {
-            ...v,
-            importStage,
-            status: resolvedStatus,
-            expectedArrival: expectedArrival !== undefined ? expectedArrival : v.expectedArrival,
-            updatedAt: now,
-            updatedBy,
-          };
-        }
-        return v;
-      });
-    }
+    await docRef.update(updatePayload);
 
     revalidateTag("vehicles", "max");
     revalidateTag("admin-vehicles", "max");
@@ -478,20 +363,12 @@ export async function archiveVehicleAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const now = new Date().toISOString();
-    if (hasAdminCredentials()) {
-      await adminDb.collection("vehicles").doc(vehicleId).update({
-        archived: true,
-        published: false,
-        updatedAt: now,
-        updatedBy,
-      });
-    } else {
-      inMemoryVehicles = inMemoryVehicles.map((v) =>
-        v.id === vehicleId
-          ? { ...v, archived: true, published: false, updatedAt: now, updatedBy }
-          : v
-      );
-    }
+    await adminDb.collection("vehicles").doc(vehicleId).update({
+      archived: true,
+      published: false,
+      updatedAt: now,
+      updatedBy,
+    });
     revalidateTag("vehicles", "max");
     revalidateTag("admin-vehicles", "max");
     revalidatePath("/vehicles");
@@ -513,20 +390,12 @@ export async function unarchiveVehicleAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const now = new Date().toISOString();
-    if (hasAdminCredentials()) {
-      await adminDb.collection("vehicles").doc(vehicleId).update({
-        archived: false,
-        published: false,
-        updatedAt: now,
-        updatedBy,
-      });
-    } else {
-      inMemoryVehicles = inMemoryVehicles.map((v) =>
-        v.id === vehicleId
-          ? { ...v, archived: false, published: false, updatedAt: now, updatedBy }
-          : v
-      );
-    }
+    await adminDb.collection("vehicles").doc(vehicleId).update({
+      archived: false,
+      published: false,
+      updatedAt: now,
+      updatedBy,
+    });
     revalidateTag("vehicles", "max");
     revalidateTag("admin-vehicles", "max");
     revalidatePath("/vehicles");
@@ -605,20 +474,11 @@ export async function saveVehicleAction(
       updatedAt: now,
     };
 
-    if (hasAdminCredentials()) {
-      await adminDb
-        .collection("vehicles")
-        .doc(id)
-        .withConverter(vehicleConverter)
-        .set(fullVehicle, { merge: true });
-    } else {
-      const idx = inMemoryVehicles.findIndex((v) => v.id === id);
-      if (idx >= 0) {
-        inMemoryVehicles[idx] = fullVehicle;
-      } else {
-        inMemoryVehicles.unshift(fullVehicle);
-      }
-    }
+    await adminDb
+      .collection("vehicles")
+      .doc(id)
+      .withConverter(vehicleConverter)
+      .set(fullVehicle, { merge: true });
 
     revalidateTag("vehicles", "max");
     revalidateTag("admin-vehicles", "max");
@@ -659,11 +519,7 @@ export async function deleteVehicleAction(
   vehicleId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    if (hasAdminCredentials()) {
-      await adminDb.collection("vehicles").doc(vehicleId).delete();
-    } else {
-      inMemoryVehicles = inMemoryVehicles.filter((v) => v.id !== vehicleId);
-    }
+    await adminDb.collection("vehicles").doc(vehicleId).delete();
     revalidateTag("vehicles", "max");
     revalidateTag("admin-vehicles", "max");
     return { success: true };
@@ -674,13 +530,10 @@ export async function deleteVehicleAction(
 }
 
 /**
- * Fetch CRM Leads for staff.
+ * Fetch CRM Leads for staff directly from Firestore.
  */
 export const getAdminLeadsAction = unstable_cache(
   async (): Promise<Lead[]> => {
-    if (!hasAdminCredentials()) {
-      return inMemoryLeads;
-    }
     try {
       const snap = await adminDb
         .collection("leads")
@@ -689,8 +542,8 @@ export const getAdminLeadsAction = unstable_cache(
         .get();
       return snap.docs.map((d) => d.data());
     } catch (err) {
-      console.warn("getAdminLeadsAction fallback:", err);
-      return inMemoryLeads;
+      console.error("getAdminLeadsAction failed:", err);
+      return [];
     }
   },
   ["admin-leads-cache"],
@@ -720,21 +573,7 @@ export async function updateLeadStageAction(
       updatePayload.lostReason = lostReason;
     }
 
-    if (hasAdminCredentials()) {
-      await adminDb.collection("leads").doc(leadId).update(updatePayload);
-    } else {
-      inMemoryLeads = inMemoryLeads.map((l) =>
-        l.id === leadId
-          ? {
-              ...l,
-              stage,
-              lostReason: lostReason || l.lostReason,
-              updatedAt: now,
-              updatedBy,
-            }
-          : l
-      );
-    }
+    await adminDb.collection("leads").doc(leadId).update(updatePayload);
     revalidateTag("admin-leads", "max");
     revalidatePath("/admin/leads");
     revalidatePath(`/admin/leads/${leadId}`);
@@ -764,28 +603,15 @@ export async function addLeadNoteAction(
       time: now,
     };
 
-    if (hasAdminCredentials()) {
-      const docRef = adminDb.collection("leads").doc(leadId);
-      const snap = await docRef.get();
-      if (snap.exists) {
-        const existingNotes = snap.data()?.notes || [];
-        await docRef.update({
-          notes: [...existingNotes, newNote],
-          updatedAt: now,
-          updatedBy: author,
-        });
-      }
-    } else {
-      inMemoryLeads = inMemoryLeads.map((l) =>
-        l.id === leadId
-          ? {
-              ...l,
-              notes: [...l.notes, newNote],
-              updatedAt: now,
-              updatedBy: author,
-            }
-          : l
-      );
+    const docRef = adminDb.collection("leads").doc(leadId);
+    const snap = await docRef.get();
+    if (snap.exists) {
+      const existingNotes = snap.data()?.notes || [];
+      await docRef.update({
+        notes: [...existingNotes, newNote],
+        updatedAt: now,
+        updatedBy: author,
+      });
     }
     revalidateTag("admin-leads", "max");
     revalidatePath("/admin/leads");
@@ -809,17 +635,11 @@ export async function setLeadFollowUpAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const now = new Date().toISOString();
-    if (hasAdminCredentials()) {
-      await adminDb.collection("leads").doc(leadId).update({
-        followUpDate,
-        updatedAt: now,
-        updatedBy,
-      });
-    } else {
-      inMemoryLeads = inMemoryLeads.map((l) =>
-        l.id === leadId ? { ...l, followUpDate, updatedAt: now, updatedBy } : l
-      );
-    }
+    await adminDb.collection("leads").doc(leadId).update({
+      followUpDate,
+      updatedAt: now,
+      updatedBy,
+    });
     revalidateTag("admin-leads", "max");
     revalidatePath("/admin/leads");
     revalidatePath(`/admin/leads/${leadId}`);
@@ -876,49 +696,37 @@ export async function registerOrMergeLeadCoreAction(
     const source: LeadSource = data.source || "website_form";
     const name = data.name.trim();
 
-    // 1. Search for existing lead with identical normalized phone
+    // 1. Search for existing lead with identical normalized phone in Firestore
     let existingLead: Lead | null = null;
 
-    if (hasAdminCredentials()) {
-      try {
-        const snap = await adminDb
+    try {
+      const snap = await adminDb
+        .collection("leads")
+        .withConverter(leadConverter)
+        .where("phone", "==", normalizedPhone)
+        .limit(1)
+        .get();
+
+      if (!snap.empty) {
+        existingLead = snap.docs[0].data();
+      } else {
+        // Fallback search to check if any older records had unnormalized phones with spaces or leading 0
+        const allSnap = await adminDb
           .collection("leads")
           .withConverter(leadConverter)
-          .where("phone", "==", normalizedPhone)
-          .limit(1)
+          .orderBy("createdAt", "desc")
+          .limit(100)
           .get();
-
-        if (!snap.empty) {
-          existingLead = snap.docs[0].data();
-        } else {
-          // Fallback search to check if any older records had unnormalized phones with spaces or leading 0
-          const allSnap = await adminDb
-            .collection("leads")
-            .withConverter(leadConverter)
-            .orderBy("createdAt", "desc")
-            .limit(100)
-            .get();
-          for (const doc of allSnap.docs) {
-            const l = doc.data();
-            if (isSamePhoneNumber(l.phone, normalizedPhone)) {
-              existingLead = l;
-              break;
-            }
+        for (const doc of allSnap.docs) {
+          const l = doc.data();
+          if (isSamePhoneNumber(l.phone, normalizedPhone)) {
+            existingLead = l;
+            break;
           }
         }
-      } catch (err) {
-        console.warn("Firestore lead deduplication query fallback:", err);
       }
-    }
-
-    // In-memory lookup (for development fallback or offline testing)
-    if (!existingLead) {
-      existingLead =
-        inMemoryLeads.find(
-          (l) =>
-            normalizePhoneNumber(l.phone) === normalizedPhone ||
-            isSamePhoneNumber(l.phone, normalizedPhone)
-        ) || null;
+    } catch (err) {
+      console.warn("Firestore lead deduplication query fallback:", err);
     }
 
     // 2. CASE A: DUPLICATE PHONE DETECTED -> MERGE INTO EXISTING RECORD
@@ -1022,17 +830,11 @@ export async function registerOrMergeLeadCoreAction(
         updatedBy: author,
       };
 
-      if (hasAdminCredentials()) {
-        await adminDb
-          .collection("leads")
-          .doc(existingLead.id)
-          .withConverter(leadConverter)
-          .set(mergedLead);
-      } else {
-        inMemoryLeads = inMemoryLeads.map((l) =>
-          l.id === existingLead!.id ? mergedLead : l
-        );
-      }
+      await adminDb
+        .collection("leads")
+        .doc(existingLead.id)
+        .withConverter(leadConverter)
+        .set(mergedLead);
 
       revalidateTag("admin-leads", "max");
       revalidateTag("leads", "max");
@@ -1101,15 +903,11 @@ export async function registerOrMergeLeadCoreAction(
       updatedAt: now,
     };
 
-    if (hasAdminCredentials()) {
-      await adminDb
-        .collection("leads")
-        .doc(id)
-        .withConverter(leadConverter)
-        .set(newLead);
-    } else {
-      inMemoryLeads.unshift(newLead);
-    }
+    await adminDb
+      .collection("leads")
+      .doc(id)
+      .withConverter(leadConverter)
+      .set(newLead);
 
     revalidateTag("admin-leads", "max");
     revalidateTag("leads", "max");
@@ -1186,30 +984,18 @@ export async function markLeadWonWithVehicleAction(
   try {
     const now = new Date().toISOString();
 
-    if (hasAdminCredentials()) {
-      await adminDb.collection("leads").doc(leadId).update({
-        stage: "won",
+    await adminDb.collection("leads").doc(leadId).update({
+      stage: "won",
+      updatedAt: now,
+      updatedBy: author,
+    });
+
+    if (markVehicleSold && vehicleId) {
+      await adminDb.collection("vehicles").doc(vehicleId).update({
+        status: "sold",
         updatedAt: now,
         updatedBy: author,
       });
-    } else {
-      inMemoryLeads = inMemoryLeads.map((l) =>
-        l.id === leadId ? { ...l, stage: "won", updatedAt: now, updatedBy: author } : l
-      );
-    }
-
-    if (markVehicleSold && vehicleId) {
-      if (hasAdminCredentials()) {
-        await adminDb.collection("vehicles").doc(vehicleId).update({
-          status: "sold",
-          updatedAt: now,
-          updatedBy: author,
-        });
-      } else {
-        inMemoryVehicles = inMemoryVehicles.map((v) =>
-          v.id === vehicleId ? { ...v, status: "sold", updatedAt: now, updatedBy: author } : v
-        );
-      }
       revalidateTag("vehicles", "max");
       revalidateTag("admin-vehicles", "max");
       revalidatePath("/vehicles");
@@ -1239,17 +1025,11 @@ export async function reassignLeadAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const now = new Date().toISOString();
-    if (hasAdminCredentials()) {
-      await adminDb.collection("leads").doc(leadId).update({
-        assignedTo,
-        updatedAt: now,
-        updatedBy: author,
-      });
-    } else {
-      inMemoryLeads = inMemoryLeads.map((l) =>
-        l.id === leadId ? { ...l, assignedTo, updatedAt: now, updatedBy: author } : l
-      );
-    }
+    await adminDb.collection("leads").doc(leadId).update({
+      assignedTo,
+      updatedAt: now,
+      updatedBy: author,
+    });
     revalidateTag("admin-leads", "max");
     revalidatePath("/admin/leads");
     revalidatePath(`/admin/leads/${leadId}`);
@@ -1269,11 +1049,7 @@ export async function deleteLeadAction(
   leadId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    if (hasAdminCredentials()) {
-      await adminDb.collection("leads").doc(leadId).delete();
-    } else {
-      inMemoryLeads = inMemoryLeads.filter((l) => l.id !== leadId);
-    }
+    await adminDb.collection("leads").doc(leadId).delete();
     revalidateTag("admin-leads", "max");
     revalidatePath("/admin/leads");
     revalidatePath(`/admin/leads/${leadId}`);
@@ -1297,20 +1073,18 @@ export async function updateCompanySettingsAction(
     const now = new Date().toISOString();
     const payload = { ...updated, updatedAt: now };
 
-    if (hasAdminCredentials()) {
-      const batch = adminDb.batch();
-      const genRef = adminDb
-        .collection("settings")
-        .doc("general")
-        .withConverter(settingsConverter);
-      const profRef = adminDb
-        .collection("settings")
-        .doc("company_profile")
-        .withConverter(settingsConverter);
-      batch.set(genRef, payload, { merge: true });
-      batch.set(profRef, payload, { merge: true });
-      await batch.commit();
-    }
+    const batch = adminDb.batch();
+    const genRef = adminDb
+      .collection("settings")
+      .doc("general")
+      .withConverter(settingsConverter);
+    const profRef = adminDb
+      .collection("settings")
+      .doc("company_profile")
+      .withConverter(settingsConverter);
+    batch.set(genRef, payload, { merge: true });
+    batch.set(profRef, payload, { merge: true });
+    await batch.commit();
 
     // Revalidate settings tags and entire public site root layout
     revalidateTag("company-settings", "max");
@@ -1339,17 +1113,11 @@ export async function updateVehicleCostAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const now = new Date().toISOString();
-    if (hasAdminCredentials()) {
-      await adminDb.collection("vehicles").doc(vehicleId).update({
-        costPrice,
-        updatedAt: now,
-        updatedBy,
-      });
-    } else {
-      inMemoryVehicles = inMemoryVehicles.map((v) =>
-        v.id === vehicleId ? { ...v, costPrice, updatedAt: now, updatedBy } : v
-      );
-    }
+    await adminDb.collection("vehicles").doc(vehicleId).update({
+      costPrice,
+      updatedAt: now,
+      updatedBy,
+    });
     revalidatePath("/admin/analytics");
     revalidatePath("/admin/vehicles");
     revalidateTag("vehicles", "max");

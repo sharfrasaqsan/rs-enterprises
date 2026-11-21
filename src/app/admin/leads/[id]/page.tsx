@@ -1,7 +1,7 @@
 import React from "react";
 import { notFound } from "next/navigation";
 import { getAdminLeadsAction, getAdminVehiclesAction } from "@/app/actions/admin";
-import { adminDb, hasAdminCredentials } from "@/lib/firebase-admin";
+import { adminDb } from "@/lib/firebase-admin";
 import { leadConverter } from "@/types/lead";
 import { LeadDossierClient } from "@/components/admin/LeadDossierClient";
 
@@ -17,7 +17,7 @@ export default async function AdminLeadDetailPage({
   ]);
   let lead = leads.find((l) => l.id === id);
 
-  if (!lead && hasAdminCredentials()) {
+  if (!lead) {
     try {
       const snap = await adminDb
         .collection("leads")

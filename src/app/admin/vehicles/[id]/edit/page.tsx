@@ -2,7 +2,7 @@ import React from "react";
 import { notFound } from "next/navigation";
 import { getAdminVehiclesAction } from "@/app/actions/admin";
 import { getCompanySettings } from "@/lib/settings";
-import { adminDb, hasAdminCredentials } from "@/lib/firebase-admin";
+import { adminDb } from "@/lib/firebase-admin";
 import { vehicleConverter } from "@/types/vehicle";
 import { VehicleFormClient } from "@/components/admin/VehicleFormClient";
 
@@ -18,7 +18,7 @@ export default async function AdminEditVehiclePage({
   ]);
   let vehicle = vehicles.find((v) => v.id === id);
 
-  if (!vehicle && hasAdminCredentials()) {
+  if (!vehicle) {
     try {
       const snap = await adminDb
         .collection("vehicles")

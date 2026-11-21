@@ -1,24 +1,19 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
-import { adminDb, hasAdminCredentials } from "@/lib/firebase-admin";
+import { adminDb } from "@/lib/firebase-admin";
 import {
   Vehicle,
   VehicleFilterParams,
   PaginatedVehiclesResult,
   vehicleConverter,
 } from "@/types/vehicle";
-import { SEED_VEHICLES } from "@/lib/seed-data";
 
 /**
- * Fetch all published vehicles from Firestore once per revalidation cycle.
+ * Fetch all published vehicles directly from Firestore once per revalidation cycle.
  * Cached with the Next.js tag 'vehicles'.
- * If Firestore is not reachable or credentials are not yet set, gracefully returns seed data.
  */
 export const getAllPublishedVehicles = unstable_cache(
   async (): Promise<Vehicle[]> => {
-    if (!hasAdminCredentials()) {
-      return SEED_VEHICLES.filter((v) => v.published && !v.archived);
-    }
     try {
       const snapshot = await adminDb
         .collection("vehicles")
@@ -31,12 +26,11 @@ export const getAllPublishedVehicles = unstable_cache(
           .map((doc) => doc.data())
           .filter((v) => !v.archived);
       }
-      
-      // If collection is empty in Firestore, return empty list
+
       return [];
     } catch (error) {
-      console.warn("Firestore read failed or credentials missing; using seed data fallback:", error);
-      return SEED_VEHICLES.filter((v) => v.published && !v.archived);
+      console.error("Firestore read failed in getAllPublishedVehicles:", error);
+      return [];
     }
   },
   ["all-published-vehicles-cache"],
@@ -212,31 +206,21 @@ export async function getVehicleBySlug(slug: string): Promise<Vehicle | null> {
   if (cached) return cached;
 
   // 1. Direct database lookup (for drafts / newly published units during runtime)
-  if (hasAdminCredentials() && process.env.NEXT_PHASE !== "phase-production-build") {
-    try {
-      const snapshot = await adminDb
-        .collection("vehicles")
-        .withConverter(vehicleConverter)
-        .where("slug", "==", slug)
-        .limit(1)
-        .get();
+  try {
+    const snapshot = await adminDb
+      .collection("vehicles")
+      .withConverter(vehicleConverter)
+      .where("slug", "==", slug)
+      .limit(1)
+      .get();
 
-      if (!snapshot.empty && snapshot.docs[0]) {
-        const data = snapshot.docs[0].data();
-        if (data.archived) return null;
-        return data;
-      }
-    } catch (error) {
-      console.warn(`Direct vehicle lookup failed for slug ${slug}:`, error);
+    if (!snapshot.empty && snapshot.docs[0]) {
+      const data = snapshot.docs[0].data();
+      if (data.archived) return null;
+      return data;
     }
-  }
-
-  // 2. Offline / build-phase fallback to seed data only if not found in database
-  const seedFallback = SEED_VEHICLES.find(
-    (v) => v.slug === slug || (slug.startsWith("2023-nissan-x-trail") && v.slug.startsWith("2023-nissan-x-trail"))
-  );
-  if (seedFallback && !seedFallback.archived) {
-    return seedFallback;
+  } catch (error) {
+    console.error(`Direct vehicle lookup failed for slug ${slug}:`, error);
   }
 
   return null;
@@ -292,10 +276,6 @@ export async function getVehiclesBySlugs(slugs: string[]): Promise<Vehicle[]> {
     const found = slugSet.get(slug);
     if (found) {
       results.push(found);
-    } else {
-      // Check seed data directly
-      const seed = SEED_VEHICLES.find((s) => s.slug === slug);
-      if (seed) results.push(seed);
     }
   }
 
