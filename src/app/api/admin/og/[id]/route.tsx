@@ -7,6 +7,15 @@ import { vehicleConverter } from "@/types/vehicle";
 import fs from "node:fs";
 import path from "node:path";
 
+// Helper to clean unsupported Unicode glyphs that cause Satori font fetch failures
+function cleanOgText(text?: string | null): string {
+  if (!text) return "";
+  return text
+    .replace(/[★☆✦✧]/g, "*")
+    .replace(/[\u{1F300}-\u{1F9FF}]/gu, "")
+    .trim();
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -16,7 +25,7 @@ export async function GET(
   const format = searchParams.get("format") || "square"; // "square" (1080x1080) or "story" (1080x1920)
   const templateParam = searchParams.get("template"); // "available" | "sold" | "incoming" | "reserved"
   const imageIndexParam = parseInt(searchParams.get("imageIndex") || "0", 10);
-  const customBadge = searchParams.get("badge") || "";
+  const customBadge = cleanOgText(searchParams.get("badge") || "");
 
   // Fetch vehicle details & settings
   const [vehicles, settings] = await Promise.all([
@@ -81,9 +90,11 @@ export async function GET(
     }
   }
 
-  // Load premier modern sans-serif font (Segoe UI Bold / Arial Bold)
+  // Load premier modern sans-serif font (bundled Geist / Windows Segoe UI / Arial)
   let fontBuffer: ArrayBuffer | null = null;
   const possibleFontPaths = [
+    path.join(process.cwd(), "public", "fonts", "Geist-Regular.ttf"),
+    path.join(process.cwd(), "node_modules", "next", "dist", "compiled", "@vercel", "og", "Geist-Regular.ttf"),
     "C:/Windows/Fonts/segoeuib.ttf",
     "C:/Windows/Fonts/segoeui.ttf",
     "C:/Windows/Fonts/arialbd.ttf",
@@ -162,10 +173,11 @@ export async function GET(
     : settings.mainBranch.address || "No. 37/1, Kaduruwela, Polonnaruwa";
 
   // Badge priority
-  const displayBadge =
+  const displayBadge = cleanOgText(
     customBadge ||
     (vehicle.auctionGrade ? `Grade ${vehicle.auctionGrade} (${vehicle.auctionScore})` : "") ||
-    (vehicle.registrationStatus === "unregistered" ? "Unregistered Direct Import" : "Genuine SL Registered");
+    (vehicle.registrationStatus === "unregistered" ? "Unregistered Direct Import" : "Genuine SL Registered")
+  );
 
   // ==========================================
   // 1. SQUARE POSTER (1080 x 1080)
