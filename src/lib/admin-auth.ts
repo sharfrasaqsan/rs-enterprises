@@ -18,24 +18,7 @@ export async function verifyAdminSession(): Promise<VerifiedAdmin | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
 
-  if (!token) {
-    return null;
-  }
-
-  // If token is a test/development bypass cookie (e.g. offline testing)
-  if (token.startsWith("dev-session:")) {
-    const parts = token.split(":");
-    const role = parts[1] === "owner" ? "owner" : "staff";
-    const email = parts[2] || (role === "owner" ? "owner@rsenterprises.lk" : "staff@rsenterprises.lk");
-    return {
-      uid: `dev-${role}`,
-      email,
-      role,
-      displayName: role === "owner" ? "S.M. Fajith (Proprietor)" : "Showroom Staff",
-    };
-  }
-
-  if (!hasAdminCredentials()) {
+  if (!token || !hasAdminCredentials()) {
     return null;
   }
 
@@ -47,7 +30,7 @@ export async function verifyAdminSession(): Promise<VerifiedAdmin | null> {
 
     return {
       uid: decoded.uid,
-      email: decoded.email || "unknown@rsenterprises.lk",
+      email: decoded.email || "staff@rsenterprises.lk",
       role,
       displayName: decoded.name || (role === "owner" ? "Showroom Director" : "Showroom Staff"),
     };

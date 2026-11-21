@@ -21,7 +21,6 @@ interface AdminAuthContextType {
   user: AdminUser | null;
   loading: boolean;
   signIn: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
-  demoSignIn: (role: "owner" | "staff") => void;
   signOut: () => Promise<void>;
 }
 
@@ -34,25 +33,9 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    // 1. Immediately read cached localStorage session on client mount
-    const timer = setTimeout(() => {
-      try {
-        const stored = localStorage.getItem("rs_admin_session");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed?.email) {
-            setUser(parsed);
-            setLoading(false);
-          }
-        } else {
-          setLoading(false);
-        }
-      } catch {
-        setLoading(false);
-      }
-    }, 0);
+    // Clean up any legacy dev session cookies or storage
+    localStorage.removeItem("rs_admin_session");
 
-    // 2. Attach Firebase Auth listener
     let unsubscribe = () => {};
     try {
       const auth = getFirebaseClientAuth();
@@ -69,21 +52,17 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
             displayName: fbUser.displayName || (role === "owner" ? "Showroom Director" : "Showroom Staff"),
           };
           setUser(adminUser);
-          localStorage.setItem("rs_admin_session", JSON.stringify(adminUser));
         } else {
-          const hasStored = localStorage.getItem("rs_admin_session");
-          if (!hasStored) {
-            setUser(null);
-          }
+          setUser(null);
         }
         setLoading(false);
       });
     } catch {
-      // Firebase auth client initialization failed (offline / demo fallback handled by session timer)
+      setUser(null);
+      setLoading(false);
     }
 
     return () => {
-      clearTimeout(timer);
       unsubscribe();
     };
   }, []);
@@ -103,38 +82,20 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         displayName: cred.user.displayName || (role === "owner" ? "Showroom Director" : "Showroom Staff"),
       };
       const idToken = await cred.user.getIdToken();
-      await setAdminSessionAction(idToken, role, adminUser.email);
+      const sessionResult = await setAdminSessionAction(idToken);
+      if (!sessionResult.success) {
+        return {
+          success: false,
+          error: sessionResult.error || "Failed to establish server session.",
+        };
+      }
       setUser(adminUser);
-      localStorage.setItem("rs_admin_session", JSON.stringify(adminUser));
       return { success: true };
     } catch (err: unknown) {
-      // Offline fallback or demo sign in
-      if (
-        (email === "owner@rsenterprises.lk" && (pass === "Polonnaruwa2026!" || pass === "TempPassword123#")) ||
-        (email === "staff@rsenterprises.lk" && (pass === "Kaduruwela2026!" || pass === "TempPassword123#"))
-      ) {
-        const role = email.includes("owner") ? ("owner" as const) : ("staff" as const);
-        demoSignIn(role);
-        return { success: true };
-      }
       return {
         success: false,
-        error: (err as Error)?.message || "Invalid staff credentials.",
+        error: (err as Error)?.message || "Invalid staff credentials. Please check your email and password.",
       };
-    }
-  };
-
-  const demoSignIn = async (role: "owner" | "staff") => {
-    const adminUser: AdminUser = {
-      email: role === "owner" ? "owner@rsenterprises.lk" : "staff@rsenterprises.lk",
-      role,
-      displayName: role === "owner" ? "S.M. Fajith (Proprietor)" : "Kaduruwela Staff Desk",
-    };
-    await setAdminSessionAction(`dev-session:${role}:${adminUser.email}`, role, adminUser.email);
-    setUser(adminUser);
-    localStorage.setItem("rs_admin_session", JSON.stringify(adminUser));
-    if (pathname === "/admin/login") {
-      router.push("/admin");
     }
   };
 
@@ -152,7 +113,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AdminAuthContext.Provider value={{ user, loading, signIn, demoSignIn, signOut }}>
+    <AdminAuthContext.Provider value={{ user, loading, signIn, signOut }}>
       {children}
     </AdminAuthContext.Provider>
   );

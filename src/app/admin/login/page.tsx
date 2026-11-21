@@ -8,7 +8,7 @@ import { Heading } from "@/components/ui/Heading";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export default function AdminLoginPage() {
-  const { signIn, demoSignIn } = useAdminAuth();
+  const { signIn } = useAdminAuth();
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -93,34 +93,15 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-12 inline-flex items-center justify-center text-xs font-sans uppercase font-medium tracking-[0.2em] bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors cursor-pointer disabled:opacity-50"
+            className="w-full h-12 inline-flex items-center justify-center text-xs font-sans uppercase font-medium tracking-[0.2em] bg-[var(--accent)] text-stone-900 hover:bg-[var(--accent-hover)] transition-colors cursor-pointer disabled:opacity-50"
           >
             {loading ? "Authenticating..." : "Sign In to Showroom"}
           </button>
         </form>
 
-        {/* 1-Tap Quick Demo Access */}
-        <div className="pt-6 border-t border-[var(--border-hairline)] space-y-3">
-          <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-[var(--text-secondary)] block text-center">
-            Instant Test Access
-          </span>
-
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => demoSignIn("staff")}
-              className="min-h-[44px] px-3 border border-[var(--border-subtle)] hover:border-[var(--accent)] text-[11px] font-sans uppercase tracking-wider text-[var(--text-primary)] transition-colors cursor-pointer"
-            >
-              Sign In as Staff
-            </button>
-            <button
-              type="button"
-              onClick={() => demoSignIn("owner")}
-              className="min-h-[44px] px-3 border border-[var(--border-subtle)] hover:border-[var(--accent)] text-[11px] font-sans uppercase tracking-wider text-[var(--text-primary)] transition-colors cursor-pointer"
-            >
-              Sign In as Owner
-            </button>
-          </div>
+        <div className="pt-4 border-t border-[var(--border-hairline)] flex items-center justify-between text-[11px] text-[var(--text-muted)] font-mono">
+          <span>Protected Staff Gateway</span>
+          <span>RS Enterprises &copy; 2026</span>
         </div>
       </div>
     </div>
