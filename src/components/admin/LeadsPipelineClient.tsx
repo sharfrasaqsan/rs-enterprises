@@ -1258,7 +1258,8 @@ export function LeadsPipelineClient({
       </div>
 
       {/* DESKTOP 5-COLUMN BOARD */}
-      <div className="hidden lg:grid lg:grid-cols-5 gap-4 items-start">
+      <div className="hidden lg:block overflow-x-auto pb-4">
+        <div className="grid grid-cols-5 gap-3.5 xl:gap-4 items-start min-w-[960px]">
         {BOARD_COLUMNS.map((col) => {
           const colLeads =
             col.key === "closed"
@@ -1307,11 +1308,11 @@ export function LeadsPipelineClient({
                       >
                         {/* Name & Phone */}
                         <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <span className="font-serif text-base text-[var(--text-primary)] font-medium leading-snug block">
+                          <div className="min-w-0">
+                            <span className="font-serif text-base text-[var(--text-primary)] font-medium leading-snug block truncate">
                               {lead.name}
                             </span>
-                            <span className="text-[10px] font-mono text-[var(--text-secondary)]">
+                            <span className="text-[10px] font-mono text-[var(--text-secondary)] block">
                               {formatPhoneDisplay(lead.phone)}
                             </span>
                           </div>
@@ -1358,50 +1359,59 @@ export function LeadsPipelineClient({
                           ) : null}
                         </div>
 
-                        {/* Bottom Actions: Call, WhatsApp, Stage Advance Button */}
+                        {/* Bottom Actions: Call, WhatsApp & Move Stage */}
                         <div
-                          className="pt-2 border-t border-[var(--border-hairline)] flex items-center justify-between gap-1"
+                          className="pt-2.5 border-t border-[var(--border-hairline)] space-y-2"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <div className="flex items-center gap-1">
+                          {/* Call & WhatsApp Quick Buttons (50/50 Balanced Grid) */}
+                          <div className="grid grid-cols-2 gap-1.5">
                             <a
                               href={`tel:${lead.phone}`}
-                              className="min-h-[32px] px-2 inline-flex items-center text-[10px] uppercase font-sans tracking-wider border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--text-primary)] rounded-[1px]"
-                              title="Call"
+                              className="h-7 px-2 inline-flex items-center justify-center gap-1.5 text-[10px] uppercase font-sans tracking-wider border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--accent)] hover:text-[var(--accent)] rounded-[2px] transition-colors"
+                              title={`Call ${lead.name}`}
                             >
-                              Call
+                              <svg className="w-2.5 h-2.5 text-[var(--accent)] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                              </svg>
+                              <span>Call</span>
                             </a>
                             <a
                               href={waUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="min-h-[32px] px-2 inline-flex items-center gap-1 text-[10px] uppercase font-sans font-medium tracking-wider bg-[#25D366] text-white hover:bg-[#20ba59] rounded-[2px] transition-colors"
-                              title="Chat on WhatsApp"
+                              className="h-7 px-2 inline-flex items-center justify-center gap-1.5 text-[10px] uppercase font-sans font-medium tracking-wider bg-[#25D366] text-white hover:bg-[#20ba59] rounded-[2px] transition-colors"
+                              title={`Chat with ${lead.name} on WhatsApp`}
                             >
-                              <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
+                              <svg className="w-2.5 h-2.5 fill-current shrink-0" viewBox="0 0 24 24">
                                 <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.077-1.782-.397-1.424-.589-2.348-2.029-2.42-2.125-.071-.096-.575-.765-.575-1.458 0-.693.361-1.033.49-1.177.129-.144.282-.18.377-.18.094 0 .188.001.27.005.086.004.202-.033.315.239.119.284.405.992.441 1.064.036.072.06.156.012.252-.048.096-.072.156-.144.24-.072.084-.152.188-.217.252-.072.072-.147.151-.063.295.084.144.373.616.8 1.002.549.497 1.013.652 1.157.724.144.072.228.06.313-.036.084-.096.36-.42.456-.564.096-.144.193-.12.325-.072.132.048.841.396.985.468.144.072.24.108.276.168.036.06.036.348-.108.753z"/>
                               </svg>
                               <span>WA</span>
                             </a>
                           </div>
 
-                          {/* Fallback stage move button */}
-                          {!isClosed && (
+                          {/* Stage Pipeline Selector (Full Width, Zero Overflow) */}
+                          <div className="relative">
                             <select
                               value={lead.stage}
                               onChange={(e) =>
                                 handleStageChange(lead.id, e.target.value as LeadStage)
                               }
-                              className="h-8 px-2 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-xs font-sans text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] cursor-pointer"
+                              className="w-full min-w-0 h-7 pl-2.5 pr-6 bg-[var(--bg-base)] border border-[var(--border-subtle)] text-[10px] font-sans font-medium text-[var(--text-primary)] rounded-[2px] focus:outline-none focus:border-[var(--accent)] hover:border-[var(--accent)] transition-colors cursor-pointer truncate appearance-none"
                             >
-                              <option value="new">New</option>
-                              <option value="contacted">Contacted</option>
-                              <option value="viewing">Viewing</option>
-                              <option value="negotiating">Negotiating</option>
-                              <option value="won">Won (Sold)</option>
-                              <option value="lost">Lost</option>
+                              <option value="new">Stage: New</option>
+                              <option value="contacted">Stage: Contacted</option>
+                              <option value="viewing">Stage: Viewing</option>
+                              <option value="negotiating">Stage: Negotiating</option>
+                              <option value="won">Stage: Won (Sold)</option>
+                              <option value="lost">Stage: Lost</option>
                             </select>
-                          )}
+                            <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-[var(--text-secondary)]">
+                              <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     );
@@ -1411,6 +1421,7 @@ export function LeadsPipelineClient({
             </div>
           );
         })}
+        </div>
       </div>
 
       {/* MOBILE CARD LIST */}
